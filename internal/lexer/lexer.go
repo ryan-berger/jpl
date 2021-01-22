@@ -1,87 +1,174 @@
 package lexer
 
-import (
-	"fmt"
-	"strings"
-	"unicode/utf8"
-)
+import "fmt"
 
-func Lex(text string) chan Token {
-	return nil
+// Lexer holds state while we lex. Heavily inspired by "Writing an Interpreter in Go"
+type Lexer struct {
+	input        string
+	position     int
+	readPosition int
+	ch           byte
 }
 
-const eof = -1
-
-// lexer is a struct for internal state to help with the state machine
-// and is heavily inspired by Rob Pike's talk on lexing in Go.
-type lexer struct {
-	name  string     // used only for error reports.
-	input string     // the string being scanned.
-	start int        // start position of the current item.
-	pos   int        // pos is current position in the input.
-	width int        // width of last rune read from input.
-	items chan Token // channel of scanned items.
-}
-
-func (l *lexer) run() {
-	for state := lexText; state != nil; {
-		state = state(l)
+func NewLexer(input string) *Lexer {
+	l := &Lexer{
+		input:        input,
+		position:     0,
+		readPosition: 0,
+		ch:           0,
 	}
-	close(l.items)
+	l.readChar()
+	return l
 }
 
-func (l *lexer) emit(t TokenType) {
-	l.items <- Token{Type: t, Val: l.input[l.start:l.pos]}
-	l.start = l.pos
-}
-
-func (l *lexer) next() (r rune) {
-	if l.pos >= len(l.input) {
-		l.width = 0
-		return eof
+func (l *Lexer) readChar() {
+	if l.readPosition >= len(l.input) {
+		l.ch = 0
+	} else {
+		l.ch = l.input[l.readPosition]
 	}
-	r, l.width =
-		utf8.DecodeRuneInString(l.input[l.pos:])
-	l.pos += l.width
-	return r
+	l.position = l.readPosition
+	l.readPosition++
 }
 
-func (l *lexer) ignore() {
-	l.start = l.pos
-}
-
-func (l *lexer) backup() {
-	l.pos -= l.width
-}
-
-func (l *lexer) peek() rune {
-	r := l.next()
-	l.backup()
-	return r
-}
-
-func (l *lexer) accept(valid string) bool {
-	if strings.IndexRune(valid, l.next()) >= 0 {
-		return true
+func (l *Lexer) readIdentifier() string {
+	pos := l.position
+	for isAlphabetic(l.ch) {
+		l.readChar()
 	}
-	l.backup()
-	return false
+	return l.input[pos:l.position]
 }
 
-func (l *lexer) acceptRun(valid string) {
-	for strings.IndexRune(valid, l.next()) >= 0 {
+func isAlphabetic(ch byte) bool {
+	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
+}
+
+func (l *Lexer) peek() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
 	}
-	l.backup()
+	return l.input[l.readPosition]
 }
 
-func (l *lexer) errorf(format string, args ...interface{}) stateFn {
-	l.items <- Token{
-		Type: Error,
-		Val:  fmt.Sprintf(format, args...),
+func newToken(tokType TokenType, ch byte) Token {
+	return Token{
+		Type: tokType,
+		Val:  string(ch),
 	}
-	return nil
 }
 
-func (l *lexer) prefixed(with string) bool {
-	return strings.HasPrefix(l.input[l.pos:], with)
+func newTokenString(tokenType TokenType, str string) Token {
+	return Token{
+		Type: tokenType,
+		Val:  str,
+	}
+}
+
+var keywords = map[string]TokenType{
+	"fn":     Function,
+	"let":    Let,
+	"if":     If,
+	"then":   Then,
+	"else":   Else,
+	"return": Return,
+}
+
+func (l *Lexer) NextToken() Token {
+	var t Token
+
+	// skip whitespace
+	for l.ch == ' ' {
+		l.readChar()
+	}
+
+	if (l.ch <= 32 || l.ch >= 126) && l.ch != 10 && l.ch != 0 {
+		return newTokenString(ILLEGAL, fmt.Sprintf("invalid character: %s", string(l.ch)))
+	}
+
+	switch l.ch {
+	case '=':
+		if l.peek() == '=' {
+			t = newTokenString(EqualTo, "==")
+			l.readChar()
+		} else {
+			t = newToken(Assign, l.ch)
+		}
+	case '!':
+		if l.peek() == '=' {
+			t = newTokenString(NotEqualTo, "!=")
+			l.readChar()
+		} else {
+			t = newToken(Not, l.ch)
+		}
+	case '>':
+		if l.peek() == '=' {
+			t = newTokenString(GreaterThanOrEqual, ">=")
+			l.readChar()
+		} else {
+			t = newToken(GreaterThan, l.ch)
+		}
+	case '<':
+		if l.peek() == '=' {
+			t = newTokenString(LessThanOrEqual, "<=")
+			l.readChar()
+		} else {
+			t = newToken(LessThan, l.ch)
+		}
+	case '&':
+		if l.peek() == '&' {
+			t = newTokenString(And, "&&")
+			l.readChar()
+		} else {
+			t = newTokenString(ILLEGAL, fmt.Sprintf("expected & received %s", string(l.ch)))
+		}
+	case '|':
+		if l.peek() == '|' {
+			t = newTokenString(Or, "||")
+			l.readChar()
+		} else {
+			t = newTokenString(ILLEGAL, fmt.Sprintf("expected | received %s", string(l.ch)))
+		}
+	case '+':
+		t = newToken(Plus, l.ch)
+	case '-':
+		t = newToken(Minus, l.ch)
+	case '*':
+		t = newToken(Multiply, l.ch)
+	case '/':
+		t = newToken(Divide, l.ch)
+	case '%':
+		t = newToken(Mod, l.ch)
+	case '[':
+		t = newToken(LBrace, l.ch)
+	case ']':
+		t = newToken(RBrace, l.ch)
+	case '{':
+		t = newToken(LCurly, l.ch)
+	case '}':
+		t = newToken(RCurly, l.ch)
+	case '(':
+		t = newToken(LParen, l.ch)
+	case ')':
+		t = newToken(RParen, l.ch)
+	case ':':
+		t = newToken(Colon, l.ch)
+	case ',':
+		t = newToken(Comma, l.ch)
+	case '\n':
+		t = newToken(NewLine, l.ch)
+	case 0:
+		t.Type = EOF
+	default:
+		if isAlphabetic(l.ch) {
+			t.Type = Variable
+			t.Val = l.readIdentifier()
+			if tokenType, ok := keywords[t.Val]; ok {
+				t.Type = tokenType
+			}
+			return t
+		}
+	}
+
+	l.readChar()
+	return t
 }
