@@ -1,6 +1,8 @@
 package lexer
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Lexer holds state while we lex. Heavily inspired by "Writing an Interpreter in Go"
 type Lexer struct {
@@ -39,8 +41,40 @@ func (l *Lexer) readIdentifier() string {
 	return l.input[pos:l.position]
 }
 
+func (l *Lexer) readString() string { return "" }
+
+func (l *Lexer) readDigits() string {
+	pos := l.position
+	for isNumeric(l.ch) {
+		l.readChar()
+	}
+	return l.input[pos:l.position]
+}
+
+func (l *Lexer) readNumber() Token {
+	first := l.readDigits()
+
+	if l.ch != '.' {
+		return newTokenString(IntLiteral, first)
+	}
+
+	// step ahead one character
+	l.readChar()
+	second := l.readDigits()
+	if second == "" { // no characters were read
+		return newTokenString(ILLEGAL,
+			fmt.Sprintf("error: expected digits after the decimal received: %s", string(l.ch)))
+	}
+
+	return newTokenString(FloatLiteral, fmt.Sprintf("%s.%s", first, second))
+}
+
 func isAlphabetic(ch byte) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
+}
+
+func isNumeric(ch byte) bool {
+	return ch >= '0' && ch <= '9'
 }
 
 func (l *Lexer) peek() byte {
@@ -71,6 +105,17 @@ var keywords = map[string]TokenType{
 	"then":   Then,
 	"else":   Else,
 	"return": Return,
+	"array":  Array,
+	// builtins
+	"print":     Print,
+	"show":      Show,
+	"time":      Time,
+	"sum":       Sum,
+	"assert":    Assert,
+	"read":      Read,
+	"write":     Write,
+	"to":        To,
+	"attribute": Attribute,
 }
 
 func (l *Lexer) NextToken() Token {
@@ -81,7 +126,7 @@ func (l *Lexer) NextToken() Token {
 		l.readChar()
 	}
 
-	if (l.ch <= 32 || l.ch >= 126) && l.ch != 10 && l.ch != 0 {
+	if (l.ch < 32 || l.ch > 126) && l.ch != 10 && l.ch != 0 {
 		return newTokenString(ILLEGAL, fmt.Sprintf("invalid character: %s", string(l.ch)))
 	}
 
@@ -156,6 +201,10 @@ func (l *Lexer) NextToken() Token {
 		t = newToken(Comma, l.ch)
 	case '\n':
 		t = newToken(NewLine, l.ch)
+	case '"':
+		t.Type = String
+		t.Val = l.readString()
+		return t
 	case 0:
 		t.Type = EOF
 	default:
@@ -166,6 +215,9 @@ func (l *Lexer) NextToken() Token {
 				t.Type = tokenType
 			}
 			return t
+		}
+		if isNumeric(l.ch) {
+			return l.readNumber()
 		}
 	}
 
