@@ -78,13 +78,13 @@ type Token struct {
 
 var typeToDump = map[TokenType]string{
 	ILLEGAL: "ERROR",
-	EOF:     "EOF",
+	EOF:     "END_OF_FILE",
 
 	// Delimiters
 	LParen:  "LPAREN",
 	RParen:  "RPAREN",
-	LBrace:  "LBRACE",
-	RBrace:  "RBRACE",
+	LBrace:  "LSQUARE",
+	RBrace:  "RSQUARE",
 	LCurly:  "LCURLY",
 	RCurly:  "RCURLY",
 	Comma:   "COMMA",
@@ -96,7 +96,7 @@ var typeToDump = map[TokenType]string{
 	Plus:               "BINOP",
 	Minus:              "BINOP",
 	Divide:             "BINOP",
-	Multiply:           "BIONP",
+	Multiply:           "BINOP",
 	Mod:                "BINOP",
 	Not:                "BOOLNOT",
 	And:                "BINOP",
@@ -104,8 +104,8 @@ var typeToDump = map[TokenType]string{
 	LessThan:           "BINOP",
 	LessThanOrEqual:    "BINOP",
 	GreaterThan:        "BINOP",
-	GreaterThanOrEqual: "BIONP",
-	EqualTo:            "BIONP",
+	GreaterThanOrEqual: "BINOP",
+	EqualTo:            "BINOP",
 	NotEqualTo:         "BIONOP",
 
 	// Keywords
@@ -131,14 +131,15 @@ var typeToDump = map[TokenType]string{
 	Print:     "PRINT",
 
 	// Literals:
-	IntLiteral: "INTVAL",
+	IntLiteral:   "INTVAL",
 	FloatLiteral: "FLOATVAL",
+	String:       "STRING",
 }
 
 func (t *Token) DumpString() string {
 	prefix := typeToDump[t.Type]
 
-	if t.Type == NewLine {
+	if t.Type == NewLine || t.Type == EOF {
 		return prefix
 	}
 

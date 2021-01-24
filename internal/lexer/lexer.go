@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"fmt"
+	"strings"
 )
 
 // Lexer holds state while we lex. Heavily inspired by "Writing an Interpreter in Go"
@@ -35,16 +36,62 @@ func (l *Lexer) readChar() {
 
 func (l *Lexer) readIdentifier() string {
 	pos := l.position
-	for isAlphabetic(l.ch) {
+	for isAlphabetic(l.ch) || isNumeric(l.ch) {
 		l.readChar()
 	}
 	return l.input[pos:l.position]
 }
 
-func (l *Lexer) readString() string { return "" }
+func (l *Lexer) errorf(msg string, args ...interface{}) Token {
+	// jump to the end
+	l.readPosition = len(l.input)
+	l.ch = 0
+	// return illegal token
+	return newTokenString(ILLEGAL, fmt.Sprintf(msg, args...))
+}
+
+func (l *Lexer) readComment() *Token {
+	l.readChar() // advance so we are in line with the comment
+	for l.ch != '\n' {
+		l.readChar()
+	}
+	l.readChar()
+	return nil
+}
+
+func (l *Lexer) readMultilineComment() *Token {
+	l.readChar() // advance so we are in line with the comment
+
+	pos := l.position
+	for !strings.HasSuffix(l.input[pos:l.position], "*/") {
+		l.readChar()
+	}
+
+	l.readChar()
+	return nil
+}
+
+func (l *Lexer) readString() Token {
+	pos := l.position
+	l.readChar() // advance past the first quotation mark
+
+	for l.ch != '"' {
+		if invalidChar(l.ch) || l.ch == '\n' {
+			return l.errorf("error, expected end quote received: %s", string(l.ch))
+		}
+		l.readChar()
+	}
+
+	l.readChar()
+	str := l.input[pos:l.position]
+	return newTokenString(String, str)
+}
 
 func (l *Lexer) readDigits() string {
 	pos := l.position
+	if l.ch == '-' || l.ch == '+' {
+		l.readChar() // move forward once if the first character is a m
+	}
 	for isNumeric(l.ch) {
 		l.readChar()
 	}
@@ -61,11 +108,6 @@ func (l *Lexer) readNumber() Token {
 	// step ahead one character
 	l.readChar()
 	second := l.readDigits()
-	if second == "" { // no characters were read
-		return newTokenString(ILLEGAL,
-			fmt.Sprintf("error: expected digits after the decimal received: %s", string(l.ch)))
-	}
-
 	return newTokenString(FloatLiteral, fmt.Sprintf("%s.%s", first, second))
 }
 
@@ -75,6 +117,10 @@ func isAlphabetic(ch byte) bool {
 
 func isNumeric(ch byte) bool {
 	return ch >= '0' && ch <= '9'
+}
+
+func invalidChar(ch byte) bool {
+	return (ch < 32 || ch > 126) && ch != 10 && ch != 0
 }
 
 func (l *Lexer) peek() byte {
@@ -118,6 +164,18 @@ var keywords = map[string]TokenType{
 	"attribute": Attribute,
 }
 
+func (l *Lexer) LexAll() ([]Token, bool) {
+	tokens := make([]Token, 0)
+	for tok := l.NextToken(); tok.Type != EOF; tok = l.NextToken() {
+		if len(tokens) != 0 && (tokens[len(tokens)-1].Type == NewLine && tok.Type == NewLine) {
+			continue
+		}
+		tokens = append(tokens, tok)
+	}
+	tokens = append(tokens, Token{Type: EOF, Val: ""})
+	return tokens, len(tokens) >= 2 && tokens[len(tokens)-2].Type != ILLEGAL
+}
+
 func (l *Lexer) NextToken() Token {
 	var t Token
 
@@ -127,7 +185,7 @@ func (l *Lexer) NextToken() Token {
 	}
 
 	if (l.ch < 32 || l.ch > 126) && l.ch != 10 && l.ch != 0 {
-		return newTokenString(ILLEGAL, fmt.Sprintf("invalid character: %s", string(l.ch)))
+		return l.errorf("invalid character: %s", string(l.ch))
 	}
 
 	switch l.ch {
@@ -174,13 +232,39 @@ func (l *Lexer) NextToken() Token {
 			t = newTokenString(ILLEGAL, fmt.Sprintf("expected | received %s", string(l.ch)))
 		}
 	case '+':
+		if isNumeric(l.peek()) {
+			return l.readNumber()
+		}
 		t = newToken(Plus, l.ch)
 	case '-':
+		if isNumeric(l.peek()) {
+			return l.readNumber()
+		}
 		t = newToken(Minus, l.ch)
 	case '*':
 		t = newToken(Multiply, l.ch)
 	case '/':
+		peek := l.peek()
+		if peek == '/' {
+			if err := l.readComment(); err != nil {
+				return *err
+			}
+			return l.NextToken()
+		}
+		if peek == '*' {
+			if err := l.readMultilineComment(); err != nil {
+				return *err
+			}
+			return l.NextToken()
+		}
 		t = newToken(Divide, l.ch)
+	case '\\':
+		if peek := l.peek(); peek != '\n' {
+			return l.errorf("error, expected newline, received %s", string(peek))
+		}
+		l.readChar()
+		l.readChar()
+		return l.NextToken()
 	case '%':
 		t = newToken(Mod, l.ch)
 	case '[':
@@ -200,11 +284,13 @@ func (l *Lexer) NextToken() Token {
 	case ',':
 		t = newToken(Comma, l.ch)
 	case '\n':
-		t = newToken(NewLine, l.ch)
+		l.readChar()
+		for l.ch == ' ' || l.ch == '\n' {
+			l.readChar()
+		}
+		return newToken(NewLine, '\n')
 	case '"':
-		t.Type = String
-		t.Val = l.readString()
-		return t
+		return l.readString()
 	case 0:
 		t.Type = EOF
 	default:
