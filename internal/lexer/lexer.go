@@ -271,14 +271,8 @@ func (l *Lexer) NextToken() Token {
 			return l.errorf("expected | received %s", string(l.ch))
 		}
 	case '+':
-		if isNumeric(l.peek()) {
-			return l.readNumber()
-		}
 		t = newToken(Plus, l.ch)
 	case '-':
-		if isNumeric(l.peek()) {
-			return l.readNumber()
-		}
 		t = newToken(Minus, l.ch)
 	case '*':
 		t = newToken(Multiply, l.ch)
