@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var test = []struct {
+var tests = []struct {
 	input  string
 	tokens []Token
 }{
@@ -99,7 +99,8 @@ fn yeet`,
 			{Type: Show, Val: "show"},
 			{Type: Variable, Val: "inc"},
 			{Type: LParen, Val: "("},
-			{Type: ILLEGAL, Val: "error: expected digits after the decimal received: )"},
+			{Type: FloatLiteral, Val: "3."},
+			{Type: RParen, Val: ")"},
 			{Type: EOF, Val: ""},
 		},
 	},
@@ -176,10 +177,72 @@ fn example(i : int, j : int) {
 			{Type: FloatLiteral, Val: "+0.3"},
 		},
 	},
+	{
+		input: `print ""`,
+		tokens: []Token{
+			{Type: Print, Val: "print"},
+			{Type: String, Val: "\"\""},
+		},
+	},
+	{
+		input: `//000000000000`,
+	},
+	{
+		input: `/* */`,
+	},
+	{
+		input: `/*`,
+		tokens: []Token{
+			{Type: ILLEGAL, Val: "error, expected closing */ received EOF"},
+		},
+	},
+	{
+		input: "print \"\x00\"",
+		tokens: []Token{
+			{Type: Print, Val: "print"},
+			{Type: ILLEGAL, Val: "error, expected end quote received: \x00"},
+		},
+	},
+	{
+		input: `fn sphere_point({x : float, y : float}) : float3 {
+    // p(t) = { 4 - t, t * x / 4, t * y / 4 }
+    let r =`,
+		tokens: []Token{
+			{Type: Function, Val: "fn"},
+			{Type: Variable, Val: "sphere_point"},
+			{Type: LParen, Val: "("},
+			{Type: LCurly, Val: "{"},
+			{Type: Variable, Val: "x"},
+			{Type: Colon, Val: ":"},
+			{Type: Variable, Val: "float"},
+			{Type: Comma, Val: ","},
+			{Type: Variable, Val: "y"},
+			{Type: Colon, Val: ":"},
+			{Type: Variable, Val: "float"},
+			{Type: RCurly, Val: "}"},
+			{Type: RParen, Val: ")"},
+			{Type: Colon, Val: ":"},
+			{Type: Variable, Val: "float3"},
+			{Type: LCurly, Val: "{"},
+			{Type: NewLine, Val: "\n"},
+			{Type: Let, Val: "let"},
+			{Type: Variable, Val: "r"},
+			{Type: Assign, Val: "="},
+		},
+	},
+	{
+		input: `let r = 10 // test comment`,
+		tokens: []Token{
+			{Type: Let, Val: "let"},
+			{Type: Variable, Val: "r"},
+			{Type: Assign, Val: "="},
+			{Type: IntLiteral, Val: "10"},
+		},
+	},
 }
 
 func TestLexer(t *testing.T) {
-	for _, test := range test {
+	for _, test := range tests {
 		l := NewLexer(test.input)
 
 		i := 0

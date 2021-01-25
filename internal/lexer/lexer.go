@@ -50,24 +50,28 @@ func (l *Lexer) errorf(msg string, args ...interface{}) Token {
 	return newTokenString(ILLEGAL, fmt.Sprintf(msg, args...))
 }
 
-func (l *Lexer) readComment() *Token {
+func (l *Lexer) readComment() {
 	l.readChar() // advance so we are in line with the comment
-	for l.ch != '\n' {
+	for l.ch != '\n' && l.ch != 0 {
 		l.readChar()
 	}
 	l.readChar()
-	return nil
 }
 
 func (l *Lexer) readMultilineComment() *Token {
+	l.readChar()
 	l.readChar() // advance so we are in line with the comment
 
 	pos := l.position
-	for !strings.HasSuffix(l.input[pos:l.position], "*/") {
+	for !strings.HasSuffix(l.input[pos:l.position], "*/") && l.ch != 0 {
 		l.readChar()
 	}
 
-	l.readChar()
+	if !strings.HasSuffix(l.input[pos:l.position], "*/") {
+		tok := l.errorf("error, expected closing */ received EOF")
+		return &tok
+	}
+
 	return nil
 }
 
@@ -120,7 +124,7 @@ func isNumeric(ch byte) bool {
 }
 
 func invalidChar(ch byte) bool {
-	return (ch < 32 || ch > 126) && ch != 10 && ch != 0
+	return (ch < 32 || ch > 126) || ch == 10 || ch == 0
 }
 
 func (l *Lexer) peek() byte {
@@ -173,19 +177,37 @@ func (l *Lexer) LexAll() ([]Token, bool) {
 		tokens = append(tokens, tok)
 	}
 	tokens = append(tokens, Token{Type: EOF, Val: ""})
-	return tokens, len(tokens) >= 2 && tokens[len(tokens)-2].Type != ILLEGAL
+	return tokens, len(tokens) == 1 || len(tokens) >= 2 && tokens[len(tokens)-2].Type != ILLEGAL
 }
 
 func (l *Lexer) NextToken() Token {
 	var t Token
+
+	if (l.ch < 32 || l.ch > 126) && l.ch != 10 && l.ch != 0 {
+		return l.errorf("invalid character: %s", string(l.ch))
+	}
 
 	// skip whitespace
 	for l.ch == ' ' {
 		l.readChar()
 	}
 
-	if (l.ch < 32 || l.ch > 126) && l.ch != 10 && l.ch != 0 {
-		return l.errorf("invalid character: %s", string(l.ch))
+	// run through all comments here before we start searching for tokens
+	for l.ch == '/' {
+		if l.peek() == '/' { // read through the single line comments
+			l.readComment()
+		} else if l.peek() == '*' { // read through the multiline ones as well
+			if tok := l.readMultilineComment(); tok != nil {
+				return *tok
+			}
+		} else { // looks like we just have a normal ol division symbol
+			break
+		}
+	}
+
+	// skip whitespace
+	for l.ch == ' ' {
+		l.readChar()
 	}
 
 	switch l.ch {
@@ -244,19 +266,6 @@ func (l *Lexer) NextToken() Token {
 	case '*':
 		t = newToken(Multiply, l.ch)
 	case '/':
-		peek := l.peek()
-		if peek == '/' {
-			if err := l.readComment(); err != nil {
-				return *err
-			}
-			return l.NextToken()
-		}
-		if peek == '*' {
-			if err := l.readMultilineComment(); err != nil {
-				return *err
-			}
-			return l.NextToken()
-		}
 		t = newToken(Divide, l.ch)
 	case '\\':
 		if peek := l.peek(); peek != '\n' {
