@@ -180,6 +180,35 @@ func (l *Lexer) LexAll() ([]Token, bool) {
 	return tokens, len(tokens) == 1 || len(tokens) >= 2 && tokens[len(tokens)-2].Type != ILLEGAL
 }
 
+func (l *Lexer) readCommentsAndWhitespace() *Token {
+	for {
+		switch l.ch {
+		case ' ':
+			l.readChar()
+		case '/':
+			if l.peek() == '/' {
+				l.readComment()
+			} else if l.peek() == '*' {
+				if tok := l.readMultilineComment(); tok != nil {
+					return tok
+				}
+			} else {
+				return nil
+			}
+		case '\\':
+			if l.peek() != '\n' {
+				tok := l.errorf("error expected newline after \\ received: %s",
+					string(l.peek()))
+				return &tok
+			}
+			l.readChar()
+			l.readChar()
+		default:
+			return nil
+		}
+	}
+}
+
 func (l *Lexer) NextToken() Token {
 	var t Token
 
@@ -187,27 +216,8 @@ func (l *Lexer) NextToken() Token {
 		return l.errorf("invalid character: %s", string(l.ch))
 	}
 
-	// skip whitespace
-	for l.ch == ' ' {
-		l.readChar()
-	}
-
-	// run through all comments here before we start searching for tokens
-	for l.ch == '/' {
-		if l.peek() == '/' { // read through the single line comments
-			l.readComment()
-		} else if l.peek() == '*' { // read through the multiline ones as well
-			if tok := l.readMultilineComment(); tok != nil {
-				return *tok
-			}
-		} else { // looks like we just have a normal ol division symbol
-			break
-		}
-	}
-
-	// skip whitespace
-	for l.ch == ' ' {
-		l.readChar()
+	if tok := l.readCommentsAndWhitespace(); tok != nil {
+		return *tok
 	}
 
 	switch l.ch {
@@ -244,14 +254,14 @@ func (l *Lexer) NextToken() Token {
 			t = newTokenString(And, "&&")
 			l.readChar()
 		} else {
-			t = newTokenString(ILLEGAL, fmt.Sprintf("expected & received %s", string(l.ch)))
+			return l.errorf("expected & received %s", string(l.ch))
 		}
 	case '|':
 		if l.peek() == '|' {
 			t = newTokenString(Or, "||")
 			l.readChar()
 		} else {
-			t = newTokenString(ILLEGAL, fmt.Sprintf("expected | received %s", string(l.ch)))
+			return l.errorf("expected | received %s", string(l.ch))
 		}
 	case '+':
 		if isNumeric(l.peek()) {
@@ -267,13 +277,6 @@ func (l *Lexer) NextToken() Token {
 		t = newToken(Multiply, l.ch)
 	case '/':
 		t = newToken(Divide, l.ch)
-	case '\\':
-		if peek := l.peek(); peek != '\n' {
-			return l.errorf("error, expected newline, received %s", string(peek))
-		}
-		l.readChar()
-		l.readChar()
-		return l.NextToken()
 	case '%':
 		t = newToken(Mod, l.ch)
 	case '[':
@@ -293,7 +296,6 @@ func (l *Lexer) NextToken() Token {
 	case ',':
 		t = newToken(Comma, l.ch)
 	case '\n':
-		l.readChar()
 		for l.ch == ' ' || l.ch == '\n' {
 			l.readChar()
 		}

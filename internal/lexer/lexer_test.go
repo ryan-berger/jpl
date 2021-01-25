@@ -239,6 +239,17 @@ fn example(i : int, j : int) {
 			{Type: IntLiteral, Val: "10"},
 		},
 	},
+	{
+		input: `M] ( \
+      /* by using clamp here, we are "extending" the boundary pixels of a */ \
+      k`,
+		tokens: []Token{
+			{Type: Variable, Val: "M"},
+			{Type: RBrace, Val: "]"},
+			{Type: LParen, Val: "("},
+			{Type: Variable, Val: "k"},
+		},
+	},
 }
 
 func TestLexer(t *testing.T) {
