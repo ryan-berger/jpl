@@ -176,11 +176,18 @@ func (l *Lexer) LexAll() ([]Token, bool) {
 		}
 		tokens = append(tokens, tok)
 	}
+	// TODO: Don't do this, just whyyyyy
 	tokens = append(tokens, Token{Type: EOF, Val: ""})
 	return tokens, len(tokens) == 1 || len(tokens) >= 2 && tokens[len(tokens)-2].Type != ILLEGAL
 }
 
-func (l *Lexer) readCommentsAndWhitespace() *Token {
+// searchNextToken looks for the next token for the given input
+// this allows the lexer to be much more specific and avoid recursion.
+// all characters such as /, /*, and \ that can be ignored are filtered
+// out in order to avoid unnecessary recursion
+// if a lexical error is encountered, an error token is returned for use
+// in the NextToken function
+func (l *Lexer) searchNextToken() *Token {
 	for {
 		switch l.ch {
 		case ' ':
@@ -201,8 +208,8 @@ func (l *Lexer) readCommentsAndWhitespace() *Token {
 					string(l.peek()))
 				return &tok
 			}
-			l.readChar()
-			l.readChar()
+			l.readChar() // advance to newline character
+			l.readChar() // advance past newline character
 		default:
 			return nil
 		}
@@ -216,7 +223,7 @@ func (l *Lexer) NextToken() Token {
 		return l.errorf("invalid character: %s", string(l.ch))
 	}
 
-	if tok := l.readCommentsAndWhitespace(); tok != nil {
+	if tok := l.searchNextToken(); tok != nil {
 		return *tok
 	}
 
