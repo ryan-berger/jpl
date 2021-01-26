@@ -210,7 +210,7 @@ func (l *Lexer) searchNextToken() *Token {
 			}
 			l.readChar() // advance to newline character
 			l.readChar() // advance past newline character
-		default:
+		default: // we don't have anything to skip
 			return nil
 		}
 	}
