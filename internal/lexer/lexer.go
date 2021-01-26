@@ -44,12 +44,14 @@ func (l *Lexer) readIdentifier() string {
 
 func (l *Lexer) errorf(msg string, args ...interface{}) Token {
 	// jump to the end
-	l.readPosition = len(l.input)
+	l.readPosition = len(l.input) + 1
 	l.ch = 0
 	// return illegal token
 	return newTokenString(ILLEGAL, fmt.Sprintf(msg, args...))
 }
 
+// TODO: actually fulfill requirements here
+// readComment reads a single line comment
 func (l *Lexer) readComment() {
 	l.readChar() // advance so we are in line with the comment
 	for l.ch != '\n' && l.ch != 0 {
@@ -58,6 +60,7 @@ func (l *Lexer) readComment() {
 	l.readChar()
 }
 
+// readMultilineComment reads a multi-line comment
 func (l *Lexer) readMultilineComment() *Token {
 	l.readChar()
 	l.readChar() // advance so we are in line with the comment
@@ -68,7 +71,7 @@ func (l *Lexer) readMultilineComment() *Token {
 	}
 
 	if !strings.HasSuffix(l.input[pos:l.position], "*/") {
-		tok := l.errorf("error, expected closing */ received EOF")
+		tok := l.errorf("error, expected closing '*/' received EOF")
 		return &tok
 	}
 
@@ -93,9 +96,6 @@ func (l *Lexer) readString() Token {
 
 func (l *Lexer) readDigits() string {
 	pos := l.position
-	if l.ch == '-' || l.ch == '+' {
-		l.readChar() // move forward once if the first character is a m
-	}
 	for isNumeric(l.ch) {
 		l.readChar()
 	}
@@ -124,7 +124,7 @@ func isNumeric(ch byte) bool {
 }
 
 func invalidChar(ch byte) bool {
-	return (ch < 32 || ch > 126) || ch == 10 || ch == 0
+	return (ch < 32 || ch > 126) && ch != 10
 }
 
 func (l *Lexer) peek() byte {
@@ -204,7 +204,7 @@ func (l *Lexer) searchNextToken() *Token {
 			}
 		case '\\':
 			if l.peek() != '\n' {
-				tok := l.errorf("error expected newline after \\ received: %s",
+				tok := l.errorf("error, expected newline after '\\' received: '%s'",
 					string(l.peek()))
 				return &tok
 			}
@@ -219,12 +219,19 @@ func (l *Lexer) searchNextToken() *Token {
 func (l *Lexer) NextToken() Token {
 	var t Token
 
-	if (l.ch < 32 || l.ch > 126) && l.ch != 10 && l.ch != 0 {
-		return l.errorf("invalid character: %s", string(l.ch))
-	}
-
+	// make sure we are in line with the next token
 	if tok := l.searchNextToken(); tok != nil {
 		return *tok
+	}
+
+	// if we've past the amount of input we have, we are at an EOF
+	if l.readPosition > len(l.input) {
+		return Token{Type: EOF}
+	}
+
+	// if we've reached an invalid character, we need to return
+	if invalidChar(l.ch) {
+		return l.errorf("error, received invalid character: %s", string(l.ch))
 	}
 
 	switch l.ch {
@@ -261,14 +268,14 @@ func (l *Lexer) NextToken() Token {
 			t = newTokenString(And, "&&")
 			l.readChar()
 		} else {
-			return l.errorf("expected & received %s", string(l.ch))
+			return l.errorf("error, expected '&' received '%s'", string(l.peek()))
 		}
 	case '|':
 		if l.peek() == '|' {
 			t = newTokenString(Or, "||")
 			l.readChar()
 		} else {
-			return l.errorf("expected | received %s", string(l.ch))
+			return l.errorf("error, expected '|' received '%s'", string(l.peek()))
 		}
 	case '+':
 		t = newToken(Plus, l.ch)
@@ -297,14 +304,9 @@ func (l *Lexer) NextToken() Token {
 	case ',':
 		t = newToken(Comma, l.ch)
 	case '\n':
-		for l.ch == ' ' || l.ch == '\n' {
-			l.readChar()
-		}
-		return newToken(NewLine, '\n')
+		t = newToken(NewLine, '\n')
 	case '"':
 		return l.readString()
-	case 0:
-		t.Type = EOF
 	default:
 		if isAlphabetic(l.ch) {
 			t.Type = Variable
@@ -317,6 +319,8 @@ func (l *Lexer) NextToken() Token {
 		if isNumeric(l.ch) {
 			return l.readNumber()
 		}
+		// "assertion" in Go
+		panic(fmt.Sprintf("error, no token match to token: %s", string(l.ch)))
 	}
 
 	l.readChar()

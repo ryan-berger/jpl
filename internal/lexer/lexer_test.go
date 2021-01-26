@@ -12,14 +12,36 @@ var tests = []struct {
 	tokens []Token
 }{
 	{
-		input: "{}[]*!",
+		input: "&&||%{}[]*!/* */!=/* other comment */<=/**/>=/**/<>",
 		tokens: []Token{
+			{Type: And, Val: "&&"},
+			{Type: Or, Val: "||"},
+			{Type: Mod, Val: "%"},
 			{Type: LCurly, Val: "{"},
 			{Type: RCurly, Val: "}"},
 			{Type: LBrace, Val: "["},
 			{Type: RBrace, Val: "]"},
 			{Type: Multiply, Val: "*"},
 			{Type: Not, Val: "!"},
+			{Type: NotEqualTo, Val: "!="},
+			{Type: LessThanOrEqual, Val: "<="},
+			{Type: GreaterThanOrEqual, Val: ">="},
+			{Type: LessThan, Val: "<"},
+			{Type: GreaterThan, Val: ">"},
+			{Type: EOF},
+		},
+	},
+	{
+		input: `&|`,
+		tokens: []Token{
+			{Type: ILLEGAL, Val: "error, expected '&' received '|'"},
+			{Type: EOF},
+		},
+	},
+	{
+		input: `|&`,
+		tokens: []Token{
+			{Type: ILLEGAL, Val: "error, expected '|' received '&'"},
 			{Type: EOF},
 		},
 	},
@@ -66,6 +88,7 @@ fn yeet`,
 			{Type: LParen, Val: "("},
 			{Type: IntLiteral, Val: "33"},
 			{Type: RParen, Val: ")"},
+			{Type: EOF},
 		},
 	},
 	{
@@ -76,6 +99,7 @@ fn yeet`,
 			{Type: LParen, Val: "("},
 			{Type: FloatLiteral, Val: "3.3"},
 			{Type: RParen, Val: ")"},
+			{Type: EOF},
 		},
 	},
 	{
@@ -91,6 +115,7 @@ fn yeet`,
 			{Type: Comma, Val: ","},
 			{Type: FloatLiteral, Val: "3.5"},
 			{Type: RParen, Val: ")"},
+			{Type: EOF},
 		},
 	},
 	{
@@ -101,7 +126,7 @@ fn yeet`,
 			{Type: LParen, Val: "("},
 			{Type: FloatLiteral, Val: "3."},
 			{Type: RParen, Val: ")"},
-			{Type: EOF, Val: ""},
+			{Type: EOF},
 		},
 	},
 	{
@@ -166,15 +191,26 @@ fn example(i : int, j : int) {
 		},
 	},
 	{
+		input: `\ `,
+		tokens: []Token{
+			{Type: ILLEGAL, Val: "error, expected newline after '\\' received: ' '"},
+			{Type: EOF},
+		},
+	},
+	{
 		input: `-22
 -1.3
 +0.3`,
 		tokens: []Token{
-			{Type: IntLiteral, Val: "-22"},
+			{Type: Minus, Val: "-"},
+			{Type: IntLiteral, Val: "22"},
 			{Type: NewLine, Val: "\n"},
-			{Type: FloatLiteral, Val: "-1.3"},
+			{Type: Minus, Val: "-"},
+			{Type: FloatLiteral, Val: "1.3"},
 			{Type: NewLine, Val: "\n"},
-			{Type: FloatLiteral, Val: "+0.3"},
+			{Type: Plus, Val: "+"},
+			{Type: FloatLiteral, Val: "0.3"},
+			{Type: EOF},
 		},
 	},
 	{
@@ -182,18 +218,33 @@ fn example(i : int, j : int) {
 		tokens: []Token{
 			{Type: Print, Val: "print"},
 			{Type: String, Val: "\"\""},
+			{Type: EOF},
 		},
 	},
 	{
 		input: `//000000000000`,
+		tokens: []Token{
+			{Type: EOF},
+		},
 	},
 	{
 		input: `/* */`,
+		tokens: []Token{
+			{Type: EOF},
+		},
 	},
 	{
 		input: `/*`,
 		tokens: []Token{
-			{Type: ILLEGAL, Val: "error, expected closing */ received EOF"},
+			{Type: ILLEGAL, Val: "error, expected closing '*/' received EOF"},
+			{Type: EOF},
+		},
+	},
+	{
+		input: "\x00",
+		tokens: []Token{
+			{Type: ILLEGAL, Val: "error, received invalid character: \x00"},
+			{Type: EOF},
 		},
 	},
 	{
@@ -201,6 +252,7 @@ fn example(i : int, j : int) {
 		tokens: []Token{
 			{Type: Print, Val: "print"},
 			{Type: ILLEGAL, Val: "error, expected end quote received: \x00"},
+			{Type: EOF},
 		},
 	},
 	{
@@ -228,6 +280,7 @@ fn example(i : int, j : int) {
 			{Type: Let, Val: "let"},
 			{Type: Variable, Val: "r"},
 			{Type: Assign, Val: "="},
+			{Type: EOF},
 		},
 	},
 	{
@@ -237,6 +290,7 @@ fn example(i : int, j : int) {
 			{Type: Variable, Val: "r"},
 			{Type: Assign, Val: "="},
 			{Type: IntLiteral, Val: "10"},
+			{Type: EOF},
 		},
 	},
 	{
@@ -248,6 +302,7 @@ fn example(i : int, j : int) {
 			{Type: RBrace, Val: "]"},
 			{Type: LParen, Val: "("},
 			{Type: Variable, Val: "k"},
+			{Type: EOF},
 		},
 	},
 }
@@ -255,17 +310,11 @@ fn example(i : int, j : int) {
 func TestLexer(t *testing.T) {
 	for _, test := range tests {
 		l := NewLexer(test.input)
-
-		i := 0
-		for tok := l.NextToken(); tok.Type != EOF; tok = l.NextToken() {
+		tokens, _ := l.LexAll()
+		for _, tok := range tokens {
 			fmt.Println(tok.DumpString())
-			if i == len(test.tokens) {
-				assert.Fail(t, "err, too many tokens, stopped on: %s\n\n NextToken: %+v", tok)
-				return
-			}
-			assert.Equal(t, test.tokens[i], tok)
-			i++
 		}
+		assert.Equal(t, test.tokens, tokens)
 		fmt.Println("-------------")
 	}
 }
