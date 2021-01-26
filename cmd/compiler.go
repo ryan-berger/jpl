@@ -23,6 +23,7 @@ func main() {
 
 	l := lexer.NewLexer(string(file))
 	tokens, success := l.LexAll()
+
 	if debugLex {
 		for _, tok := range tokens {
 			fmt.Println(tok.DumpString())
@@ -33,5 +34,6 @@ func main() {
 		} else {
 			fmt.Println("Compilation failed")
 		}
+		return
 	}
 }
