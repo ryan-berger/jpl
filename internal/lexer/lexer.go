@@ -54,10 +54,9 @@ func (l *Lexer) errorf(msg string, args ...interface{}) Token {
 // readComment reads a single line comment
 func (l *Lexer) readComment() {
 	l.readChar() // advance so we are in line with the comment
-	for l.ch != '\n' && l.ch != 0 {
+	for l.ch != '\n' && l.readPosition <= len(l.input) {
 		l.readChar()
 	}
-	l.readChar()
 }
 
 // readMultilineComment reads a multi-line comment
@@ -66,7 +65,11 @@ func (l *Lexer) readMultilineComment() *Token {
 	l.readChar() // advance so we are in line with the comment
 
 	pos := l.position
-	for !strings.HasSuffix(l.input[pos:l.position], "*/") && l.ch != 0 {
+	for !strings.HasSuffix(l.input[pos:l.position], "*/") && l.readPosition <= len(l.input) {
+		if invalidChar(l.ch) {
+			tok := l.errorf("error, expected closing '*/' received invalid character: '%s'", string(l.ch))
+			return &tok
+		}
 		l.readChar()
 	}
 

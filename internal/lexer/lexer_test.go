@@ -12,7 +12,7 @@ var tests = []struct {
 	tokens []Token
 }{
 	{
-		input: "&&||%{}[]*!/* */!=/* other comment */<=/**/>=/**/<>==",
+		input: "&&||%{}[]*!/* */!=/* other comment */<=/**/>=/**/<>/**/==",
 		tokens: []Token{
 			{Type: And, Val: "&&"},
 			{Type: Or, Val: "||"},
@@ -64,8 +64,6 @@ fn yeet`,
 			{Type: EOF},
 		},
 	},
-
-	// TODO: actually make this one work....
 	{
 		input: `print "�"`,
 		tokens: []Token{
@@ -223,6 +221,14 @@ fn example(i : int, j : int) {
 		},
 	},
 	{
+		input: "1234567\x0012345",
+		tokens: []Token{
+			{Type: IntLiteral, Val: "1234567"},
+			{Type: ILLEGAL, Val: "error, received invalid character: \x00"},
+			{Type: EOF},
+		},
+	},
+	{
 		input: `//000000000000`,
 		tokens: []Token{
 			{Type: EOF},
@@ -231,6 +237,13 @@ fn example(i : int, j : int) {
 	{
 		input: `/* */`,
 		tokens: []Token{
+			{Type: EOF},
+		},
+	},
+	{
+		input: "/* \x00*/",
+		tokens: []Token{
+			{Type: ILLEGAL, Val: "error, expected closing '*/' received invalid character: '\x00'"},
 			{Type: EOF},
 		},
 	},
@@ -303,6 +316,28 @@ fn example(i : int, j : int) {
 			{Type: RBrace, Val: "]"},
 			{Type: LParen, Val: "("},
 			{Type: Variable, Val: "k"},
+			{Type: EOF},
+		},
+	},
+	{
+		input: `+ mi /* Green is a good lazy monochrome */
+}`,
+		tokens: []Token{
+			{Type: Plus, Val: "+"},
+			{Type: Variable, Val: "mi"},
+			{Type: NewLine, Val: "\n"},
+			{Type: RCurly, Val: "}"},
+			{Type: EOF},
+		},
+	},
+	{
+		input: `+ mi // Green is a good lazy monochrome
+}`,
+		tokens: []Token{
+			{Type: Plus, Val: "+"},
+			{Type: Variable, Val: "mi"},
+			{Type: NewLine, Val: "\n"},
+			{Type: RCurly, Val: "}"},
 			{Type: EOF},
 		},
 	},

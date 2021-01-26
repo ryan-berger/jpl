@@ -38,15 +38,14 @@ COMMA,
 LSQUARE,
 RSQUARE,
 EQUALS,
-BINOP,
-BOOLNOT,
+OP,
 ERROR,
 ATTRIBUTE, and
 END_OF_FILE.
 
 Note that some tokens are trivial---they correspond to only one possible
 string (ATTRIBUTE, LCURLY)---while other tokens are non-trivial and
-correspond to multiple possible strings (INTVAL, BINOP).
+correspond to multiple possible strings (INTVAL, OP).
 
 The list of tokens should use a suitable list or array data structure
 in your compiler implementation language. For example, in C++ it might be:
@@ -136,7 +135,7 @@ LCURLY '{'
 NEWLINE
 RETURN 'return'
 INTVAL '1'
-BINOP '+'
+OP '+'
 VARIABLE 'n'
 NEWLINE
 RCURLY '}'
