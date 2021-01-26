@@ -12,7 +12,7 @@ var tests = []struct {
 	tokens []Token
 }{
 	{
-		input: "&&||%{}[]*!/* */!=/* other comment */<=/**/>=/**/<>",
+		input: "&&||%{}[]*!/* */!=/* other comment */<=/**/>=/**/<>==",
 		tokens: []Token{
 			{Type: And, Val: "&&"},
 			{Type: Or, Val: "||"},
@@ -28,6 +28,7 @@ var tests = []struct {
 			{Type: GreaterThanOrEqual, Val: ">="},
 			{Type: LessThan, Val: "<"},
 			{Type: GreaterThan, Val: ">"},
+			{Type: EqualTo, Val: "=="},
 			{Type: EOF},
 		},
 	},
