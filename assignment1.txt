@@ -1,0 +1,24 @@
+OP ^(\+)
+OP ^(\-)
+OP ^(\*)
+OP ^(%)
+LSQUARE ^(\[)
+RSQUARE ^(\])
+LPAREN ^(\()
+RSQUARE ^(\))
+RCURLY ^(\})
+LCURLY ^(\{)
+NEWLINE ^(\n)
+ATTRIBUTE ^(attribute)\b
+FN ^(fn)\b
+LET ^(let)\b
+IF ^(if)\b
+THEN ^(then)\b
+ELSE ^(else)\b
+RETURN ^(return)\b
+READ ^(read)\b
+WRITE ^(write)\b
+TO ^(to)\b
+PRINT ^(print)\b
+SHOW ^(show)\b
+

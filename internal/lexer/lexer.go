@@ -10,6 +10,7 @@ type Lexer struct {
 	input        string
 	position     int
 	readPosition int
+	lineNumber   int
 	ch           byte
 }
 
@@ -18,6 +19,7 @@ func NewLexer(input string) *Lexer {
 		input:        input,
 		position:     0,
 		readPosition: 0,
+		lineNumber:   1,
 		ch:           0,
 	}
 	l.readChar()
@@ -47,10 +49,9 @@ func (l *Lexer) errorf(msg string, args ...interface{}) Token {
 	l.readPosition = len(l.input) + 1
 	l.ch = 0
 	// return illegal token
-	return newTokenString(ILLEGAL, fmt.Sprintf(msg, args...))
+	return newTokenString(ILLEGAL, fmt.Sprintf(msg, args...), l.lineNumber)
 }
 
-// TODO: actually fulfill requirements here
 // readComment reads a single line comment
 func (l *Lexer) readComment() {
 	l.readChar() // advance so we are in line with the comment
@@ -69,6 +70,9 @@ func (l *Lexer) readMultilineComment() *Token {
 		if invalidChar(l.ch) {
 			tok := l.errorf("error, expected closing '*/' received invalid character: '%s'", string(l.ch))
 			return &tok
+		}
+		if l.ch == '\n' {
+			l.lineNumber++
 		}
 		l.readChar()
 	}
@@ -94,7 +98,7 @@ func (l *Lexer) readString() Token {
 
 	l.readChar()
 	str := l.input[pos:l.position]
-	return newTokenString(String, str)
+	return newTokenString(String, str, l.lineNumber)
 }
 
 func (l *Lexer) readDigits() string {
@@ -109,13 +113,13 @@ func (l *Lexer) readNumber() Token {
 	first := l.readDigits()
 
 	if l.ch != '.' {
-		return newTokenString(IntLiteral, first)
+		return newTokenString(IntLiteral, first, l.lineNumber)
 	}
 
 	// step ahead one character
 	l.readChar()
 	second := l.readDigits()
-	return newTokenString(FloatLiteral, fmt.Sprintf("%s.%s", first, second))
+	return newTokenString(FloatLiteral, fmt.Sprintf("%s.%s", first, second), l.lineNumber)
 }
 
 func isAlphabetic(ch byte) bool {
@@ -137,17 +141,19 @@ func (l *Lexer) peek() byte {
 	return l.input[l.readPosition]
 }
 
-func newToken(tokType TokenType, ch byte) Token {
+func newToken(tokType TokenType, ch byte, line int) Token {
 	return Token{
 		Type: tokType,
 		Val:  string(ch),
+		Line: line,
 	}
 }
 
-func newTokenString(tokenType TokenType, str string) Token {
+func newTokenString(tokenType TokenType, str string, line int) Token {
 	return Token{
 		Type: tokenType,
 		Val:  str,
+		Line: line,
 	}
 }
 
@@ -213,6 +219,7 @@ func (l *Lexer) searchNextToken() *Token {
 			}
 			l.readChar() // advance to newline character
 			l.readChar() // advance past newline character
+			l.lineNumber++
 		default: // we don't have anything to skip
 			return nil
 		}
@@ -240,74 +247,75 @@ func (l *Lexer) NextToken() Token {
 	switch l.ch {
 	case '=':
 		if l.peek() == '=' {
-			t = newTokenString(EqualTo, "==")
+			t = newTokenString(EqualTo, "==", l.lineNumber)
 			l.readChar()
 		} else {
-			t = newToken(Assign, l.ch)
+			t = newToken(Assign, l.ch, l.lineNumber)
 		}
 	case '!':
 		if l.peek() == '=' {
-			t = newTokenString(NotEqualTo, "!=")
+			t = newTokenString(NotEqualTo, "!=", l.lineNumber)
 			l.readChar()
 		} else {
-			t = newToken(Not, l.ch)
+			t = newToken(Not, l.ch, l.lineNumber)
 		}
 	case '>':
 		if l.peek() == '=' {
-			t = newTokenString(GreaterThanOrEqual, ">=")
+			t = newTokenString(GreaterThanOrEqual, ">=", l.lineNumber)
 			l.readChar()
 		} else {
-			t = newToken(GreaterThan, l.ch)
+			t = newToken(GreaterThan, l.ch, l.lineNumber)
 		}
 	case '<':
 		if l.peek() == '=' {
-			t = newTokenString(LessThanOrEqual, "<=")
+			t = newTokenString(LessThanOrEqual, "<=", l.lineNumber)
 			l.readChar()
 		} else {
-			t = newToken(LessThan, l.ch)
+			t = newToken(LessThan, l.ch, l.lineNumber)
 		}
 	case '&':
 		if l.peek() == '&' {
-			t = newTokenString(And, "&&")
+			t = newTokenString(And, "&&", l.lineNumber)
 			l.readChar()
 		} else {
 			return l.errorf("error, expected '&' received '%s'", string(l.peek()))
 		}
 	case '|':
 		if l.peek() == '|' {
-			t = newTokenString(Or, "||")
+			t = newTokenString(Or, "||", l.lineNumber)
 			l.readChar()
 		} else {
 			return l.errorf("error, expected '|' received '%s'", string(l.peek()))
 		}
 	case '+':
-		t = newToken(Plus, l.ch)
+		t = newToken(Plus, l.ch, l.lineNumber)
 	case '-':
-		t = newToken(Minus, l.ch)
+		t = newToken(Minus, l.ch, l.lineNumber)
 	case '*':
-		t = newToken(Multiply, l.ch)
+		t = newToken(Multiply, l.ch, l.lineNumber)
 	case '/':
-		t = newToken(Divide, l.ch)
+		t = newToken(Divide, l.ch, l.lineNumber)
 	case '%':
-		t = newToken(Mod, l.ch)
+		t = newToken(Mod, l.ch, l.lineNumber)
 	case '[':
-		t = newToken(LBrace, l.ch)
+		t = newToken(LBrace, l.ch, l.lineNumber)
 	case ']':
-		t = newToken(RBrace, l.ch)
+		t = newToken(RBrace, l.ch, l.lineNumber)
 	case '{':
-		t = newToken(LCurly, l.ch)
+		t = newToken(LCurly, l.ch, l.lineNumber)
 	case '}':
-		t = newToken(RCurly, l.ch)
+		t = newToken(RCurly, l.ch, l.lineNumber)
 	case '(':
-		t = newToken(LParen, l.ch)
+		t = newToken(LParen, l.ch, l.lineNumber)
 	case ')':
-		t = newToken(RParen, l.ch)
+		t = newToken(RParen, l.ch, l.lineNumber)
 	case ':':
-		t = newToken(Colon, l.ch)
+		t = newToken(Colon, l.ch, l.lineNumber)
 	case ',':
-		t = newToken(Comma, l.ch)
+		t = newToken(Comma, l.ch, l.lineNumber)
 	case '\n':
-		t = newToken(NewLine, '\n')
+		t = newToken(NewLine, '\n', l.lineNumber)
+		l.lineNumber++
 	case '"':
 		return l.readString()
 	default:
@@ -317,6 +325,7 @@ func (l *Lexer) NextToken() Token {
 			if tokenType, ok := keywords[t.Val]; ok {
 				t.Type = tokenType
 			}
+			t.Line = l.lineNumber
 			return t
 		}
 		if isNumeric(l.ch) {
