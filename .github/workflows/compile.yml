@@ -1,0 +1,11 @@
+name: Compiles the Compiler
+
+on: [push]
+
+jobs:
+  compiles:
+    name: "Runs `make run`"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - run: make run
