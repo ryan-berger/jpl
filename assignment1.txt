@@ -1,14 +1,22 @@
+// operators
 OP \+
 OP \-
 OP \*
 OP %
+
+// delimiters
+COLON :
+COMMA ,
 LSQUARE \[
 RSQUARE \]
 LPAREN \(
-RParen \)
+RPAREN \)
 RCURLY \}
 LCURLY \{
 NEWLINE \n
+
+// keywords
+ARRAY ^(array)\b
 ATTRIBUTE ^(attribute)\b
 FN ^(fn)\b
 LET ^(let)\b
