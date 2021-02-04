@@ -38,7 +38,7 @@ func (l *Lexer) readChar() {
 
 func (l *Lexer) readIdentifier() string {
 	pos := l.position
-	for isAlphabetic(l.ch) || isNumeric(l.ch) {
+	for isAlphabetic(l.ch) || isNumeric(l.ch) || l.ch == '_' {
 		l.readChar()
 	}
 	return l.input[pos:l.position]
@@ -123,7 +123,7 @@ func (l *Lexer) readNumber() Token {
 }
 
 func isAlphabetic(ch byte) bool {
-	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
+	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
 }
 
 func isNumeric(ch byte) bool {

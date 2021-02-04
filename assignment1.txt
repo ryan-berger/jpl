@@ -1,32 +1,14 @@
-// operators
-OP \+
-OP \-
-OP \*
-OP %
-
-// delimiters
-COLON :
-COMMA ,
-LSQUARE \[
-RSQUARE \]
-LPAREN \(
-RPAREN \)
-RCURLY \}
-LCURLY \{
-NEWLINE \n
-
 // keywords
-ARRAY ^(array)\b
-ATTRIBUTE ^(attribute)\b
-FN ^(fn)\b
-LET ^(let)\b
-IF ^(if)\b
-THEN ^(then)\b
-ELSE ^(else)\b
-RETURN ^(return)\b
-READ ^(read)\b
-WRITE ^(write)\b
-TO ^(to)\b
-PRINT ^(print)\b
-SHOW ^(show)\b
+VAR [a-zA-Z][a-zA-Z0-9-]*
+INTVAL [1-9][0-9]+|0
+FLOATVAL [0-9]+\.[0-9]*|\.[0-9]
+STRING \"[\x20-\x21\x23-\x7E]*\"
+OP (<(?!\=))  // <=
+   (>(?!\=))  // >=
+   (\!(?!\=)) // !=
 
+// whitespace
+SINGLE-COMMENT    \/\/([\x20-\x7E])*\n
+MULTILINE-COMMENT \/\*[\x20-\x7E\n]*?\*\/
+LINE-CONTINUATION \\\n
+SPACE             [\x20]+
