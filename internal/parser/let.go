@@ -67,10 +67,29 @@ func (p *Parser) parseTupleLValue() ast.LValue {
 
 func (p *Parser) parseArgument() ast.Argument {
 	argName := p.cur.Val // TODO: check to make sure no keyword
-	if !p.expectPeek(lexer.RBrace) {
+	if !p.expectPeek(lexer.LBrace) {
 		return &ast.VariableArgument{
 			Variable: argName,
 		}
 	}
-	return nil
+	var args []string
+	for {
+		if !p.expectPeek(lexer.Variable) {
+			return nil
+		}
+		args = append(args, p.cur.Val)
+
+		if p.expectPeek(lexer.RBrace) {
+			break
+		}
+
+		if !p.expectPeek(lexer.Comma) {
+			return nil
+		}
+	}
+
+	return &ast.VariableArr{
+		Variable:  argName,
+		Variables: args,
+	}
 }

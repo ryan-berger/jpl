@@ -11,6 +11,7 @@ type Program struct {
 
 type Parser struct {
 	tokens   []lexer.Token
+	err      error
 	position int
 	cur      lexer.Token
 	peek     lexer.Token
@@ -62,6 +63,7 @@ func (p *Parser) parseCommand() ast.Command {
 	switch p.cur.Type {
 	case lexer.Let:
 		return p.parseLetStatement()
+	case
 	default:
 		return nil
 	}
