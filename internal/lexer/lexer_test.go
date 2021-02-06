@@ -341,6 +341,16 @@ fn example(i : int, j : int) {
 			{Type: EOF},
 		},
 	},
+	{
+		input: `.31111 // Green is a good lazy monochrome
+}`,
+		tokens: []Token{
+			{Type: FloatLiteral, Val: ".31111", Line: 1},
+			{Type: NewLine, Val: "\n", Line: 1},
+			{Type: RCurly, Val: "}", Line: 2},
+			{Type: EOF},
+		},
+	},
 }
 
 func TestLexer(t *testing.T) {

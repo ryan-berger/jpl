@@ -287,6 +287,12 @@ func (l *Lexer) NextToken() Token {
 		} else {
 			return l.errorf("error, expected '|' received '%s'", string(l.peek()))
 		}
+	case '.':
+		if !isNumeric(l.peek()) {
+			return l.errorf("error, expected number received %s", string(l.peek()))
+		}
+		l.readChar()
+		t = newTokenString(FloatLiteral, fmt.Sprintf(".%s", l.readDigits()), l.lineNumber)
 	case '+':
 		t = newToken(Plus, l.ch, l.lineNumber)
 	case '-':
