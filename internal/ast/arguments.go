@@ -26,7 +26,7 @@ type VariableArr struct {
 
 func (v *VariableArr) String() string {
 	return fmt.Sprintf("%s[%s]",
-		v.Variable, strings.Join(v.Variables, ","))
+		v.Variable, strings.Join(v.Variables, ", "))
 }
 func (v *VariableArr) argument() {}
 func (v *VariableArr) lValue()   {}

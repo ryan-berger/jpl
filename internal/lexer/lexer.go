@@ -175,6 +175,11 @@ var keywords = map[string]TokenType{
 	"write":     Write,
 	"to":        To,
 	"attribute": Attribute,
+	// types
+	"int":    Int,
+	"float":  Float,
+	"float3": Float3,
+	"float4": Float4,
 }
 
 func (l *Lexer) LexAll() ([]Token, bool) {

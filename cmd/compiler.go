@@ -6,11 +6,13 @@ import (
 	"io/ioutil"
 
 	"github.com/ryan-berger/jpl/internal/lexer"
+	"github.com/ryan-berger/jpl/internal/parser"
 )
 
 var debugLex bool
 func init() {
 	flag.BoolVar(&debugLex, "l", false, "lex")
+	flag.BoolVar(&debugLex, "p", false, "parse")
 }
 
 func main() {
@@ -36,4 +38,7 @@ func main() {
 		}
 		return
 	}
+
+	p := parser.NewParser(tokens)
+	p.ParseProgram()
 }

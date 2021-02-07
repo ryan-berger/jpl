@@ -12,7 +12,7 @@ type Binding interface {
 
 type TypeBind struct {
 	Argument Argument
-	Type     string
+	Type     Type
 }
 
 func (b *TypeBind) String() string {
@@ -28,6 +28,59 @@ func (b TupleBinding) String() string {
 		strs[i] = b.String()
 	}
 
-	return fmt.Sprintf("{%s}", strings.Join(strs, ","))
+	return fmt.Sprintf("{%s}", strings.Join(strs, ", "))
 }
 func (b TupleBinding) binding() {}
+
+type Type interface {
+	String() string
+	typ()
+}
+
+type BasicType int
+
+func (b BasicType) String() string {
+	if b == Int {
+		return "int"
+	}
+	return "float"
+}
+
+func (b BasicType) typ() {}
+
+const (
+	Int BasicType = iota
+	Float
+)
+
+type ArrType struct {
+	Type Type
+	Rank int
+}
+
+func (a *ArrType) String() string {
+	commas := make([]byte, a.Rank)
+	for i := 0; i < a.Rank - 1; i++ {
+		commas[i] = ','
+	}
+	return fmt.Sprintf("%s[%s]", a.Type.String(), string(commas))
+}
+func (a *ArrType) typ() {}
+
+type TupleType struct {
+	Types []Type
+}
+
+func (t *TupleType) String() string {
+	strs := make([]string, len(t.Types))
+	for i, t := range t.Types {
+		strs[i] = t.String()
+	}
+
+	return fmt.Sprintf("{%s}", strings.Join(strs, ", "))
+}
+
+func (t *TupleType) typ() {
+	panic("implement me")
+}
+

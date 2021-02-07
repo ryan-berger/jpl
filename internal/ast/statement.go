@@ -24,7 +24,7 @@ func (l *LTuple) String() string {
 	for i := 0; i < len(l.Args); i++ {
 		lVals[i] = l.Args[i].String()
 	}
-	return fmt.Sprintf("{%s}", strings.Join(lVals, ","))
+	return fmt.Sprintf("{%s}", strings.Join(lVals, ", "))
 }
 func (l *LTuple) lValue() {}
 

@@ -5,19 +5,27 @@ import (
 	"github.com/ryan-berger/jpl/internal/lexer"
 )
 
-func (p *Parser) parseLetStatement() *ast.LetStatement {
+func (p *Parser) parseLetStatement() ast.Statement {
 	let := &ast.LetStatement{}
+	p.advance()
 
 	if let.LValue = p.parseLValue(); let.LValue == nil {
 		return nil
 	}
 
 	if !p.expectPeek(lexer.Assign) {
+		p.errorf("err: illegal token. Expected '=', found %s at line %d", p.peek.Val, p.peek.Line)
 		return nil
 	}
 
-	if let.Expr = p.parseExpression(); let.Expr == nil {
+	p.advance() // advance onto expression
+
+	if let.Expr = p.parseExpression(lowest); let.Expr == nil { // get out of here if expression parsing fails
 		return nil
+	}
+
+	if !p.curTokenIs(lexer.NewLine) {
+		p.advance()
 	}
 
 	return let
@@ -26,40 +34,43 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 func (p *Parser) parseLValue() ast.LValue {
 	switch {
 	case p.curTokenIs(lexer.LCurly):
-		p.advance()
 		return p.parseTupleLValue()
 	case p.curTokenIs(lexer.Variable):
 		return p.parseArgument()
 	}
+	p.errorf("err: illegal token. Expected argument or '{', found %s at line %d", p.cur.Val, p.cur.Line)
 	return nil
 }
 
 func (p *Parser) parseTupleLValue() ast.LValue {
 	lTuple := &ast.LTuple{}
-	for {
-		var lVal ast.LValue
-		switch {
-		case p.curTokenIs(lexer.LCurly):
-			p.advance()                 // advance token
-			lVal = p.parseTupleLValue() // recurse to parse tuple val
-		case p.curTokenIs(lexer.Variable):
-			lVal = p.parseArgument() // parse arg
-		default:
-			return nil // if none of these are the case, return nil TODO: error out
-		}
 
+	if p.expectPeek(lexer.RCurly) { // TODO: is this an error???
+		p.advance() // move past curly
+		return lTuple
+	}
+
+	p.advance()
+
+	lVal := p.parseLValue()
+	if lVal == nil {
+		return nil
+	}
+
+	lTuple.Args = append(lTuple.Args, lVal)
+	for p.peekTokenIs(lexer.Comma) {
+		p.advance()
+		p.advance()
+		lVal = p.parseLValue()
 		if lVal == nil {
-			return nil // return if there was an error in parsing either lVal
+			return nil
 		}
+		lTuple.Args = append(lTuple.Args, lVal)
+	}
 
-		lTuple.Args = append(lTuple.Args, lVal) // append lVal
-		if p.expectPeek(lexer.RBrace) {
-			break // if we've found an RBrace, we are finished parsing
-		}
-
-		if !p.expectPeek(lexer.Comma) {
-			return nil // if there isn't a comma, then the peek token is illegal
-		}
+	if !p.expectPeek(lexer.RCurly) {
+		p.errorf("err: illegal token. Expected '}', found %s at line %d", p.cur.Val, p.cur.Line)
+		return nil
 	}
 
 	return lTuple
