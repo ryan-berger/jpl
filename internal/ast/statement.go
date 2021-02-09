@@ -37,7 +37,7 @@ func (l *LetStatement) command()   {}
 func (l *LetStatement) statement() {}
 
 func (l *LetStatement) String() string {
-	return fmt.Sprintf("let %s = %s", l.LValue.String(), l.Expr.String())
+	return fmt.Sprintf("let %s = %s", l.LValue, l.Expr)
 }
 
 type ReturnStatement struct {

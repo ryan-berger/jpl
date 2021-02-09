@@ -20,16 +20,16 @@ type Function struct {
 func (f *Function) command() {}
 func (f *Function) String() string {
 	buf := bytes.NewBuffer([]byte{})
-	buf.WriteString(fmt.Sprintf("%s (", f.Var))
+	buf.WriteString(fmt.Sprintf("fn %s (", f.Var))
 	for i, b := range f.Bindings {
 		buf.WriteString(b.String())
 		if i != len(f.Bindings)-1 {
 			buf.WriteByte(',')
 		}
 	}
-	buf.WriteString(fmt.Sprintf(") : %s {\n", f.ReturnType.String()))
+	buf.WriteString(fmt.Sprintf(") : %s {\n", f.ReturnType))
 	for _, s := range f.Statements {
-		buf.WriteString(fmt.Sprintf("\t%s\n", s.String()))
+		buf.WriteString(fmt.Sprintf("\t%s\n", s))
 	}
 
 	buf.WriteString("}\n")
@@ -43,7 +43,7 @@ type Read struct {
 }
 
 func (r *Read) String() string {
-	return fmt.Sprintf("read %s %s to %s", r.Type, r.Location, r.Argument.String())
+	return fmt.Sprintf("read %s %s to %s", r.Type, r.Location, r.Argument)
 }
 func (r *Read) command() {}
 
@@ -54,7 +54,7 @@ type Write struct {
 }
 
 func (w *Write) String() string {
-	return fmt.Sprintf("write %s %s to %s", w.Type, w.Expr.String(), w.Dest)
+	return fmt.Sprintf("write %s %s to %s", w.Type, w.Expr, w.Dest)
 }
 func (w *Write) command() {}
 
@@ -63,7 +63,7 @@ type Show struct {
 }
 
 func (s *Show) String() string {
-	return fmt.Sprintf("show %s", s.Expr.String())
+	return fmt.Sprintf("show %s", s.Expr)
 }
 func (s *Show) command() {}
 

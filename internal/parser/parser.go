@@ -49,8 +49,8 @@ func NewParser(tokens []lexer.Token) *Parser {
 	p.registerPrefixFn(lexer.Bool, p.parseBoolean)
 	p.registerPrefixFn(lexer.Variable, p.parseIdentifier)
 	p.registerPrefixFn(lexer.If, p.parseIf)
-	// p.registerPrefixFn(lexer.Array, p.parseArr)
-	// p.registerPrefixFn(lexer.Sum, p.parseSum)
+	p.registerPrefixFn(lexer.Array, p.parseArrayTransform)
+	p.registerPrefixFn(lexer.Sum, p.parseSumTransform)
 
 	p.registerInfixFn(lexer.Plus, p.parseInfixExpr)
 	p.registerInfixFn(lexer.Minus, p.parseInfixExpr)
@@ -132,11 +132,16 @@ func (p *Parser) errorf(format string, args ...interface{}) {
 
 func (p *Parser) ParseProgram() []ast.Command {
 	var commands []ast.Command
-	for p.cur.Type != lexer.EOF {
+	if p.curTokenIs(lexer.NewLine) {
+		p.advance()	// newline can be at the beginning of the file sometime
+	}
+
+	for !p.curTokenIs(lexer.EOF) {
 		cmd := p.parseCommand()
 		if cmd != nil {
 			commands = append(commands, cmd)
 		}
+
 		p.advance()
 	}
 	for _, cmd := range commands {

@@ -21,17 +21,18 @@ func TestParse_Let(t *testing.T) {
 }
 
 func TestParse_Fn(t *testing.T) {
-	test := `fn my_fn(x : int) : int[] {
-let y = if x then 10 else 5
-return x 
+	test := `
+fn my_fn(x : int) : int[,][][] {
+  let x = array[i : 10] 10
+  return x 
 }`
 
 	tokens, ok := lexer.NewLexer(test).LexAll()
 	assert.True(t, ok)
 
 	p := NewParser(tokens)
+	p.ParseProgram()
 	assert.Empty(t, p.errors)
-	fmt.Println(p.ParseProgram())
 }
 
 func TestParse_Cmd(t *testing.T) {
@@ -41,5 +42,5 @@ func TestParse_Cmd(t *testing.T) {
 	assert.True(t, ok)
 
 	p := NewParser(tokens)
-	fmt.Println(p.ParseProgram())
+	p.ParseProgram()
 }

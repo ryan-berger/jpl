@@ -88,19 +88,39 @@ type OpBinding struct {
 	Expr     Expression
 }
 
+func (o *OpBinding) String() string {
+	return fmt.Sprintf("%s : %s", o.Variable, o.Expr)
+}
+
 type ArrayTransform struct {
 	OpBindings []OpBinding
 	Expr       Expression
 }
 
-func (a *ArrayTransform) String() string { return "" }
+func (a *ArrayTransform) String() string {
+	bindings := make([]string, len(a.OpBindings))
+	for i, b := range a.OpBindings {
+		bindings[i] = b.String()
+	}
+
+	return fmt.Sprintf("array[%s] %s", strings.Join(bindings, ", "), a.Expr)
+}
 
 func (a *ArrayTransform) expression() {}
 
 type SumTransform struct {
-	OpBinding []OpBinding
+	OpBindings []OpBinding
 	Expr      Expression
 }
+
+func (s *SumTransform) String() string {
+	bindings := make([]string, len(s.OpBindings))
+	for i, b := range s.OpBindings {
+		bindings[i] = b.String()
+	}
+	return fmt.Sprintf("array[%s] %s", strings.Join(bindings, ", "), s.Expr)
+}
+func (s *SumTransform) expression() {}
 
 type InfixExpression struct {
 	Left  Expression
@@ -109,7 +129,7 @@ type InfixExpression struct {
 }
 
 func (i *InfixExpression) String() string {
-	return fmt.Sprintf("(%s %s %s)", i.Left.String(), i.Op, i.Right.String())
+	return fmt.Sprintf("(%s %s %s)", i.Left, i.Op, i.Right)
 }
 func (i *InfixExpression) command()    {}
 func (i *InfixExpression) expression() {}
@@ -120,7 +140,7 @@ type PrefixExpression struct {
 }
 
 func (p *PrefixExpression) String() string {
-	return fmt.Sprintf("(%s%s)", p.Op, p.Expr.String())
+	return fmt.Sprintf("(%s%s)", p.Op, p.Expr)
 }
 
 func (p *PrefixExpression) command()    {}

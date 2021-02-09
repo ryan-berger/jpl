@@ -20,12 +20,16 @@ func (p *Parser) parseFunction() ast.Command {
 
 	function.Bindings = p.parseBindings()
 
+	if !p.expectPeek(lexer.RParen) {
+		return nil
+	}
+
 	if !p.expectPeek(lexer.Colon) {
 		return nil
 	}
 	p.advance()
 
-	if function.ReturnType = p.parseType(); function.ReturnType == nil {
+	if function.ReturnType = p.parseTypeExpression(); function.ReturnType == nil {
 		return nil
 	}
 
@@ -40,6 +44,10 @@ func (p *Parser) parseFunction() ast.Command {
 
 	function.Statements = p.parseStatements()
 
+	if !p.expectPeek(lexer.RCurly) {
+		return nil
+	}
+	p.advance()
 	return function
 }
 
@@ -55,8 +63,19 @@ func (p *Parser) parseStatements() []ast.Statement {
 			stmt = p.parseReturnStatement()
 		case lexer.Assert: // TODO: actually implement
 			break
+		default:
+			p.errorf("err :yeet") // TODO: YEET
+			stmt = nil
+			for !p.curTokenIs(lexer.NewLine) {
+				p.advance()
+			}
+
 		}
-		statements = append(statements, stmt)
+
+		if stmt != nil {
+			statements = append(statements, stmt)
+		}
+
 		p.advance()
 	}
 
@@ -77,10 +96,6 @@ func (p *Parser) parseBindings() []ast.Binding {
 		p.advance()
 		p.advance()
 		bindings = append(bindings, p.parseBinding())
-	}
-
-	if !p.expectPeek(lexer.RParen) {
-		return nil
 	}
 
 	return bindings
@@ -106,7 +121,7 @@ func (p *Parser) parseBinding() ast.Binding {
 	}
 	p.advance() // move past colon
 
-	binding.Type = p.parseType()
+	binding.Type = p.parseTypeExpression()
 	if binding.Type == nil {
 		return nil
 	}
@@ -119,65 +134,3 @@ var tokenToType = map[lexer.TokenType]ast.Type{
 	lexer.Int:   ast.Int,
 }
 
-func (p *Parser) parseType() ast.Type {
-	if p.curTokenIs(lexer.LCurly) {
-		return p.parseTupleType()
-	}
-	var t ast.Type
-
-	switch p.cur.Type {
-	case lexer.Float, lexer.Int:
-		t = tokenToType[p.cur.Type]
-	case lexer.Float3:
-		t = &ast.ArrType{
-			Type: ast.Float,
-			Rank: 3,
-		}
-	case lexer.Float4:
-		t = &ast.ArrType{
-			Type: ast.Float,
-			Rank: 4,
-		}
-	default:
-		p.errorf("err: expected type received %s at line %d", p.cur.Val, p.cur.Line)
-		return nil
-	}
-
-	if !p.expectPeek(lexer.LBrace) {
-		return t
-	}
-
-	rank := 1
-	for p.peekTokenIs(lexer.Comma) {
-		rank++
-	}
-
-	if !p.expectPeek(lexer.RBrace) {
-		return nil
-	}
-
-	return &ast.ArrType{
-		Type: t,
-		Rank: rank,
-	}
-}
-
-func (p *Parser) parseTupleType() ast.Type {
-	tupleType := &ast.TupleType{}
-
-	if p.expectPeek(lexer.RCurly) {
-		p.advance() // move past rCurly
-		return nil
-	}
-
-	p.advance() // move past lCurly
-
-	tupleType.Types = append(tupleType.Types, p.parseType()) // TODO: error handling
-	for p.peekTokenIs(lexer.Comma) {
-		p.advance()
-		p.advance()
-		tupleType.Types = append(tupleType.Types, p.parseType()) // TODO: error handling
-	}
-
-	return tupleType
-}

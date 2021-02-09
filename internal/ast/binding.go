@@ -16,7 +16,7 @@ type TypeBind struct {
 }
 
 func (b *TypeBind) String() string {
-	return fmt.Sprintf("%s : %s", b.Argument.String(), b.Type)
+	return fmt.Sprintf("%s : %s", b.Argument, b.Type)
 }
 func (b *TypeBind) binding() {}
 
@@ -60,10 +60,10 @@ type ArrType struct {
 
 func (a *ArrType) String() string {
 	commas := make([]byte, a.Rank)
-	for i := 0; i < a.Rank - 1; i++ {
+	for i := 0; i < a.Rank-1; i++ {
 		commas[i] = ','
 	}
-	return fmt.Sprintf("%s[%s]", a.Type.String(), string(commas))
+	return fmt.Sprintf("%s[%s]", a.Type, string(commas))
 }
 func (a *ArrType) typ() {}
 
@@ -79,8 +79,4 @@ func (t *TupleType) String() string {
 
 	return fmt.Sprintf("{%s}", strings.Join(strs, ", "))
 }
-
-func (t *TupleType) typ() {
-	panic("implement me")
-}
-
+func (t *TupleType) typ() {}
