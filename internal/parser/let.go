@@ -24,10 +24,7 @@ func (p *Parser) parseLetStatement() ast.Statement {
 		return nil
 	}
 
-	if !p.curTokenIs(lexer.NewLine) {
-		p.advance()
-	}
-
+	p.advance()
 	return let
 }
 

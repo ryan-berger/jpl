@@ -79,6 +79,7 @@ func (p *Parser) parseReadCommand() ast.Command {
 		return nil
 	}
 
+	p.advance()
 	return read
 }
 
@@ -112,6 +113,7 @@ func (p *Parser) parseWriteCommand() ast.Command {
 		return nil
 	}
 	write.Dest = p.cur.Val
+
 	p.advance()
 	return write
 }

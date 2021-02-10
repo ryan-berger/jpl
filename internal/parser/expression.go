@@ -17,7 +17,9 @@ type precedence int
 const (
 	_ precedence = iota
 	lowest
-	equals
+	or
+	and
+	equal
 	lg
 	sum
 	product
@@ -26,24 +28,27 @@ const (
 )
 
 var opPrecedence = map[lexer.TokenType]precedence{
-	lexer.EqualTo:     equals,
-	lexer.NotEqualTo:  equals,
-	lexer.LessThan:    lg,
-	lexer.GreaterThan: lg,
-	lexer.Plus:        sum,
-	lexer.Minus:       sum,
-	lexer.Or:          sum,
-	lexer.Multiply:    product,
-	lexer.Divide:      product,
-	lexer.Mod:         product,
-	lexer.And:         product,
-	lexer.LCurly:      call,
-	lexer.LBrace:      call,
+	lexer.Or:                 or,
+	lexer.And:                and,
+	lexer.EqualTo:            equal,
+	lexer.NotEqualTo:         equal,
+	lexer.LessThan:           lg,
+	lexer.LessThanOrEqual:    lg,
+	lexer.GreaterThan:        lg,
+	lexer.GreaterThanOrEqual: lg,
+	lexer.Plus:               sum,
+	lexer.Minus:              sum,
+	lexer.Multiply:           product,
+	lexer.Divide:             product,
+	lexer.Mod:                product,
+	lexer.LCurly:             call,
+	lexer.LBrace:             call,
 }
 
 func (p *Parser) parseExpression(pr precedence) ast.Expression {
 	prefix := p.prefixParseFns[p.cur.Type]
 	if prefix == nil { // TODO: actually implement
+		p.errorf("error, unable to parse prefix operator %s at line %d", p.cur.Val, p.cur.Line)
 		return nil
 	}
 

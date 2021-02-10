@@ -22,11 +22,14 @@ func TestParse_Let(t *testing.T) {
 
 func TestParse_Fn(t *testing.T) {
 	test := `
-fn dense(input[W, H] : float[,], weights[Wi, Hi, Wo, Ho] : float[,,,]) : float[,] {
-    assert W == Wi && H == Hi, "Weight matrix doesn't match input size"
-    return array[i : W, j : H] \
-      relu(sum[i2 : W, j2 : H] input[i2, j2] * weights[i2, j2, i, j])
+fn gamma_decompress(x : float) : float {
+   assert 0.0 <= x && x <= 1.0, "gamma_decompress argument out of range"
+   return \
+     if x <= 0.04045 then x / 12.92 else \
+     pow((x + 0.055) / 1.055, 2.4)
 }
+
+read 
 `
 
 	tokens, ok := lexer.NewLexer(test).LexAll()

@@ -67,9 +67,9 @@ func NewParser(tokens []lexer.Token) *Parser {
 	p.registerInfixFn(lexer.EqualTo, p.parseInfixExpr)
 	p.registerInfixFn(lexer.NotEqualTo, p.parseInfixExpr)
 	p.registerInfixFn(lexer.LessThan, p.parseInfixExpr)
+	p.registerInfixFn(lexer.LessThanOrEqual, p.parseInfixExpr)
 	p.registerInfixFn(lexer.GreaterThan, p.parseInfixExpr)
 	p.registerInfixFn(lexer.GreaterThanOrEqual, p.parseInfixExpr)
-	p.registerInfixFn(lexer.LessThanOrEqual, p.parseInfixExpr)
 	p.registerInfixFn(lexer.LCurly, p.parseTupleRefExpr)
 	p.registerInfixFn(lexer.LBrace, p.parseArrayRefExpr)
 
@@ -145,6 +145,10 @@ func (p *Parser) ParseProgram(debug bool) []ast.Command {
 		cmd := p.parseCommand()
 		if cmd != nil {
 			commands = append(commands, cmd)
+		}
+
+		if !p.curTokenIs(lexer.EOF) && !p.curTokenIs(lexer.NewLine) {
+			// TODO this is a serious problem... Likely move this into parse Command??
 		}
 
 		p.advance()

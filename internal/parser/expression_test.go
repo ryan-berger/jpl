@@ -96,14 +96,23 @@ var tests = []struct {
 		"!(true == true)",
 		"(!(true == true))",
 	},
+	{
+		"true || false && false",
+		"(true || (false && false))",
+	},
+	{
+		expr:     "0 <= x && x <= 1",
+		expected: "((0 <= x) && (x <= 1))",
+	},
 }
 
 func TestPrecedenceParsing(t *testing.T) {
 	for _, test := range tests {
 		tokens, ok := lexer.NewLexer(test.expr).LexAll()
 		assert.True(t, ok)
-
-		expr := NewParser(tokens).parseExpression(lowest) // parse expression
+		parser := NewParser(tokens)
+		expr := parser.parseExpression(lowest) // parse expression
+		assert.Empty(t, parser.errors)
 		assert.NotNil(t, expr)
 		assert.Equal(t, test.expected, expr.String())
 	}
