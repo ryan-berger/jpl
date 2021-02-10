@@ -20,10 +20,6 @@ func (p *Parser) parseFunction() ast.Command {
 
 	function.Bindings = p.parseBindings()
 
-	if !p.expectPeek(lexer.RParen) {
-		return nil
-	}
-
 	if !p.expectPeek(lexer.Colon) {
 		return nil
 	}
@@ -69,7 +65,6 @@ func (p *Parser) parseStatements() []ast.Statement {
 			for !p.curTokenIs(lexer.NewLine) {
 				p.advance()
 			}
-
 		}
 
 		if stmt != nil {
@@ -84,25 +79,40 @@ func (p *Parser) parseStatements() []ast.Statement {
 
 func (p *Parser) parseBindings() []ast.Binding {
 	var bindings []ast.Binding
-	if p.expectPeek(lexer.RCurly) {
-		p.advance() // move past rCurly
-		return bindings
-	}
 
-	p.advance() // move past lCurly
+	ok := p.parseList(lexer.RParen, func() bool {
+		bind := p.parseBinding()
+		if bind == nil {
+			return false
+		}
+		bindings = append(bindings, bind)
+		return true
+	})
 
-	bindings = append(bindings, p.parseBinding()) // TODO: error handling
-	for p.peekTokenIs(lexer.Comma) {
-		p.advance()
-		p.advance()
-		bindings = append(bindings, p.parseBinding())
+	if !ok {
+		return nil
 	}
 
 	return bindings
 }
 
 func (p *Parser) parseTupleBinding() ast.Binding {
-	return nil
+	binding := ast.TupleBinding{}
+
+	ok := p.parseList(lexer.RCurly, func() bool {
+		bind := p.parseBinding()
+		if bind == nil {
+			return false
+		}
+		binding = append(binding, bind)
+		return true
+	})
+
+	if !ok {
+		return nil
+	}
+
+	return binding
 }
 
 func (p *Parser) parseBinding() ast.Binding {

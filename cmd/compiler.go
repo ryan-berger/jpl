@@ -10,9 +10,10 @@ import (
 )
 
 var debugLex bool
+var debugParse bool
 func init() {
 	flag.BoolVar(&debugLex, "l", false, "lex")
-	flag.BoolVar(&debugLex, "p", false, "parse")
+	flag.BoolVar(&debugParse, "p", false, "parse")
 }
 
 func main() {
@@ -40,5 +41,5 @@ func main() {
 	}
 
 	p := parser.NewParser(tokens)
-	p.ParseProgram()
+	p.ParseProgram(debugParse)
 }

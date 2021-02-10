@@ -54,27 +54,31 @@ func (p *Parser) parseSumTransform() ast.Expression {
 func (p *Parser) parseOpBindings() []ast.OpBinding {
 	var opBindings []ast.OpBinding
 
-	for i := 0; i < 64; i++ {
+	ok := p.parseList(lexer.RBrace, func() bool {
 		var opBinding ast.OpBinding
 		if !p.expectPeek(lexer.Variable) {
-			return nil
+			p.errorf("expecting variable, received %s at line %d", p.peek.Val, p.peek.Line)
+			return false
 		}
 		opBinding.Variable = p.cur.Val
 
 		if !p.expectPeek(lexer.Colon) {
-			return nil
+			p.errorf("expecting ':', received %s at line %d", p.peek.Val, p.peek.Line)
+			return false
 		}
 		p.advance()
 
 		opBinding.Expr = p.parseExpression(lowest)
 		if opBinding.Expr == nil {
-			return nil
+			return false
 		}
 
 		opBindings = append(opBindings, opBinding)
-		if !p.expectPeek(lexer.Comma) {
-			break
-		}
+		return true
+	})
+
+	if !ok {
+		return nil
 	}
 	return opBindings
 }

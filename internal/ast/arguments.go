@@ -6,6 +6,7 @@ import (
 )
 
 type Argument interface {
+	SExpr
 	String() string
 	argument()
 	lValue()
@@ -13,6 +14,10 @@ type Argument interface {
 
 type VariableArgument struct {
 	Variable string
+}
+
+func (v *VariableArgument) SExpr() string {
+	return fmt.Sprintf("(VarExpr %s)", v.Variable)
 }
 
 func (v *VariableArgument) String() string { return v.Variable }
@@ -23,6 +28,8 @@ type VariableArr struct {
 	Variable  string
 	Variables []string
 }
+// TODO: make this work when needed
+func (v *VariableArr) SExpr() string { return "" }
 
 func (v *VariableArr) String() string {
 	return fmt.Sprintf("%s[%s]",

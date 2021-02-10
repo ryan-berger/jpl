@@ -6,6 +6,7 @@ import (
 )
 
 type Expression interface {
+	SExpr
 	String() string
 	expression()
 }
@@ -13,6 +14,10 @@ type Expression interface {
 // IntExpression
 type IntExpression struct {
 	Val int64
+}
+
+func (i *IntExpression) SExpr() string {
+	return fmt.Sprintf("(IntExpr %d)", i.Val)
 }
 
 func (i *IntExpression) String() string {
@@ -25,6 +30,10 @@ type IdentifierExpression struct {
 	Identifier string
 }
 
+func (i *IdentifierExpression) SExpr() string {
+	return fmt.Sprintf("(VarExpr %s)", i.Identifier)
+}
+
 func (i *IdentifierExpression) String() string {
 	return i.Identifier
 }
@@ -33,6 +42,15 @@ func (i *IdentifierExpression) expression() {}
 type CallExpression struct {
 	Identifier string
 	Arguments  []Expression
+}
+
+func (c *CallExpression) SExpr() string {
+	strs := make([]string, len(c.Arguments))
+	for i, expr := range c.Arguments {
+		strs[i] = expr.SExpr()
+	}
+
+	return fmt.Sprintf("(CallExpr %s %s)", c.Identifier, strings.Join(strs, " "))
 }
 
 func (c *CallExpression) String() string {
@@ -50,6 +68,10 @@ type FloatExpression struct {
 	Val float64
 }
 
+func (f *FloatExpression) SExpr() string {
+	return fmt.Sprintf("(FloatExpr %f)", f.Val)
+}
+
 func (f *FloatExpression) String() string {
 	return fmt.Sprintf("%f", f.Val)
 }
@@ -57,6 +79,10 @@ func (f *FloatExpression) expression() {}
 
 type BooleanExpression struct {
 	Val bool
+}
+
+func (b *BooleanExpression) SExpr() string {
+	panic("implement me")
 }
 
 func (b *BooleanExpression) String() string {
@@ -69,6 +95,10 @@ func (b *BooleanExpression) expression() {}
 
 type TupleExpression struct {
 	Expressions []Expression
+}
+
+func (t *TupleExpression) SExpr() string {
+	panic("implement me")
 }
 
 func (t *TupleExpression) String() string {
@@ -85,6 +115,10 @@ type IfExpression struct {
 	Condition   Expression
 	Consequence Expression
 	Otherwise   Expression
+}
+
+func (i *IfExpression) SExpr() string {
+	panic("implement me")
 }
 
 func (i *IfExpression) String() string {
@@ -107,6 +141,10 @@ type ArrayTransform struct {
 	Expr       Expression
 }
 
+func (a *ArrayTransform) SExpr() string {
+	panic("implement me")
+}
+
 func (a *ArrayTransform) String() string {
 	bindings := make([]string, len(a.OpBindings))
 	for i, b := range a.OpBindings {
@@ -121,6 +159,10 @@ func (a *ArrayTransform) expression() {}
 type SumTransform struct {
 	OpBindings []OpBinding
 	Expr       Expression
+}
+
+func (s *SumTransform) SExpr() string {
+	panic("implement me")
 }
 
 func (s *SumTransform) String() string {
@@ -138,6 +180,10 @@ type InfixExpression struct {
 	Op    string
 }
 
+func (i *InfixExpression) SExpr() string {
+	panic("shouldn't run")
+}
+
 func (i *InfixExpression) String() string {
 	return fmt.Sprintf("(%s %s %s)", i.Left, i.Op, i.Right)
 }
@@ -146,6 +192,10 @@ func (i *InfixExpression) expression() {}
 type PrefixExpression struct {
 	Op   string
 	Expr Expression
+}
+
+func (p *PrefixExpression) SExpr() string {
+	return p.Expr.SExpr()
 }
 
 func (p *PrefixExpression) String() string {

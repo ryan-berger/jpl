@@ -45,31 +45,16 @@ func (p *Parser) parseLValue() ast.LValue {
 func (p *Parser) parseTupleLValue() ast.LValue {
 	lTuple := &ast.LTuple{}
 
-	if p.expectPeek(lexer.RCurly) { // TODO: is this an error???
-		p.advance() // move past curly
-		return lTuple
-	}
-
-	p.advance()
-
-	lVal := p.parseLValue()
-	if lVal == nil {
-		return nil
-	}
-
-	lTuple.Args = append(lTuple.Args, lVal)
-	for p.peekTokenIs(lexer.Comma) {
-		p.advance()
-		p.advance()
-		lVal = p.parseLValue()
-		if lVal == nil {
-			return nil
+	ok := p.parseList(lexer.RCurly, func() bool {
+		expr := p.parseLValue()
+		if expr == nil {
+			return false
 		}
-		lTuple.Args = append(lTuple.Args, lVal)
-	}
+		lTuple.Args = append(lTuple.Args, expr)
+		return true
+	})
 
-	if !p.expectPeek(lexer.RCurly) {
-		p.errorf("err: illegal token. Expected '}', found %s at line %d", p.cur.Val, p.cur.Line)
+	if !ok {
 		return nil
 	}
 
@@ -83,20 +68,18 @@ func (p *Parser) parseArgument() ast.Argument {
 			Variable: argName,
 		}
 	}
+
 	var args []string
-	for {
+	ok := p.parseList(lexer.RParen, func() bool {
 		if !p.expectPeek(lexer.Variable) {
-			return nil
+			return false
 		}
 		args = append(args, p.cur.Val)
+		return true
+	})
 
-		if p.expectPeek(lexer.RBrace) {
-			break
-		}
-
-		if !p.expectPeek(lexer.Comma) {
-			return nil
-		}
+	if !ok {
+		return nil
 	}
 
 	return &ast.VariableArr{

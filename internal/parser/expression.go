@@ -89,7 +89,6 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 	exp := p.parseExpression(lowest) // TODO: handle error
 
 	if exp == nil {
-		p.errorf("err: illegal token. Expected string, found %s at line %d", p.peek.Val, p.peek.Line)
 		return nil
 	}
 
@@ -104,24 +103,19 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 func (p *Parser) parseTupleExpression() ast.Expression {
 	tupleExpr := &ast.TupleExpression{}
 
-	if p.expectPeek(lexer.RCurly) {
-		p.advance() // move past curly
-		return tupleExpr
-	}
+	ok := p.parseList(lexer.RCurly, func() bool {
+		expr := p.parseExpression(lowest)
+		if expr == nil {
+			return false
+		}
 
-	p.advance() // move past lBrace
+		tupleExpr.Expressions = append(tupleExpr.Expressions, expr)
+		return true
+	})
 
-	tupleExpr.Expressions = append(tupleExpr.Expressions, p.parseExpression(lowest)) // TODO: error handling
-	for p.peekTokenIs(lexer.Comma) {
-		p.advance()
-		p.advance()
-		tupleExpr.Expressions = append(tupleExpr.Expressions, p.parseExpression(lowest))
-	}
-
-	if !p.expectPeek(lexer.RCurly) {
+	if !ok {
 		return nil
 	}
-
 	return tupleExpr
 }
 
@@ -158,32 +152,20 @@ func (p *Parser) parseIdentifier() ast.Expression {
 		return &ast.IdentifierExpression{Identifier: val}
 	}
 
-	if p.expectPeek(lexer.RParen) {
-		return &ast.CallExpression{Identifier: val}
-	}
-
-	p.advance()
 	var exprs []ast.Expression
-
-	for {
+	ok := p.parseList(lexer.RParen, func() bool {
 		expr := p.parseExpression(lowest)
 		if expr == nil {
-			return nil
+			return false
 		}
 		exprs = append(exprs, expr)
+		return true
+	})
 
-		if p.expectPeek(lexer.RParen) {
-			break
-		}
-
-		if !p.expectPeek(lexer.Comma) {
-			return nil
-		}
-		p.advance()
+	if !ok {
+		return nil
 	}
-
 	return &ast.CallExpression{Identifier: val, Arguments: exprs}
-
 }
 
 func (p *Parser) parseIf() ast.Expression {

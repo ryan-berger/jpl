@@ -52,6 +52,7 @@ func NewParser(tokens []lexer.Token) *Parser {
 	p.registerPrefixFn(lexer.Array, p.parseArrayTransform)
 	p.registerPrefixFn(lexer.Sum, p.parseSumTransform)
 
+	// TODO: make sure to support cast expressions as if they are call expressions...
 	p.registerInfixFn(lexer.Plus, p.parseInfixExpr)
 	p.registerInfixFn(lexer.Minus, p.parseInfixExpr)
 	p.registerInfixFn(lexer.Multiply, p.parseInfixExpr)
@@ -65,8 +66,6 @@ func NewParser(tokens []lexer.Token) *Parser {
 	p.registerInfixFn(lexer.GreaterThan, p.parseInfixExpr)
 	p.registerInfixFn(lexer.GreaterThanOrEqual, p.parseInfixExpr)
 	p.registerInfixFn(lexer.LessThanOrEqual, p.parseInfixExpr)
-	// p.registerInfixFn(lexer.LBrace, p.parseInfixExpr)
-	// p.registerInfixFn(lexer.LCurly, p.parseInfixExpr)
 
 	p.registerCommandFn(lexer.Read, p.parseReadCommand)
 	p.registerCommandFn(lexer.Write, p.parseWriteCommand)
@@ -130,7 +129,7 @@ func (p *Parser) errorf(format string, args ...interface{}) {
 	p.errors = append(p.errors, fmt.Errorf(format, args...))
 }
 
-func (p *Parser) ParseProgram() []ast.Command {
+func (p *Parser) ParseProgram(debug bool) []ast.Command {
 	var commands []ast.Command
 	if p.curTokenIs(lexer.NewLine) {
 		p.advance()	// newline can be at the beginning of the file sometime
@@ -144,8 +143,15 @@ func (p *Parser) ParseProgram() []ast.Command {
 
 		p.advance()
 	}
-	for _, cmd := range commands {
-		fmt.Print(cmd.String())
+
+	if debug {
+		for _, c := range commands {
+			expr := c.String()
+			//if stmt, ok := c.(ast.Statement); ok {
+			//	expr = fmt.Sprintf("(StmtCmd %s)", stmt.SExpr())
+			//}
+			fmt.Println(expr)
+		}
 	}
 
 	return commands

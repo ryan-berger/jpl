@@ -11,12 +11,17 @@ type Statement interface {
 }
 
 type LValue interface {
+	SExpr
 	String() string
 	lValue()
 }
 
 type LTuple struct {
 	Args []LValue
+}
+
+func (l *LTuple) SExpr() string {
+	panic("implement me")
 }
 
 func (l *LTuple) String() string {
@@ -33,6 +38,10 @@ type LetStatement struct {
 	Expr   Expression
 }
 
+func (l *LetStatement) SExpr() string {
+	return fmt.Sprintf("(LetStmt %s %s)", l.LValue.String(), l.Expr.SExpr())
+}
+
 func (l *LetStatement) command()   {}
 func (l *LetStatement) statement() {}
 
@@ -44,6 +53,10 @@ type ReturnStatement struct {
 	Expr Expression
 }
 
+func (r *ReturnStatement) SExpr() string {
+	return fmt.Sprintf("(ReturnStmt %s)", r.Expr.SExpr())
+}
+
 func (r *ReturnStatement) String() string {
 	return fmt.Sprintf("return %s", r.Expr.String())
 }
@@ -53,6 +66,10 @@ func (r *ReturnStatement) statement() {}
 type AssertStatement struct {
 	Expr    Expression
 	Message string
+}
+
+func (a *AssertStatement) SExpr() string {
+	return fmt.Sprintf("(AssertStmt %s %s)", a.Expr.SExpr(), a.Message)
 }
 
 func (a *AssertStatement) String() string {

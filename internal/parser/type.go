@@ -57,18 +57,17 @@ func (p *Parser) parseType() ast.Type {
 func (p *Parser) parseTupleType() ast.Type {
 	tupleType := &ast.TupleType{}
 
-	if p.expectPeek(lexer.RCurly) {
-		p.advance() // move past rCurly
+	ok := p.parseList(lexer.RCurly, func() bool {
+		typ := p.parseTypeExpression()
+		if typ == nil {
+			return false
+		}
+		tupleType.Types = append(tupleType.Types, typ)
+		return true
+	})
+
+	if !ok {
 		return nil
-	}
-
-	p.advance() // move past lCurly
-
-	tupleType.Types = append(tupleType.Types, p.parseTypeExpression()) // TODO: error handling
-	for p.peekTokenIs(lexer.Comma) {
-		p.advance()
-		p.advance()
-		tupleType.Types = append(tupleType.Types, p.parseTypeExpression()) // TODO: error handling
 	}
 
 	return tupleType

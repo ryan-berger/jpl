@@ -35,6 +35,8 @@ func (p *Parser) parseAssertStatement() ast.Statement {
 	}
 
 	stmt.Message = p.cur.Val
+
+	p.advance()
 	return stmt
 }
 
@@ -65,18 +67,20 @@ func (p *Parser) parseReadCommand() ast.Command {
 		return nil
 	}
 
-	read.Location = p.cur.Val
+	read.Src = p.cur.Val
 
-	if !p.expectPeek(lexer.Variable) && p.cur.Val != "to" {
+	if !p.expectPeek(lexer.To) {
 		p.errorf("err: illegal token. Expected 'to', found %s at line %d", p.peek.Val, p.peek.Line)
 		return nil
 	}
+	p.advance()
 
 	read.Argument = p.parseArgument()
 	if read.Argument == nil {
 		return nil
 	}
 
+	p.advance()
 	return read
 }
 
@@ -100,7 +104,7 @@ func (p *Parser) parseWriteCommand() ast.Command {
 		return nil
 	}
 
-	if !p.expectPeek(lexer.Variable) && p.cur.Val != "to" {
+	if !p.expectPeek(lexer.To) {
 		p.errorf("err: illegal token. Expected 'to', found %s at line %d", p.peek.Val, p.peek.Line)
 		return nil
 	}
@@ -111,6 +115,7 @@ func (p *Parser) parseWriteCommand() ast.Command {
 	}
 
 	write.Dest = p.cur.Val
+	p.advance()
 	return write
 }
 
@@ -122,6 +127,7 @@ func (p *Parser) parsePrintCommand() ast.Command {
 	}
 
 	pr.Str = p.cur.Val
+	p.advance()
 	return pr
 }
 
@@ -133,6 +139,7 @@ func (p *Parser) parseShowCommand() ast.Command {
 	if show.Expr == nil {
 		return nil
 	}
+	p.advance()
 
 	return show
 }
@@ -146,5 +153,6 @@ func (p *Parser) parseTimeCommand() ast.Command {
 		return nil
 	}
 
+	p.advance()
 	return time
 }
