@@ -11,9 +11,31 @@ func (p *Parser) parseCommand() ast.Command {
 		return p.parseLetStatement()
 	case lexer.Function:
 		return p.parseFunction()
+	case lexer.Assert:
+		return p.parseAssertStatement()
 	default:
 		return p.parseBuiltinCommand()
 	}
+}
+
+func (p *Parser) parseAssertStatement() ast.Statement {
+	stmt := &ast.AssertStatement{}
+	p.advance()
+
+	if stmt.Expr = p.parseExpression(lowest); stmt.Expr == nil {
+		return nil
+	}
+
+	if !p.expectPeek(lexer.Comma) {
+		return nil
+	}
+
+	if !p.expectPeek(lexer.String) {
+		return nil
+	}
+
+	stmt.Message = p.cur.Val
+	return stmt
 }
 
 func (p *Parser) parseBuiltinCommand() ast.Command {

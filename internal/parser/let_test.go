@@ -23,7 +23,9 @@ func TestParse_Let(t *testing.T) {
 func TestParse_Fn(t *testing.T) {
 	test := `
 fn my_fn(x : int) : int[,][][] {
+  assert 1 == 1, "my str"
   let x = array[i : 10] 10
+  let y = myfn(1, 2, 3)
   return x 
 }`
 

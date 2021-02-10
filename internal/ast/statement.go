@@ -49,3 +49,15 @@ func (r *ReturnStatement) String() string {
 }
 func (r *ReturnStatement) command()   {}
 func (r *ReturnStatement) statement() {}
+
+type AssertStatement struct {
+	Expr    Expression
+	Message string
+}
+
+func (a *AssertStatement) String() string {
+	return fmt.Sprintf("assert %s , %s", a.Expr.String(), a.Message)
+}
+
+func (a *AssertStatement) command()   {}
+func (a *AssertStatement) statement() {}

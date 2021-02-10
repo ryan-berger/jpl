@@ -18,7 +18,6 @@ type IntExpression struct {
 func (i *IntExpression) String() string {
 	return fmt.Sprintf("%d", i.Val)
 }
-func (i *IntExpression) command()    {}
 func (i *IntExpression) expression() {}
 
 // IdentifierExpression
@@ -29,9 +28,22 @@ type IdentifierExpression struct {
 func (i *IdentifierExpression) String() string {
 	return i.Identifier
 }
-
-func (i *IdentifierExpression) command()    {}
 func (i *IdentifierExpression) expression() {}
+
+type CallExpression struct {
+	Identifier string
+	Arguments  []Expression
+}
+
+func (c *CallExpression) String() string {
+	strs := make([]string, len(c.Arguments))
+	for i, expr := range c.Arguments {
+		strs[i] = expr.String()
+	}
+
+	return fmt.Sprintf("%s(%s)", c.Identifier, strings.Join(strs, ", "))
+}
+func (c *CallExpression) expression() {}
 
 // FloatExpression
 type FloatExpression struct {
@@ -41,7 +53,6 @@ type FloatExpression struct {
 func (f *FloatExpression) String() string {
 	return fmt.Sprintf("%f", f.Val)
 }
-func (f *FloatExpression) command()    {}
 func (f *FloatExpression) expression() {}
 
 type BooleanExpression struct {
@@ -68,7 +79,6 @@ func (t *TupleExpression) String() string {
 	return fmt.Sprintf("{%s}", strings.Join(strs, ", "))
 }
 
-func (t *TupleExpression) command()    {}
 func (t *TupleExpression) expression() {}
 
 type IfExpression struct {
@@ -110,7 +120,7 @@ func (a *ArrayTransform) expression() {}
 
 type SumTransform struct {
 	OpBindings []OpBinding
-	Expr      Expression
+	Expr       Expression
 }
 
 func (s *SumTransform) String() string {
@@ -131,7 +141,6 @@ type InfixExpression struct {
 func (i *InfixExpression) String() string {
 	return fmt.Sprintf("(%s %s %s)", i.Left, i.Op, i.Right)
 }
-func (i *InfixExpression) command()    {}
 func (i *InfixExpression) expression() {}
 
 type PrefixExpression struct {
@@ -143,5 +152,4 @@ func (p *PrefixExpression) String() string {
 	return fmt.Sprintf("(%s%s)", p.Op, p.Expr)
 }
 
-func (p *PrefixExpression) command()    {}
 func (p *PrefixExpression) expression() {}

@@ -62,7 +62,7 @@ func (p *Parser) parseStatements() []ast.Statement {
 		case lexer.Return:
 			stmt = p.parseReturnStatement()
 		case lexer.Assert: // TODO: actually implement
-			break
+			stmt = p.parseAssertStatement()
 		default:
 			p.errorf("err :yeet") // TODO: YEET
 			stmt = nil

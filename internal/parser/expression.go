@@ -153,7 +153,37 @@ func (p *Parser) parseBoolean() ast.Expression {
 }
 
 func (p *Parser) parseIdentifier() ast.Expression {
-	return &ast.IdentifierExpression{Identifier: p.cur.Val}
+	val := p.cur.Val
+	if !p.expectPeek(lexer.LParen) {
+		return &ast.IdentifierExpression{Identifier: val}
+	}
+
+	if p.expectPeek(lexer.RParen) {
+		return &ast.CallExpression{Identifier: val}
+	}
+
+	p.advance()
+	var exprs []ast.Expression
+
+	for {
+		expr := p.parseExpression(lowest)
+		if expr == nil {
+			return nil
+		}
+		exprs = append(exprs, expr)
+
+		if p.expectPeek(lexer.RParen) {
+			break
+		}
+
+		if !p.expectPeek(lexer.Comma) {
+			return nil
+		}
+		p.advance()
+	}
+
+	return &ast.CallExpression{Identifier: val, Arguments: exprs}
+
 }
 
 func (p *Parser) parseIf() ast.Expression {
