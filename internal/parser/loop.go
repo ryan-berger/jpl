@@ -15,12 +15,7 @@ func (p *Parser) parseArrayTransform() ast.Expression {
 		return nil
 	}
 
-	if !p.expectPeek(lexer.RBrace) {
-		return nil
-	}
-
 	p.advance() // move onto start of expression
-
 	if expr.Expr = p.parseExpression(lowest); expr.Expr == nil {
 		return nil
 	}
@@ -38,10 +33,6 @@ func (p *Parser) parseSumTransform() ast.Expression {
 		return nil
 	}
 
-	if !p.expectPeek(lexer.RBrace) {
-		return nil
-	}
-
 	p.advance() // move onto start of expression
 
 	if expr.Expr = p.parseExpression(lowest); expr.Expr == nil {
@@ -56,10 +47,11 @@ func (p *Parser) parseOpBindings() []ast.OpBinding {
 
 	ok := p.parseList(lexer.RBrace, func() bool {
 		var opBinding ast.OpBinding
-		if !p.expectPeek(lexer.Variable) {
+		if !p.curTokenIs(lexer.Variable) {
 			p.errorf("expecting variable, received %s at line %d", p.peek.Val, p.peek.Line)
 			return false
 		}
+
 		opBinding.Variable = p.cur.Val
 
 		if !p.expectPeek(lexer.Colon) {

@@ -111,6 +111,54 @@ func (t *TupleExpression) String() string {
 
 func (t *TupleExpression) expression() {}
 
+type ArrayExpression struct {
+	Expressions []Expression
+}
+
+func (a *ArrayExpression) SExpr() string {
+	return ""
+}
+
+func (a *ArrayExpression) String() string {
+	strs := make([]string, len(a.Expressions))
+	for i, e := range a.Expressions {
+		strs[i] = e.String()
+	}
+	return fmt.Sprintf("[%s]", strings.Join([]string{}, ", "))
+}
+
+func (a *ArrayExpression) expression() {}
+
+type ArrayRefExpression struct {
+	Array   Expression
+	Indexes []Expression
+}
+
+func (a *ArrayRefExpression) SExpr() string {
+	return ""
+}
+func (a *ArrayRefExpression) String() string {
+	strs := make([]string, len(a.Indexes))
+	for i, idx := range a.Indexes {
+		strs[i] = fmt.Sprintf("%s", idx)
+	}
+	return fmt.Sprintf("%s[%s]", a.Array, strings.Join(strs, ", "))
+}
+func (a *ArrayRefExpression) expression() {}
+
+type TupleRefExpression struct {
+	Tuple Expression
+	Index Expression
+}
+
+func (t *TupleRefExpression) SExpr() string {
+	panic("implement me")
+}
+func (t *TupleRefExpression) String() string {
+	return fmt.Sprintf("%s{%s}", t.Tuple, t.Index)
+}
+func (t *TupleRefExpression) expression() {}
+
 type IfExpression struct {
 	Condition   Expression
 	Consequence Expression
@@ -170,7 +218,7 @@ func (s *SumTransform) String() string {
 	for i, b := range s.OpBindings {
 		bindings[i] = b.String()
 	}
-	return fmt.Sprintf("array[%s] %s", strings.Join(bindings, ", "), s.Expr)
+	return fmt.Sprintf("sum[%s] %s", strings.Join(bindings, ", "), s.Expr)
 }
 func (s *SumTransform) expression() {}
 

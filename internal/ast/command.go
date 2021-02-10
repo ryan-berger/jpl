@@ -29,7 +29,7 @@ func (f *Function) String() string {
 	for i, b := range f.Bindings {
 		buf.WriteString(b.String())
 		if i != len(f.Bindings)-1 {
-			buf.WriteByte(',')
+			buf.WriteString(", ")
 		}
 	}
 	buf.WriteString(fmt.Sprintf(") : %s {\n", f.ReturnType))

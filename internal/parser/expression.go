@@ -37,6 +37,8 @@ var opPrecedence = map[lexer.TokenType]precedence{
 	lexer.Divide:      product,
 	lexer.Mod:         product,
 	lexer.And:         product,
+	lexer.LCurly:      call,
+	lexer.LBrace:      call,
 }
 
 func (p *Parser) parseExpression(pr precedence) ast.Expression {
@@ -83,6 +85,42 @@ func (p *Parser) parseInfixExpr(left ast.Expression) ast.Expression {
 	return expr
 }
 
+func (p *Parser) parseArrayRefExpr(arr ast.Expression) ast.Expression {
+	arrRefExpr := &ast.ArrayRefExpression{
+		Array: arr,
+	}
+	ok := p.parseList(lexer.RBrace, func() bool {
+		expr := p.parseExpression(lowest)
+		if expr == nil {
+			return false
+		}
+		arrRefExpr.Indexes = append(arrRefExpr.Indexes, expr)
+		return true
+	})
+
+	if !ok {
+		return nil
+	}
+
+	if len(arrRefExpr.Indexes) == 0 {
+		return nil
+	}
+
+	return arrRefExpr
+}
+
+func (p *Parser) parseTupleRefExpr(tuple ast.Expression) ast.Expression {
+	arrRefExpr := &ast.TupleRefExpression{
+		Tuple: tuple,
+	}
+
+	if arrRefExpr.Index = p.parseExpression(lowest); arrRefExpr.Index == nil {
+		return nil
+	}
+
+	return arrRefExpr
+}
+
 func (p *Parser) parseGroupedExpression() ast.Expression {
 	p.advance()
 
@@ -119,6 +157,25 @@ func (p *Parser) parseTupleExpression() ast.Expression {
 	return tupleExpr
 }
 
+func (p *Parser) parseArrayExpression() ast.Expression {
+	arrayExpr := &ast.ArrayExpression{}
+
+	ok := p.parseList(lexer.RCurly, func() bool {
+		expr := p.parseExpression(lowest)
+		if expr == nil {
+			return false
+		}
+
+		arrayExpr.Expressions = append(arrayExpr.Expressions, expr)
+		return true
+	})
+
+	if !ok {
+		return nil
+	}
+	return arrayExpr
+}
+
 func (p *Parser) parseInteger() ast.Expression {
 	expr := &ast.IntExpression{}
 	val, err := strconv.ParseInt(p.cur.Val, 10, 64)
@@ -148,8 +205,16 @@ func (p *Parser) parseBoolean() ast.Expression {
 
 func (p *Parser) parseIdentifier() ast.Expression {
 	val := p.cur.Val
+	if p.peekTokenIs(lexer.LParen) {
+		return p.parseCallExpression()
+	}
+	return &ast.IdentifierExpression{Identifier: val}
+}
+
+func (p *Parser) parseCallExpression() ast.Expression {
+	val := p.cur.Val
 	if !p.expectPeek(lexer.LParen) {
-		return &ast.IdentifierExpression{Identifier: val}
+		return nil
 	}
 
 	var exprs []ast.Expression

@@ -35,7 +35,6 @@ func (p *Parser) parseAssertStatement() ast.Statement {
 	}
 
 	stmt.Message = p.cur.Val
-
 	p.advance()
 	return stmt
 }
@@ -80,7 +79,6 @@ func (p *Parser) parseReadCommand() ast.Command {
 		return nil
 	}
 
-	p.advance()
 	return read
 }
 
@@ -113,7 +111,6 @@ func (p *Parser) parseWriteCommand() ast.Command {
 		p.errorf("err: illegal token. Expected string, found %s at line %d", p.peek.Val, p.peek.Line)
 		return nil
 	}
-
 	write.Dest = p.cur.Val
 	p.advance()
 	return write
@@ -139,7 +136,6 @@ func (p *Parser) parseShowCommand() ast.Command {
 	if show.Expr == nil {
 		return nil
 	}
-	p.advance()
 
 	return show
 }
@@ -153,6 +149,5 @@ func (p *Parser) parseTimeCommand() ast.Command {
 		return nil
 	}
 
-	p.advance()
 	return time
 }

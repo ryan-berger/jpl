@@ -70,8 +70,8 @@ func (p *Parser) parseArgument() ast.Argument {
 	}
 
 	var args []string
-	ok := p.parseList(lexer.RParen, func() bool {
-		if !p.expectPeek(lexer.Variable) {
+	ok := p.parseList(lexer.RBrace, func() bool {
+		if !p.curTokenIs(lexer.Variable) {
 			return false
 		}
 		args = append(args, p.cur.Val)

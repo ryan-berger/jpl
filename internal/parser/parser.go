@@ -51,8 +51,12 @@ func NewParser(tokens []lexer.Token) *Parser {
 	p.registerPrefixFn(lexer.If, p.parseIf)
 	p.registerPrefixFn(lexer.Array, p.parseArrayTransform)
 	p.registerPrefixFn(lexer.Sum, p.parseSumTransform)
+	// type casts should be call expressions
+	p.registerPrefixFn(lexer.Int, p.parseCallExpression)
+	p.registerPrefixFn(lexer.Float, p.parseCallExpression)
+	p.registerPrefixFn(lexer.Float3, p.parseCallExpression)
+	p.registerPrefixFn(lexer.Float4, p.parseCallExpression)
 
-	// TODO: make sure to support cast expressions as if they are call expressions...
 	p.registerInfixFn(lexer.Plus, p.parseInfixExpr)
 	p.registerInfixFn(lexer.Minus, p.parseInfixExpr)
 	p.registerInfixFn(lexer.Multiply, p.parseInfixExpr)
@@ -66,6 +70,8 @@ func NewParser(tokens []lexer.Token) *Parser {
 	p.registerInfixFn(lexer.GreaterThan, p.parseInfixExpr)
 	p.registerInfixFn(lexer.GreaterThanOrEqual, p.parseInfixExpr)
 	p.registerInfixFn(lexer.LessThanOrEqual, p.parseInfixExpr)
+	p.registerInfixFn(lexer.LCurly, p.parseTupleRefExpr)
+	p.registerInfixFn(lexer.LBrace, p.parseArrayRefExpr)
 
 	p.registerCommandFn(lexer.Read, p.parseReadCommand)
 	p.registerCommandFn(lexer.Write, p.parseWriteCommand)
@@ -132,7 +138,7 @@ func (p *Parser) errorf(format string, args ...interface{}) {
 func (p *Parser) ParseProgram(debug bool) []ast.Command {
 	var commands []ast.Command
 	if p.curTokenIs(lexer.NewLine) {
-		p.advance()	// newline can be at the beginning of the file sometime
+		p.advance() // newline can be at the beginning of the file sometime
 	}
 
 	for !p.curTokenIs(lexer.EOF) {

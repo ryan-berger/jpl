@@ -50,18 +50,18 @@ func (p *Parser) parseFunction() ast.Command {
 func (p *Parser) parseStatements() []ast.Statement {
 	var statements []ast.Statement
 
-	var stmt ast.Statement
+
 	for !p.peekTokenIs(lexer.RCurly) && !p.peekTokenIs(lexer.EOF) {
+		var stmt ast.Statement
 		switch p.cur.Type {
 		case lexer.Let:
 			stmt = p.parseLetStatement()
 		case lexer.Return:
 			stmt = p.parseReturnStatement()
-		case lexer.Assert: // TODO: actually implement
+		case lexer.Assert:
 			stmt = p.parseAssertStatement()
 		default:
 			p.errorf("err :yeet") // TODO: YEET
-			stmt = nil
 			for !p.curTokenIs(lexer.NewLine) {
 				p.advance()
 			}
