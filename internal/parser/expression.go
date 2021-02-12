@@ -197,7 +197,7 @@ func (p *Parser) parseFloat() ast.Expression {
 	expr := &ast.FloatExpression{}
 	val, err := strconv.ParseFloat(p.cur.Val, 64)
 	if err != nil {
-		p.errorf("error, float %s too large for a 64 bit integer at line %d", p.cur.Val, p.cur.Line)
+		p.errorf("error, float %s too large for a 64 bit float at line %d", p.cur.Val, p.cur.Line)
 		return nil
 	}
 	expr.Val = val

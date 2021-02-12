@@ -6,10 +6,8 @@ import (
 )
 
 type Argument interface {
-	SExpr
-	String() string
+	LValue
 	argument()
-	lValue()
 }
 
 type VariableArgument struct {

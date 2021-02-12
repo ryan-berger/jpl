@@ -4,8 +4,8 @@ on: [push]
 
 jobs:
   compiles:
-    name: "Runs `make run`"
+    name: "Runs `make compile`"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - run: make run
+      - run: make compile
