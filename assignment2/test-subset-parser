@@ -73,5 +73,6 @@ if ($fails == 0) {
     print "All tests pass.\n";
 } else {
     print "${fails} tests fail.\n";
+    exit 1;
 }
 

@@ -1,3 +1,0 @@
-(StmtCmd (ReturnStmt (VarExpr e)))
-(TimeCmd (PrintCmd ""))
-Compilation succeeded
