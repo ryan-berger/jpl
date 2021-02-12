@@ -1,6 +1,6 @@
 name: Compiles the Compiler
 
-on: [push]
+on: [ push ]
 
 jobs:
   compiles:
@@ -8,4 +8,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - run: make compile
+      - name: Compile
+        run: make compile
+      - name: Lexer tests
+        run: |
+          ./assignment1/test-lexer1 ./jpl
+          ./assignment1/test-lexer2 ./jpl
+      - name: Parser tests
+        run: ./assignment2/test-subset-parser
+      - name: Internal tests
+        run: go test ./internal/...

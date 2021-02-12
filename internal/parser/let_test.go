@@ -22,16 +22,7 @@ func TestParse_Let(t *testing.T) {
 
 func TestParse_Fn(t *testing.T) {
 	test := `
-write image C() to "E" 
-print "8" 
-assert 62,
-write image 6 to "s*2x[i"
-show .3694592063
-assert ""
-show 09
-time read image "" i
-read "" q2V. to
-return 44
+print "test"
 `
 	tokens, ok := lexer.NewLexer(test).LexAll()
 	assert.True(t, ok)
