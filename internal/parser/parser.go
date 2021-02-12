@@ -21,8 +21,6 @@ type Parser struct {
 
 	prefixParseFns map[lexer.TokenType]prefixParseFn
 	infixParseFns  map[lexer.TokenType]infixParseFn
-
-	cmdParseFns map[lexer.TokenType]func() ast.Command
 }
 
 func NewParser(tokens []lexer.Token) *Parser {
@@ -32,8 +30,6 @@ func NewParser(tokens []lexer.Token) *Parser {
 
 		prefixParseFns: make(map[lexer.TokenType]prefixParseFn),
 		infixParseFns:  make(map[lexer.TokenType]infixParseFn),
-
-		cmdParseFns: make(map[lexer.TokenType]func() ast.Command),
 	}
 
 	p.advance()
@@ -73,12 +69,6 @@ func NewParser(tokens []lexer.Token) *Parser {
 	p.registerInfixFn(lexer.LCurly, p.parseTupleRefExpr)
 	p.registerInfixFn(lexer.LBrace, p.parseArrayRefExpr)
 
-	p.registerCommandFn(lexer.Read, p.parseReadCommand)
-	p.registerCommandFn(lexer.Write, p.parseWriteCommand)
-	p.registerCommandFn(lexer.Print, p.parsePrintCommand)
-	p.registerCommandFn(lexer.Show, p.parseShowCommand)
-	p.registerCommandFn(lexer.Time, p.parseTimeCommand)
-
 	return p
 }
 
@@ -112,10 +102,6 @@ func (p *Parser) registerPrefixFn(tokType lexer.TokenType, prefixFn prefixParseF
 
 func (p *Parser) registerInfixFn(tokType lexer.TokenType, infixFn infixParseFn) {
 	p.infixParseFns[tokType] = infixFn
-}
-
-func (p *Parser) registerCommandFn(cmd lexer.TokenType, parseFn func() ast.Command) {
-	p.cmdParseFns[cmd] = parseFn
 }
 
 func (p *Parser) curPrecedence() precedence {

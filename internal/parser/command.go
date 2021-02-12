@@ -65,14 +65,6 @@ func (p *Parser) parseAssertStatement() ast.Statement {
 	return stmt
 }
 
-func (p *Parser) parseBuiltinCommand() ast.Command {
-	if parse := p.cmdParseFns[p.cur.Type]; parse != nil {
-		return parse()
-	}
-	p.errorf("err: expected command, received %s at line %d", p.cur.Val, p.cur.Line)
-	return nil
-}
-
 func (p *Parser) parseReadCommand() ast.Command {
 	read := &ast.Read{}
 	if !p.expectPeek(lexer.Variable) {

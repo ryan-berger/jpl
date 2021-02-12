@@ -396,12 +396,39 @@ func (p *Parser) parseArgument() ast.Argument {
 	}
 }
 
-func (p *Parser) parseBuiltinCommand() ast.Command {
-	if parse := p.cmdParseFns[p.cur.Type]; parse != nil {
-		return parse()
+func (p *Parser) parseCommand() ast.Command {
+	switch p.cur.Type {
+	case lexer.Read:
+		return p.parseReadCommand()
+	case lexer.Write:
+		return p.parseWriteCommand()
+	case lexer.Print:
+		return p.parsePrintCommand()
+	case lexer.Show:
+		return p.parseShowCommand()
+	case lexer.Time:
+		return p.parseTimeCommand()
+	default:
+		stmt := p.parseStatement()
+		if stmt != nil {
+			return stmt
+		}
+		p.error = fmt.Errorf("error while parsing command statement %w", p.error)
+		return nil
 	}
-	p.errorf("err: expected command, received %s at line %d", p.cur.Val, p.cur.Line)
-	return nil
+}
+
+func (p *Parser) parseStatement() ast.Statement {
+	switch p.cur.Type {
+	case lexer.Let:
+		return p.parseLetStatement()
+	case lexer.Return:
+		return p.parseReturnStatement()
+	case lexer.Assert:
+		return p.parseAssertStatement()
+	default:
+		return nil
+	}
 }
 
 func (p *Parser) parseReadCommand() ast.Command {
