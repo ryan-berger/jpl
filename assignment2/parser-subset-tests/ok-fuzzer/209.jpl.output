@@ -1,0 +1,3 @@
+(PrintCmd "")
+(TimeCmd (StmtCmd (ReturnStmt (FloatExpr 69))))
+Compilation succeeded

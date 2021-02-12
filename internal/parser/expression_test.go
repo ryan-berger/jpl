@@ -112,7 +112,7 @@ func TestPrecedenceParsing(t *testing.T) {
 		assert.True(t, ok)
 		parser := NewParser(tokens)
 		expr := parser.parseExpression(lowest) // parse expression
-		assert.Empty(t, parser.errors)
+		assert.Nil(t, parser.error)
 		assert.NotNil(t, expr)
 		assert.Equal(t, test.expected, expr.String())
 	}

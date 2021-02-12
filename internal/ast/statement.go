@@ -39,7 +39,7 @@ type LetStatement struct {
 }
 
 func (l *LetStatement) SExpr() string {
-	return fmt.Sprintf("(LetStmt %s %s)", l.LValue.String(), l.Expr.SExpr())
+	return fmt.Sprintf("(LetStmt (ArgLValue %s) %s)", l.LValue.SExpr(), l.Expr.SExpr())
 }
 
 func (l *LetStatement) command()   {}

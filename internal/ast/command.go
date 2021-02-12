@@ -48,7 +48,7 @@ type Read struct {
 }
 
 func (r *Read) SExpr() string {
-	return fmt.Sprintf("(ReadImageCmd %s %s)", r.Argument.SExpr(), r.Src)
+	return fmt.Sprintf("(ReadImageCmd %s %s)", r.Src, r.Argument.SExpr(),)
 }
 
 func (r *Read) String() string {
@@ -105,7 +105,11 @@ type Time struct {
 }
 
 func (t *Time) SExpr() string {
-	return fmt.Sprintf("(TimeCmd %s)", t.Command.SExpr())
+	cmd := t.Command.SExpr()
+	if _, ok := t.Command.(Statement); ok {
+		cmd = fmt.Sprintf("(StmtCmd %s)", cmd)
+	}
+	return fmt.Sprintf("(TimeCmd %s)", cmd)
 }
 
 func (t *Time) String() string {

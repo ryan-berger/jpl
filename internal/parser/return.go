@@ -9,5 +9,6 @@ func  (p *Parser) parseReturnStatement() ast.Statement {
 		return nil
 	}
 
+	p.advance()
 	return ret
 }

@@ -371,6 +371,17 @@ fn example(i : int, j : int) {
 		},
 
 	},
+	{
+		input: "return .38\ntime write",
+		tokens: []Token{
+			{Type: Return, Val: "return", Line: 1},
+			{Type: FloatLiteral, Val: ".38", Line: 1},
+			{Type: NewLine, Val: "\n", Line: 1},
+			{Type: Time, Val: "time", Line: 2},
+			{Type: Write, Val: "write", Line: 2},
+			{Type: EOF},
+		},
+	},
 }
 
 func TestLexer(t *testing.T) {

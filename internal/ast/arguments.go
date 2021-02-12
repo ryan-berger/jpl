@@ -17,7 +17,7 @@ type VariableArgument struct {
 }
 
 func (v *VariableArgument) SExpr() string {
-	return fmt.Sprintf("(VarExpr %s)", v.Variable)
+	return fmt.Sprintf("(VarArgument %s)", v.Variable)
 }
 
 func (v *VariableArgument) String() string { return v.Variable }

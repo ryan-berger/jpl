@@ -17,7 +17,7 @@ type Parser struct {
 	cur      lexer.Token
 	peek     lexer.Token
 
-	errors []error
+	error error
 
 	prefixParseFns map[lexer.TokenType]prefixParseFn
 	infixParseFns  map[lexer.TokenType]infixParseFn
@@ -132,10 +132,10 @@ func (p *Parser) peekPrecedence() precedence {
 }
 
 func (p *Parser) errorf(format string, args ...interface{}) {
-	p.errors = append(p.errors, fmt.Errorf(format, args...))
+	p.error = fmt.Errorf(format, args...)
 }
 
-func (p *Parser) ParseProgram(debug bool) []ast.Command {
+func (p *Parser) ParseProgram(debug bool) ([]ast.Command, error) {
 	var commands []ast.Command
 	if p.curTokenIs(lexer.NewLine) {
 		p.advance() // newline can be at the beginning of the file sometime
@@ -145,10 +145,8 @@ func (p *Parser) ParseProgram(debug bool) []ast.Command {
 		cmd := p.parseCommand()
 		if cmd != nil {
 			commands = append(commands, cmd)
-		}
-
-		if !p.curTokenIs(lexer.EOF) && !p.curTokenIs(lexer.NewLine) {
-			// TODO this is a serious problem... Likely move this into parse Command??
+		} else {
+			return nil, p.error
 		}
 
 		p.advance()
@@ -156,13 +154,13 @@ func (p *Parser) ParseProgram(debug bool) []ast.Command {
 
 	if debug {
 		for _, c := range commands {
-			expr := c.String()
-			//if stmt, ok := c.(ast.Statement); ok {
-			//	expr = fmt.Sprintf("(StmtCmd %s)", stmt.SExpr())
-			//}
+			expr := c.SExpr()
+			if stmt, ok := c.(ast.Statement); ok {
+				expr = fmt.Sprintf("(StmtCmd %s)", stmt.SExpr())
+			}
 			fmt.Println(expr)
 		}
 	}
 
-	return commands
+	return commands, nil
 }

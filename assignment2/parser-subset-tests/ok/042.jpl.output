@@ -1,0 +1,2 @@
+(StmtCmd (ReturnStmt (FloatExpr 0)))
+Compilation succeeded

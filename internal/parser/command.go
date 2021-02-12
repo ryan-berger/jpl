@@ -13,6 +13,8 @@ func (p *Parser) parseCommand() ast.Command {
 		return p.parseFunction()
 	case lexer.Assert:
 		return p.parseAssertStatement()
+	case lexer.Return:
+		return p.parseReturnStatement()
 	default:
 		return p.parseBuiltinCommand()
 	}
@@ -27,10 +29,12 @@ func (p *Parser) parseAssertStatement() ast.Statement {
 	}
 
 	if !p.expectPeek(lexer.Comma) {
+		p.errorf("error, expected comma received: %s, line %d", p.peek.Val, p.peek.Line)
 		return nil
 	}
 
 	if !p.expectPeek(lexer.String) {
+		p.errorf("error, expected string received: %s, line %d", p.peek.Val, p.peek.Line)
 		return nil
 	}
 
@@ -120,7 +124,7 @@ func (p *Parser) parseWriteCommand() ast.Command {
 
 func (p *Parser) parsePrintCommand() ast.Command {
 	pr := &ast.Print{}
-	if !p.peekTokenIs(lexer.String) {
+	if !p.expectPeek(lexer.String) {
 		p.errorf("err: illegal token. Expected string, found %s at line %d", p.peek.Val, p.peek.Line)
 		return nil
 	}
@@ -139,6 +143,7 @@ func (p *Parser) parseShowCommand() ast.Command {
 		return nil
 	}
 
+	p.advance()
 	return show
 }
 
@@ -149,6 +154,10 @@ func (p *Parser) parseTimeCommand() ast.Command {
 	time.Command = p.parseCommand()
 	if time.Command == nil {
 		return nil
+	}
+
+	if !p.curTokenIs(lexer.NewLine) {
+		p.advance()
 	}
 
 	return time

@@ -1,0 +1,3 @@
+(StmtCmd (AssertStmt (CallExpr Y ) "W"))
+(PrintCmd "{")
+Compilation succeeded

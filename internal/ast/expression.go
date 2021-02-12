@@ -69,7 +69,7 @@ type FloatExpression struct {
 }
 
 func (f *FloatExpression) SExpr() string {
-	return fmt.Sprintf("(FloatExpr %f)", f.Val)
+	return fmt.Sprintf("(FloatExpr %d)", int64(f.Val))
 }
 
 func (f *FloatExpression) String() string {

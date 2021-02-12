@@ -16,28 +16,30 @@ func TestParse_Let(t *testing.T) {
 	assert.True(t, ok)
 
 	p := NewParser(tokens)
-	assert.Empty(t, p.errors)
+	assert.Nil(t, p.error)
 	fmt.Println(p.ParseProgram(false))
 }
 
 func TestParse_Fn(t *testing.T) {
 	test := `
-fn gamma_decompress(x : float) : float {
-   assert 0.0 <= x && x <= 1.0, "gamma_decompress argument out of range"
-   return \
-     if x <= 0.04045 then x / 12.92 else \
-     pow((x + 0.055) / 1.055, 2.4)
-}
-
-read 
+write image C() to "E" 
+print "8" 
+assert 62,
+write image 6 to "s*2x[i"
+show .3694592063
+assert ""
+show 09
+time read image "" i
+read "" q2V. to
+return 44
 `
-
 	tokens, ok := lexer.NewLexer(test).LexAll()
 	assert.True(t, ok)
 
 	p := NewParser(tokens)
-	p.ParseProgram(false)
-	assert.Empty(t, p.errors)
+	cmds, err := p.ParseProgram(false)
+	fmt.Println(cmds)
+	assert.Nil(t, err)
 }
 
 func TestParse_Cmd(t *testing.T) {

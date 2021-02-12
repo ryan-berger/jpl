@@ -4,13 +4,12 @@ import "github.com/ryan-berger/jpl/internal/lexer"
 
 func (p *Parser) parseList(end lexer.TokenType, parseFn func() bool) bool {
 	if p.expectPeek(end) {
-		p.advance()
 		return true
 	}
 
 	p.advance()
 
-	for i := 0; i < 64; i++ {
+	for i := 0; i < 512; i++ {
 		if !parseFn() {
 			return false
 		}
@@ -27,6 +26,7 @@ func (p *Parser) parseList(end lexer.TokenType, parseFn func() bool) bool {
 	}
 	if !p.expectPeek(end) {
 		p.errorf("error found unexpected token or >64 elements at expression at line %d", p.peek.Line)
+		return false
 	}
 
 	return true
