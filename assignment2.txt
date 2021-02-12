@@ -193,6 +193,32 @@ type Parser struct {
 	cmdParseFns map[lexer.TokenType]func() ast.Command
 }
 
+// Helpers
+func (p *Parser) advance() {
+	p.cur = p.peek
+	p.peek = p.tokens[p.position]
+	if p.position != len(p.tokens)-1 {
+		p.position++
+	}
+}
+
+func (p *Parser) expectPeek(tokType lexer.TokenType) bool {
+	if p.peek.Type == tokType {
+		p.advance()
+		return true
+	}
+	return false
+}
+
+func (p *Parser) curTokenIs(tokType lexer.TokenType) bool {
+	return p.cur.Type == tokType
+}
+
+func (p *Parser) peekTokenIs(tokType lexer.TokenType) bool {
+	return p.peek.Type == tokType
+}
+
+// Constructor
 func NewParser(tokens []lexer.Token) *Parser {
 	p := &Parser{
 		tokens:   tokens,
@@ -344,7 +370,7 @@ func (p *Parser) parseLValue() ast.LValue {
 
 
 func (p *Parser) parseArgument() ast.Argument {
-	argName := p.cur.Val // TODO: check to make sure no keyword
+	argName := p.cur.Val
 	if !p.expectPeek(lexer.LBrace) {
 		return &ast.VariableArgument{
 			Variable: argName,

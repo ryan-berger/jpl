@@ -50,27 +50,14 @@ func (p *Parser) parseFunction() ast.Command {
 func (p *Parser) parseStatements() []ast.Statement {
 	var statements []ast.Statement
 
-
 	for !p.peekTokenIs(lexer.RCurly) && !p.peekTokenIs(lexer.EOF) {
-		var stmt ast.Statement
-		switch p.cur.Type {
-		case lexer.Let:
-			stmt = p.parseLetStatement()
-		case lexer.Return:
-			stmt = p.parseReturnStatement()
-		case lexer.Assert:
-			stmt = p.parseAssertStatement()
-		default:
-			p.errorf("err :yeet") // TODO: YEET
-			for !p.curTokenIs(lexer.NewLine) {
-				p.advance()
-			}
+		stmt := p.parseStatement()
+
+		if stmt == nil {
+			return nil
 		}
 
-		if stmt != nil {
-			statements = append(statements, stmt)
-		}
-
+		statements = append(statements, stmt)
 		p.advance()
 	}
 
@@ -143,4 +130,3 @@ var tokenToType = map[lexer.TokenType]ast.Type{
 	lexer.Float: ast.Float,
 	lexer.Int:   ast.Int,
 }
-

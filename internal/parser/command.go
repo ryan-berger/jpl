@@ -1,22 +1,44 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/lexer"
 )
 
 func (p *Parser) parseCommand() ast.Command {
 	switch p.cur.Type {
+	case lexer.Read:
+		return p.parseReadCommand()
+	case lexer.Write:
+		return p.parseWriteCommand()
+	case lexer.Print:
+		return p.parsePrintCommand()
+	case lexer.Show:
+		return p.parseShowCommand()
+	case lexer.Time:
+		return p.parseTimeCommand()
+	default:
+		stmt := p.parseStatement()
+		if stmt != nil {
+			return stmt
+		}
+		p.error = fmt.Errorf("error while parsing command statement %w", p.error)
+		return nil
+	}
+}
+
+func (p *Parser) parseStatement() ast.Statement {
+	switch p.cur.Type {
 	case lexer.Let:
 		return p.parseLetStatement()
-	case lexer.Function:
-		return p.parseFunction()
-	case lexer.Assert:
-		return p.parseAssertStatement()
 	case lexer.Return:
 		return p.parseReturnStatement()
+	case lexer.Assert:
+		return p.parseAssertStatement()
 	default:
-		return p.parseBuiltinCommand()
+		return nil
 	}
 }
 
