@@ -1,0 +1,10 @@
+read image "photo.png" to photo
+assert has_width(photo, 800), "Photo must be 800 pixels wide"
+assert has_height(photo, 600), "Photo must be 600 pixels tall"
+let middle = cut_center(photo)
+write image sepia(middle) to "profile.png"
+return 10
+time write image sepia(middle) to "profile.png"
+print "hello world"
+let x = 10
+let y = 3.223
