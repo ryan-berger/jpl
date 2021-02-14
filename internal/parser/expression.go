@@ -47,7 +47,7 @@ var opPrecedence = map[lexer.TokenType]precedence{
 
 func (p *Parser) parseExpression(pr precedence) ast.Expression {
 	prefix := p.prefixParseFns[p.cur.Type]
-	if prefix == nil { // TODO: actually implement
+	if prefix == nil {
 		p.errorf("error, unable to parse prefix operator %s at line %d", p.cur.Val, p.cur.Line)
 		return nil
 	}

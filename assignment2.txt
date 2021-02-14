@@ -1,3 +1,12 @@
+// OVERVIEW:
+// In Go there is no such things as classes, only interfaces.
+// Interfaces can implement interfaces via composition. I am using interfaces
+// to imitate classes/inheritance.
+
+// In order to implement print, I've used an interface, SExpr, in place of a "Print" method
+// The String() method is used _specificially_ for fmt.Sprintf() or fmt.Println(), and not this assignment
+
+
 /*
 ------------------------------------
 ----------------AST-----------------
@@ -172,6 +181,81 @@ func (v *VariableArgument) argument()      {}
 func (v *VariableArgument) lValue()        {}
 
 
+// EXPRESSIONS:
+type Expression interface {
+	SExpr
+	String() string
+	expression()
+}
+
+// IntExpression
+type IntExpression struct {
+	Val int64
+}
+
+func (i *IntExpression) SExpr() string {
+	return fmt.Sprintf("(IntExpr %d)", i.Val)
+}
+
+func (i *IntExpression) String() string {
+	return fmt.Sprintf("%d", i.Val)
+}
+func (i *IntExpression) expression() {}
+
+// IdentifierExpression
+type IdentifierExpression struct {
+	Identifier string
+}
+
+func (i *IdentifierExpression) SExpr() string {
+	return fmt.Sprintf("(VarExpr %s)", i.Identifier)
+}
+
+func (i *IdentifierExpression) String() string {
+	return i.Identifier
+}
+func (i *IdentifierExpression) expression() {}
+
+type CallExpression struct {
+	Identifier string
+	Arguments  []Expression
+}
+
+func (c *CallExpression) SExpr() string {
+	strs := make([]string, len(c.Arguments))
+	for i, expr := range c.Arguments {
+		strs[i] = expr.SExpr()
+	}
+
+	return fmt.Sprintf("(CallExpr %s %s)", c.Identifier, strings.Join(strs, " "))
+}
+
+func (c *CallExpression) String() string {
+	strs := make([]string, len(c.Arguments))
+	for i, expr := range c.Arguments {
+		strs[i] = expr.String()
+	}
+
+	return fmt.Sprintf("%s(%s)", c.Identifier, strings.Join(strs, ", "))
+}
+func (c *CallExpression) expression() {}
+
+// FloatExpression
+type FloatExpression struct {
+	Val float64
+}
+
+func (f *FloatExpression) SExpr() string {
+	return fmt.Sprintf("(FloatExpr %d)", int64(f.Val))
+}
+
+func (f *FloatExpression) String() string {
+	return fmt.Sprintf("%f", f.Val)
+}
+func (f *FloatExpression) expression() {}
+
+
+
 
 /*
 ------------------------------------
@@ -189,8 +273,6 @@ type Parser struct {
 
 	prefixParseFns map[lexer.TokenType]prefixParseFn
 	infixParseFns  map[lexer.TokenType]infixParseFn
-
-	cmdParseFns map[lexer.TokenType]func() ast.Command
 }
 
 // Helpers
@@ -244,12 +326,6 @@ func NewParser(tokens []lexer.Token) *Parser {
 	p.registerPrefixFn(lexer.Float3, p.parseCallExpression)
 	p.registerPrefixFn(lexer.Float4, p.parseCallExpression)
 
-	p.registerCommandFn(lexer.Read, p.parseReadCommand)
-	p.registerCommandFn(lexer.Write, p.parseWriteCommand)
-	p.registerCommandFn(lexer.Print, p.parsePrintCommand)
-	p.registerCommandFn(lexer.Show, p.parseShowCommand)
-	p.registerCommandFn(lexer.Time, p.parseTimeCommand)
-
 	return p
 }
 
@@ -281,6 +357,28 @@ func (p *Parser) ParseProgram(debug bool) ([]ast.Command, error) {
 	}
 
 	return commands, nil
+}
+
+// parseExpression takes a single parameter pr, which is th precedence of the current operator
+// NOTE TO INSTRUCTORS: I already have precedence implemented, but I've pulled most of it out to simplify
+func (p *Parser) parseExpression(pr precedence) ast.Expression {
+	prefix := p.prefixParseFns[p.cur.Type]
+	if prefix == nil {
+		p.errorf("error, unable to parse prefix operator %s at line %d", p.cur.Val, p.cur.Line)
+		return nil
+	}
+
+	leftExp := prefix()
+	for (!p.peekTokenIs(lexer.NewLine) || !p.peekTokenIs(lexer.EOF)) && pr < p.peekPrecedence() {
+		infix := p.infixParseFns[p.peek.Type]
+		if infix == nil {
+			return leftExp
+		}
+		p.advance()
+		leftExp = infix(leftExp)
+	}
+
+	return leftExp
 }
 
 func (p *Parser) parseInteger() ast.Expression {
@@ -321,7 +419,7 @@ func (p *Parser) parseCallExpression() ast.Expression {
 	}
 
 	var exprs []ast.Expression
-	ok := p.parseList(lexer.RParen, func() bool {
+	ok := p.parseList(lexer.RParen, func() bool { // helper method to parse a list
 		expr := p.parseExpression(lowest)
 		if expr == nil {
 			return false
@@ -336,210 +434,4 @@ func (p *Parser) parseCallExpression() ast.Expression {
 	return &ast.CallExpression{Identifier: val, Arguments: exprs}
 }
 
-func (p *Parser) parseLetStatement() ast.Statement {
-	let := &ast.LetStatement{}
-	p.advance()
-
-	if let.LValue = p.parseLValue(); let.LValue == nil {
-		return nil
-	}
-
-	if !p.expectPeek(lexer.Assign) {
-		p.errorf("err: illegal token. Expected '=', found %s at line %d", p.peek.Val, p.peek.Line)
-		return nil
-	}
-
-	p.advance() // advance onto expression
-
-	if let.Expr = p.parseExpression(lowest); let.Expr == nil { // get out of here if expression parsing fails
-		return nil
-	}
-
-	p.advance()
-	return let
-}
-
-func (p *Parser) parseLValue() ast.LValue {
-	switch {
-	case p.curTokenIs(lexer.Variable):
-		return p.parseArgument()
-	}
-	p.errorf("err: illegal token. Expected argument or '{', found %s at line %d", p.cur.Val, p.cur.Line)
-	return nil
-}
-
-
-func (p *Parser) parseArgument() ast.Argument {
-	argName := p.cur.Val
-	if !p.expectPeek(lexer.LBrace) {
-		return &ast.VariableArgument{
-			Variable: argName,
-		}
-	}
-
-	var args []string
-	ok := p.parseList(lexer.RBrace, func() bool {
-		if !p.curTokenIs(lexer.Variable) {
-			return false
-		}
-		args = append(args, p.cur.Val)
-		return true
-	})
-
-	if !ok {
-		return nil
-	}
-
-	return &ast.VariableArr{
-		Variable:  argName,
-		Variables: args,
-	}
-}
-
-func (p *Parser) parseCommand() ast.Command {
-	switch p.cur.Type {
-	case lexer.Read:
-		return p.parseReadCommand()
-	case lexer.Write:
-		return p.parseWriteCommand()
-	case lexer.Print:
-		return p.parsePrintCommand()
-	case lexer.Show:
-		return p.parseShowCommand()
-	case lexer.Time:
-		return p.parseTimeCommand()
-	default:
-		stmt := p.parseStatement()
-		if stmt != nil {
-			return stmt
-		}
-		p.error = fmt.Errorf("error while parsing command statement %w", p.error)
-		return nil
-	}
-}
-
-func (p *Parser) parseStatement() ast.Statement {
-	switch p.cur.Type {
-	case lexer.Let:
-		return p.parseLetStatement()
-	case lexer.Return:
-		return p.parseReturnStatement()
-	case lexer.Assert:
-		return p.parseAssertStatement()
-	default:
-		return nil
-	}
-}
-
-func (p *Parser) parseReadCommand() ast.Command {
-	read := &ast.Read{}
-	if !p.expectPeek(lexer.Variable) {
-		p.errorf("err: illegal token. Expected read type, found %s at line %d", p.peek.Val, p.peek.Line)
-		return nil
-	}
-
-	if p.cur.Val != "image" && p.cur.Val != "video" {
-		p.errorf("err: unsupported read type %s, at %d", p.peek.Val, p.peek.Line)
-		return nil
-	}
-
-	read.Type = p.cur.Val
-
-	if !p.expectPeek(lexer.String) {
-		p.errorf("err: illegal token. Expected string, found %s at line %d", p.peek.Val, p.peek.Line)
-		return nil
-	}
-
-	read.Src = p.cur.Val
-
-	if !p.expectPeek(lexer.To) {
-		p.errorf("err: illegal token. Expected 'to', found %s at line %d", p.peek.Val, p.peek.Line)
-		return nil
-	}
-	p.advance()
-
-	read.Argument = p.parseArgument()
-	if read.Argument == nil {
-		return nil
-	}
-
-	p.advance()
-	return read
-}
-
-func (p *Parser) parseWriteCommand() ast.Command {
-	write := &ast.Write{}
-	if !p.expectPeek(lexer.Variable) {
-		p.errorf("err: illegal token. Expected write type, found %s at line %d", p.peek.Val, p.peek.Line)
-		return nil
-	}
-
-	if p.cur.Val != "image" && p.cur.Val != "video" {
-		p.errorf("err: unsupported write type %s, at %d", p.peek.Val, p.peek.Line)
-		return nil
-	}
-
-	write.Type = p.cur.Val
-	p.advance()
-
-	write.Expr = p.parseExpression(lowest)
-	if write.Expr == nil {
-		return nil
-	}
-
-	if !p.expectPeek(lexer.To) {
-		p.errorf("err: illegal token. Expected 'to', found %s at line %d", p.peek.Val, p.peek.Line)
-		return nil
-	}
-
-	if !p.expectPeek(lexer.String) {
-		p.errorf("err: illegal token. Expected string, found %s at line %d", p.peek.Val, p.peek.Line)
-		return nil
-	}
-	write.Dest = p.cur.Val
-
-	p.advance()
-	return write
-}
-
-func (p *Parser) parsePrintCommand() ast.Command {
-	pr := &ast.Print{}
-	if !p.expectPeek(lexer.String) {
-		p.errorf("err: illegal token. Expected string, found %s at line %d", p.peek.Val, p.peek.Line)
-		return nil
-	}
-
-	pr.Str = p.cur.Val
-	p.advance()
-	return pr
-}
-
-func (p *Parser) parseShowCommand() ast.Command {
-	show := &ast.Show{}
-	p.advance()
-
-	show.Expr = p.parseExpression(lowest)
-	if show.Expr == nil {
-		return nil
-	}
-
-	p.advance()
-	return show
-}
-
-func (p *Parser) parseTimeCommand() ast.Command {
-	time := &ast.Time{}
-	p.advance()
-
-	time.Command = p.parseCommand()
-	if time.Command == nil {
-		return nil
-	}
-
-	if !p.curTokenIs(lexer.NewLine) {
-		p.advance()
-	}
-
-	return time
-}
 
