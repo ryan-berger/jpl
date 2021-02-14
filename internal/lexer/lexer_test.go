@@ -145,11 +145,11 @@ fn example(i : int, j : int) {
 			{Type: LParen, Val: "(", Line: 7},
 			{Type: Variable, Val: "i", Line: 7},
 			{Type: Colon, Val: ":", Line: 7},
-			{Type: Variable, Val: "int", Line: 7},
+			{Type: Int, Val: "int", Line: 7},
 			{Type: Comma, Val: ",", Line: 7},
 			{Type: Variable, Val: "j", Line: 7},
 			{Type: Colon, Val: ":", Line: 7},
-			{Type: Variable, Val: "int", Line: 7},
+			{Type: Int, Val: "int", Line: 7},
 			{Type: RParen, Val: ")", Line: 7},
 			{Type: LCurly, Val: "{", Line: 7},
 			{Type: NewLine, Val: "\n", Line: 7},
@@ -172,11 +172,11 @@ fn example(i : int, j : int) {
 			{Type: LParen, Val: "(", Line: 1},
 			{Type: Variable, Val: "i", Line: 1},
 			{Type: Colon, Val: ":", Line: 1},
-			{Type: Variable, Val: "int", Line: 1},
+			{Type: Int, Val: "int", Line: 1},
 			{Type: Comma, Val: ",", Line: 1},
 			{Type: Variable, Val: "j", Line: 1},
 			{Type: Colon, Val: ":", Line: 1},
-			{Type: Variable, Val: "int", Line: 1},
+			{Type: Int, Val: "int", Line: 1},
 			{Type: RParen, Val: ")", Line: 1},
 			{Type: LCurly, Val: "{", Line: 1},
 			{Type: NewLine, Val: "\n", Line: 1},
@@ -280,15 +280,15 @@ fn example(i : int, j : int) {
 			{Type: LCurly, Val: "{", Line: 1},
 			{Type: Variable, Val: "x", Line: 1},
 			{Type: Colon, Val: ":", Line: 1},
-			{Type: Variable, Val: "float", Line: 1},
+			{Type: Float, Val: "float", Line: 1},
 			{Type: Comma, Val: ",", Line: 1},
 			{Type: Variable, Val: "y", Line: 1},
 			{Type: Colon, Val: ":", Line: 1},
-			{Type: Variable, Val: "float", Line: 1},
+			{Type: Float, Val: "float", Line: 1},
 			{Type: RCurly, Val: "}", Line: 1},
 			{Type: RParen, Val: ")", Line: 1},
 			{Type: Colon, Val: ":", Line: 1},
-			{Type: Variable, Val: "float3", Line: 1},
+			{Type: Float3, Val: "float3", Line: 1},
 			{Type: LCurly, Val: "{", Line: 1},
 			{Type: NewLine, Val: "\n", Line: 1},
 			{Type: Let, Val: "let", Line: 3},
@@ -351,10 +351,42 @@ fn example(i : int, j : int) {
 			{Type: EOF},
 		},
 	},
+	{
+		input: `fn my_fn(x : int) : int { return x }`,
+		tokens: []Token{
+			{Type: Function, Val: "fn", Line: 1},
+			{Type: Variable, Val: "my_fn", Line: 1},
+			{Type: LParen, Val: "(", Line: 1},
+			{Type: Variable, Val: "x", Line: 1},
+			{Type: Colon, Val: ":", Line: 1},
+			{Type: Int, Val: "int", Line: 1},
+			{Type: RParen, Val: ")", Line: 1},
+			{Type: Colon, Val: ":", Line: 1},
+			{Type: Int, Val: "int", Line: 1},
+			{Type: LCurly, Val: "{", Line: 1},
+			{Type: Return, Val: "return", Line: 1},
+			{Type: Variable, Val: "x", Line: 1},
+			{Type: RCurly, Val: "}", Line: 1},
+			{Type: EOF},
+		},
+
+	},
+	{
+		input: "return .38\ntime write",
+		tokens: []Token{
+			{Type: Return, Val: "return", Line: 1},
+			{Type: FloatLiteral, Val: ".38", Line: 1},
+			{Type: NewLine, Val: "\n", Line: 1},
+			{Type: Time, Val: "time", Line: 2},
+			{Type: Write, Val: "write", Line: 2},
+			{Type: EOF},
+		},
+	},
 }
 
 func TestLexer(t *testing.T) {
-	for _, test := range tests {
+	for i, test := range tests {
+		fmt.Println(i)
 		l := NewLexer(test.input)
 		tokens, _ := l.LexAll()
 		for _, tok := range tokens {

@@ -1,2 +1,4 @@
 *.my-output
+*.output
+*.output.pp
 jpl

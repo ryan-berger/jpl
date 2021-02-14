@@ -38,7 +38,7 @@ func (l *Lexer) readChar() {
 
 func (l *Lexer) readIdentifier() string {
 	pos := l.position
-	for isAlphabetic(l.ch) || isNumeric(l.ch) || l.ch == '_' {
+	for isAlphabetic(l.ch) || isNumeric(l.ch) || l.ch == '_' || l.ch == '.' {
 		l.readChar()
 	}
 	return l.input[pos:l.position]
@@ -175,6 +175,11 @@ var keywords = map[string]TokenType{
 	"write":     Write,
 	"to":        To,
 	"attribute": Attribute,
+	// types
+	"int":    Int,
+	"float":  Float,
+	"float3": Float3,
+	"float4": Float4,
 }
 
 func (l *Lexer) LexAll() ([]Token, bool) {
@@ -292,7 +297,7 @@ func (l *Lexer) NextToken() Token {
 			return l.errorf("error, expected number received %s", string(l.peek()))
 		}
 		l.readChar()
-		t = newTokenString(FloatLiteral, fmt.Sprintf(".%s", l.readDigits()), l.lineNumber)
+		return newTokenString(FloatLiteral, fmt.Sprintf(".%s", l.readDigits()), l.lineNumber)
 	case '+':
 		t = newToken(Plus, l.ch, l.lineNumber)
 	case '-':
@@ -338,7 +343,7 @@ func (l *Lexer) NextToken() Token {
 			return l.readNumber()
 		}
 		// "assertion" in Go
-		panic(fmt.Sprintf("error, no token match to token: %s", string(l.ch)))
+		l.errorf("error, no token match to token: %s", string(l.ch))
 	}
 
 	l.readChar()

@@ -1,0 +1,437 @@
+// OVERVIEW:
+// In Go there is no such things as classes, only interfaces.
+// Interfaces can implement interfaces via composition. I am using interfaces
+// to imitate classes/inheritance.
+
+// In order to implement print, I've used an interface, SExpr, in place of a "Print" method
+// The String() method is used _specificially_ for fmt.Sprintf() or fmt.Println(), and not this assignment
+
+
+/*
+------------------------------------
+----------------AST-----------------
+------------------------------------
+*/
+
+// COMMANDS:
+type Command interface {
+	SExpr
+	String() string
+	command()
+}
+
+type Read struct {
+	Type     string
+	Src      string
+	Argument Argument
+}
+
+func (r *Read) SExpr() string {
+	return fmt.Sprintf("(ReadImageCmd %s %s)", r.Src, r.Argument.SExpr(),)
+}
+
+func (r *Read) String() string {
+	return fmt.Sprintf("read %s %s to %s", r.Type, r.Src, r.Argument)
+}
+func (r *Read) command() {}
+
+
+type Write struct {
+	Type string
+	Expr Expression
+	Dest string
+}
+
+func (w *Write) SExpr() string {
+	return fmt.Sprintf("(WriteImageCmd %s %s)", w.Expr.SExpr(), w.Dest)
+}
+
+func (w *Write) String() string {
+	return fmt.Sprintf("write %s %s to %s", w.Type, w.Expr, w.Dest)
+}
+func (w *Write) command() {}
+
+
+type Show struct {
+	Expr Expression
+}
+
+func (s *Show) SExpr() string {
+	return fmt.Sprintf("(ShowCmd %s)", s.Expr.SExpr())
+}
+
+
+func (s *Show) String() string {
+	return fmt.Sprintf("show %s", s.Expr)
+}
+func (s *Show) command() {}
+
+type Print struct {
+	Str string
+}
+
+func (p *Print) SExpr() string {
+	return fmt.Sprintf("(PrintCmd %s)", p.Str)
+}
+
+
+func (p *Print) String() string {
+	return fmt.Sprintf("print %s", p.Str)
+}
+
+func (p *Print) command() {}
+
+
+type Time struct {
+	Command Command
+}
+
+func (t *Time) SExpr() string {
+	cmd := t.Command.SExpr()
+	if _, ok := t.Command.(Statement); ok {
+		cmd = fmt.Sprintf("(StmtCmd %s)", cmd)
+	}
+	return fmt.Sprintf("(TimeCmd %s)", cmd)
+}
+
+func (t *Time) String() string {
+	return fmt.Sprintf("time %s", t.Command)
+}
+func (t *Time) command() {}
+
+
+// STATEMENTS:
+type Statement interface {
+	Command
+	statement()
+}
+
+type LValue interface {
+	SExpr
+	String() string
+	lValue()
+}
+
+type LetStatement struct {
+	LValue LValue
+	Expr   Expression
+}
+
+func (l *LetStatement) SExpr() string {
+	return fmt.Sprintf("(LetStmt (ArgLValue %s) %s)", l.LValue.SExpr(), l.Expr.SExpr())
+}
+
+func (l *LetStatement) command()   {}
+func (l *LetStatement) statement() {}
+
+func (l *LetStatement) String() string {
+	return fmt.Sprintf("let %s = %s", l.LValue, l.Expr)
+}
+
+
+type ReturnStatement struct {
+	Expr Expression
+}
+
+func (r *ReturnStatement) SExpr() string {
+	return fmt.Sprintf("(ReturnStmt %s)", r.Expr.SExpr())
+}
+
+func (r *ReturnStatement) String() string {
+	return fmt.Sprintf("return %s", r.Expr.String())
+}
+func (r *ReturnStatement) command()   {}
+func (r *ReturnStatement) statement() {}
+
+
+type AssertStatement struct {
+	Expr    Expression
+	Message string
+}
+
+func (a *AssertStatement) SExpr() string {
+	return fmt.Sprintf("(AssertStmt %s %s)", a.Expr.SExpr(), a.Message)
+}
+
+func (a *AssertStatement) String() string {
+	return fmt.Sprintf("assert %s , %s", a.Expr.String(), a.Message)
+}
+
+func (a *AssertStatement) command()   {}
+func (a *AssertStatement) statement() {}
+
+
+// LVALUE:
+type Argument interface {
+	LValue
+	argument()
+}
+
+// ARGUMENT
+type VariableArgument struct {
+	Variable string
+}
+
+func (v *VariableArgument) SExpr() string {
+	return fmt.Sprintf("(VarArgument %s)", v.Variable)
+}
+
+func (v *VariableArgument) String() string { return v.Variable }
+func (v *VariableArgument) argument()      {}
+func (v *VariableArgument) lValue()        {}
+
+
+// EXPRESSIONS:
+type Expression interface {
+	SExpr
+	String() string
+	expression()
+}
+
+// IntExpression
+type IntExpression struct {
+	Val int64
+}
+
+func (i *IntExpression) SExpr() string {
+	return fmt.Sprintf("(IntExpr %d)", i.Val)
+}
+
+func (i *IntExpression) String() string {
+	return fmt.Sprintf("%d", i.Val)
+}
+func (i *IntExpression) expression() {}
+
+// IdentifierExpression
+type IdentifierExpression struct {
+	Identifier string
+}
+
+func (i *IdentifierExpression) SExpr() string {
+	return fmt.Sprintf("(VarExpr %s)", i.Identifier)
+}
+
+func (i *IdentifierExpression) String() string {
+	return i.Identifier
+}
+func (i *IdentifierExpression) expression() {}
+
+type CallExpression struct {
+	Identifier string
+	Arguments  []Expression
+}
+
+func (c *CallExpression) SExpr() string {
+	strs := make([]string, len(c.Arguments))
+	for i, expr := range c.Arguments {
+		strs[i] = expr.SExpr()
+	}
+
+	return fmt.Sprintf("(CallExpr %s %s)", c.Identifier, strings.Join(strs, " "))
+}
+
+func (c *CallExpression) String() string {
+	strs := make([]string, len(c.Arguments))
+	for i, expr := range c.Arguments {
+		strs[i] = expr.String()
+	}
+
+	return fmt.Sprintf("%s(%s)", c.Identifier, strings.Join(strs, ", "))
+}
+func (c *CallExpression) expression() {}
+
+// FloatExpression
+type FloatExpression struct {
+	Val float64
+}
+
+func (f *FloatExpression) SExpr() string {
+	return fmt.Sprintf("(FloatExpr %d)", int64(f.Val))
+}
+
+func (f *FloatExpression) String() string {
+	return fmt.Sprintf("%f", f.Val)
+}
+func (f *FloatExpression) expression() {}
+
+
+
+
+/*
+------------------------------------
+--------------PARSER----------------
+------------------------------------
+*/
+
+type Parser struct {
+	tokens   []lexer.Token
+	position int
+	cur      lexer.Token
+	peek     lexer.Token
+
+	error error
+
+	prefixParseFns map[lexer.TokenType]prefixParseFn
+	infixParseFns  map[lexer.TokenType]infixParseFn
+}
+
+// Helpers
+func (p *Parser) advance() {
+	p.cur = p.peek
+	p.peek = p.tokens[p.position]
+	if p.position != len(p.tokens)-1 {
+		p.position++
+	}
+}
+
+func (p *Parser) expectPeek(tokType lexer.TokenType) bool {
+	if p.peek.Type == tokType {
+		p.advance()
+		return true
+	}
+	return false
+}
+
+func (p *Parser) curTokenIs(tokType lexer.TokenType) bool {
+	return p.cur.Type == tokType
+}
+
+func (p *Parser) peekTokenIs(tokType lexer.TokenType) bool {
+	return p.peek.Type == tokType
+}
+
+// Constructor
+func NewParser(tokens []lexer.Token) *Parser {
+	p := &Parser{
+		tokens:   tokens,
+		position: 0,
+
+		prefixParseFns: make(map[lexer.TokenType]prefixParseFn),
+		infixParseFns:  make(map[lexer.TokenType]infixParseFn),
+
+		cmdParseFns: make(map[lexer.TokenType]func() ast.Command),
+	}
+
+	p.advance()
+	p.advance()
+
+	// "prefix" operators
+	p.registerPrefixFn(lexer.IntLiteral, p.parseInteger)
+	p.registerPrefixFn(lexer.FloatLiteral, p.parseFloat)
+	p.registerPrefixFn(lexer.Variable, p.parseIdentifier)
+
+	// type casts should be call expressions
+	p.registerPrefixFn(lexer.Int, p.parseCallExpression)
+	p.registerPrefixFn(lexer.Float, p.parseCallExpression)
+	p.registerPrefixFn(lexer.Float3, p.parseCallExpression)
+	p.registerPrefixFn(lexer.Float4, p.parseCallExpression)
+
+	return p
+}
+
+func (p *Parser) ParseProgram(debug bool) ([]ast.Command, error) {
+	var commands []ast.Command
+	if p.curTokenIs(lexer.NewLine) {
+		p.advance() // newline can be at the beginning of the file sometime
+	}
+
+	for !p.curTokenIs(lexer.EOF) {
+		cmd := p.parseCommand()
+		if cmd != nil {
+			commands = append(commands, cmd)
+		} else {
+			return nil, p.error
+		}
+
+		p.advance()
+	}
+
+	if debug {
+		for _, c := range commands {
+			expr := c.SExpr()
+			if stmt, ok := c.(ast.Statement); ok {
+				expr = fmt.Sprintf("(StmtCmd %s)", stmt.SExpr())
+			}
+			fmt.Println(expr)
+		}
+	}
+
+	return commands, nil
+}
+
+// parseExpression takes a single parameter pr, which is th precedence of the current operator
+// NOTE TO INSTRUCTORS: I already have precedence implemented, but I've pulled most of it out to simplify
+func (p *Parser) parseExpression(pr precedence) ast.Expression {
+	prefix := p.prefixParseFns[p.cur.Type]
+	if prefix == nil {
+		p.errorf("error, unable to parse prefix operator %s at line %d", p.cur.Val, p.cur.Line)
+		return nil
+	}
+
+	leftExp := prefix()
+	for (!p.peekTokenIs(lexer.NewLine) || !p.peekTokenIs(lexer.EOF)) && pr < p.peekPrecedence() {
+		infix := p.infixParseFns[p.peek.Type]
+		if infix == nil {
+			return leftExp
+		}
+		p.advance()
+		leftExp = infix(leftExp)
+	}
+
+	return leftExp
+}
+
+func (p *Parser) parseInteger() ast.Expression {
+	expr := &ast.IntExpression{}
+	val, err := strconv.ParseInt(p.cur.Val, 10, 64)
+	if err != nil {
+		p.errorf("error, integer literal %s too large for a 64 bit integer at line %d", p.cur.Val, p.cur.Line)
+		return nil
+	}
+
+	expr.Val = val
+	return expr
+}
+
+func (p *Parser) parseFloat() ast.Expression {
+	expr := &ast.FloatExpression{}
+	val, err := strconv.ParseFloat(p.cur.Val, 64)
+	if err != nil {
+		p.errorf("error, float %s too large for a 64 bit float at line %d", p.cur.Val, p.cur.Line)
+		return nil
+	}
+	expr.Val = val
+	return expr
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	val := p.cur.Val
+	if p.peekTokenIs(lexer.LParen) {
+		return p.parseCallExpression()
+	}
+	return &ast.IdentifierExpression{Identifier: val}
+}
+
+func (p *Parser) parseCallExpression() ast.Expression {
+	val := p.cur.Val
+	if !p.expectPeek(lexer.LParen) {
+		return nil
+	}
+
+	var exprs []ast.Expression
+	ok := p.parseList(lexer.RParen, func() bool { // helper method to parse a list
+		expr := p.parseExpression(lowest)
+		if expr == nil {
+			return false
+		}
+		exprs = append(exprs, expr)
+		return true
+	})
+
+	if !ok {
+		return nil
+	}
+	return &ast.CallExpression{Identifier: val, Arguments: exprs}
+}
+
+
