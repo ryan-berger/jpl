@@ -243,9 +243,11 @@ func (l *Lexer) searchNextToken() *Token {
 				return &tok
 			}
 			l.readChar() // advance to newline character
-			l.readChar() // advance past newline character
+
 			l.lineNumber++
 			l.linePos = 0
+
+			l.readChar() // advance past newline character
 		default: // we don't have anything to skip
 			return nil
 		}
@@ -318,7 +320,7 @@ func (l *Lexer) NextToken() Token {
 			return l.errorf("error, expected number received %s", string(l.peek()))
 		}
 		l.readChar()
-		return l.newTokenString(FloatLiteral, fmt.Sprintf(".%s", l.readDigits()))
+		return l.newOverflowedToken(FloatLiteral, fmt.Sprintf(".%s", l.readDigits()))
 	case '+':
 		t = l.newToken(Plus, l.ch)
 	case '-':
