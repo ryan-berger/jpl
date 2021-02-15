@@ -14,35 +14,35 @@ var tests = []struct {
 	{
 		input: "&&||%{}[]*!/* */!=/* other comment */<=/**/>=/**/<>/**/==",
 		tokens: []Token{
-			{Type: And, Val: "&&", Line: 1},
-			{Type: Or, Val: "||", Line: 1},
-			{Type: Mod, Val: "%", Line: 1},
-			{Type: LCurly, Val: "{", Line: 1},
-			{Type: RCurly, Val: "}", Line: 1},
-			{Type: LBrace, Val: "[", Line: 1},
-			{Type: RBrace, Val: "]", Line: 1},
-			{Type: Multiply, Val: "*", Line: 1},
-			{Type: Not, Val: "!", Line: 1},
-			{Type: NotEqualTo, Val: "!=", Line: 1},
-			{Type: LessThanOrEqual, Val: "<=", Line: 1},
-			{Type: GreaterThanOrEqual, Val: ">=", Line: 1},
-			{Type: LessThan, Val: "<", Line: 1},
-			{Type: GreaterThan, Val: ">", Line: 1},
-			{Type: EqualTo, Val: "==", Line: 1},
+			{Type: And, Val: "&&", Line: 1, Character: 0},
+			{Type: Or, Val: "||", Line: 1, Character: 2},
+			{Type: Mod, Val: "%", Line: 1, Character: 4},
+			{Type: LCurly, Val: "{", Line: 1, Character: 5},
+			{Type: RCurly, Val: "}", Line: 1, Character: 6},
+			{Type: LBrace, Val: "[", Line: 1, Character: 7},
+			{Type: RBrace, Val: "]", Line: 1, Character: 8},
+			{Type: Multiply, Val: "*", Line: 1, Character: 9},
+			{Type: Not, Val: "!", Line: 1, Character: 10},
+			{Type: NotEqualTo, Val: "!=", Line: 1, Character: 16},
+			{Type: LessThanOrEqual, Val: "<=", Line: 1, Character: 37},
+			{Type: GreaterThanOrEqual, Val: ">=", Line: 1, Character: 43},
+			{Type: LessThan, Val: "<", Line: 1, Character: 49},
+			{Type: GreaterThan, Val: ">", Line: 1, Character: 50},
+			{Type: EqualTo, Val: "==", Line: 1, Character: 55},
 			{Type: EOF},
 		},
 	},
 	{
 		input: `&|`,
 		tokens: []Token{
-			{Type: ILLEGAL, Val: "error, expected '&' received '|'", Line: 1},
+			{Type: ILLEGAL, Val: "error, expected '&' received '|' at line 1 position 1", Line: 1, Character: 1},
 			{Type: EOF},
 		},
 	},
 	{
 		input: `|&`,
 		tokens: []Token{
-			{Type: ILLEGAL, Val: "error, expected '|' received '&'", Line: 1},
+			{Type: ILLEGAL, Val: "error, expected '|' received '&' at line 1 position 1", Line: 1, Character: 1},
 			{Type: EOF},
 		},
 	},
@@ -53,22 +53,22 @@ test = 0
 
 fn yeet`,
 		tokens: []Token{
-			{Type: RCurly, Val: "}", Line: 1},
-			{Type: NewLine, Val: "\n", Line: 1},
-			{Type: Variable, Val: "test", Line: 3},
-			{Type: Assign, Val: "=", Line: 3},
-			{Type: IntLiteral, Val: "0", Line: 3},
-			{Type: NewLine, Val: "\n", Line: 3},
-			{Type: Function, Val: "fn", Line: 5},
-			{Type: Variable, Val: "yeet", Line: 5},
+			{Type: RCurly, Val: "}", Line: 1, Character: 0},
+			{Type: NewLine, Val: "\n", Line: 1, Character: 1},
+			{Type: Variable, Val: "test", Line: 3, Character: 0},
+			{Type: Assign, Val: "=", Line: 3, Character: 5},
+			{Type: IntLiteral, Val: "0", Line: 3, Character: 7},
+			{Type: NewLine, Val: "\n", Line: 3, Character: 8},
+			{Type: Function, Val: "fn", Line: 5, Character: 0},
+			{Type: Variable, Val: "yeet", Line: 5, Character: 3},
 			{Type: EOF},
 		},
 	},
 	{
 		input: `print "�"`,
 		tokens: []Token{
-			{Type: Print, Val: "print", Line: 1},
-			{Type: ILLEGAL, Val: "error, expected end quote received: ï", Line: 1},
+			{Type: Print, Val: "print", Line: 1, Character: 0},
+			{Type: ILLEGAL, Val: "error, expected end quote received: ï at line 1 position 8", Line: 1, Character: 8},
 			{Type: EOF},
 		},
 	},
@@ -82,22 +82,22 @@ fn yeet`,
 	{
 		input: `show inc(33)`,
 		tokens: []Token{
-			{Type: Show, Val: "show", Line: 1},
-			{Type: Variable, Val: "inc", Line: 1},
-			{Type: LParen, Val: "(", Line: 1},
-			{Type: IntLiteral, Val: "33", Line: 1},
-			{Type: RParen, Val: ")", Line: 1},
+			{Type: Show, Val: "show", Line: 1, Character: 0},
+			{Type: Variable, Val: "inc", Line: 1, Character: 5},
+			{Type: LParen, Val: "(", Line: 1, Character: 8},
+			{Type: IntLiteral, Val: "33", Line: 1, Character: 9},
+			{Type: RParen, Val: ")", Line: 1, Character: 11},
 			{Type: EOF},
 		},
 	},
 	{
 		input: `show inc(3.3)`,
 		tokens: []Token{
-			{Type: Show, Val: "show", Line: 1},
-			{Type: Variable, Val: "inc", Line: 1},
-			{Type: LParen, Val: "(", Line: 1},
-			{Type: FloatLiteral, Val: "3.3", Line: 1},
-			{Type: RParen, Val: ")", Line: 1},
+			{Type: Show, Val: "show", Line: 1, Character: 0},
+			{Type: Variable, Val: "inc", Line: 1, Character: 5},
+			{Type: LParen, Val: "(", Line: 1, Character: 8},
+			{Type: FloatLiteral, Val: "3.3", Line: 1, Character: 9},
+			{Type: RParen, Val: ")", Line: 1, Character: 12},
 			{Type: EOF},
 		},
 	},
@@ -105,13 +105,13 @@ fn yeet`,
 		input: `show inc(3.3, \
 3.3, 3.5)`,
 		tokens: []Token{
-			{Type: Show, Val: "show", Line: 1},
-			{Type: Variable, Val: "inc", Line: 1},
-			{Type: LParen, Val: "(", Line: 1},
-			{Type: FloatLiteral, Val: "3.3", Line: 1},
-			{Type: Comma, Val: ",", Line: 1},
-			{Type: FloatLiteral, Val: "3.3", Line: 2},
-			{Type: Comma, Val: ",", Line: 2},
+			{Type: Show, Val: "show", Line: 1, Character: 0},
+			{Type: Variable, Val: "inc", Line: 1, Character: 5},
+			{Type: LParen, Val: "(", Line: 1, Character: 8},
+			{Type: FloatLiteral, Val: "3.3", Line: 1, Character: 9},
+			{Type: Comma, Val: ",", Line: 1, Character: 10},
+			{Type: FloatLiteral, Val: "3.3", Line: 2, Character: 0},
+			{Type: Comma, Val: ",", Line: 2, Character: 3},
 			{Type: FloatLiteral, Val: "3.5", Line: 2},
 			{Type: RParen, Val: ")", Line: 2},
 			{Type: EOF},
@@ -389,10 +389,10 @@ func TestLexer(t *testing.T) {
 		fmt.Println(i)
 		l := NewLexer(test.input)
 		tokens, _ := l.LexAll()
-		for _, tok := range tokens {
-			fmt.Println(tok.DumpString())
-		}
+		//for _, tok := range tokens {
+		//	fmt.Println(tok.DumpString())
+		//}
 		assert.Equal(t, test.tokens, tokens)
-		fmt.Println("-------------")
+		//fmt.Println("-------------")
 	}
 }
