@@ -72,9 +72,10 @@ const (
 )
 
 type Token struct {
-	Type TokenType
-	Val  string
-	Line int
+	Type      TokenType
+	Val       string
+	Line      int
+	Character int
 }
 
 var typeToDump = map[TokenType]string{
