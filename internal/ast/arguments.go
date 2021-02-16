@@ -12,6 +12,7 @@ type Argument interface {
 
 type VariableArgument struct {
 	Variable string
+	Location
 }
 
 func (v *VariableArgument) SExpr() string {
@@ -25,6 +26,7 @@ func (v *VariableArgument) lValue()        {}
 type VariableArr struct {
 	Variable  string
 	Variables []string
+	Location
 }
 // TODO: make this work when needed
 func (v *VariableArr) SExpr() string { return "" }

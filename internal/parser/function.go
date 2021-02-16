@@ -6,7 +6,12 @@ import (
 )
 
 func (p *Parser) parseFunction() ast.Command {
-	function := &ast.Function{}
+	function := &ast.Function{
+		Location: ast.Location{
+			Line: p.cur.Line,
+			Pos:  p.cur.Character,
+		},
+	}
 
 	if !p.expectPeek(lexer.Variable) {
 		return nil
@@ -84,14 +89,14 @@ func (p *Parser) parseBindings() []ast.Binding {
 }
 
 func (p *Parser) parseTupleBinding() ast.Binding {
-	binding := ast.TupleBinding{}
+	binding := &ast.TupleBinding{}
 
 	ok := p.parseList(lexer.RCurly, func() bool {
 		bind := p.parseBinding()
 		if bind == nil {
 			return false
 		}
-		binding = append(binding, bind)
+		binding.Bindings = append(binding.Bindings, bind)
 		return true
 	})
 

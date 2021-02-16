@@ -6,7 +6,12 @@ import (
 )
 
 func (p *Parser) parseLetStatement() ast.Statement {
-	let := &ast.LetStatement{}
+	let := &ast.LetStatement{
+		Location: ast.Location{
+			Line: p.cur.Line,
+			Pos:  p.cur.Character,
+		},
+	}
 	p.advance()
 
 	if let.LValue = p.parseLValue(); let.LValue == nil {
@@ -40,7 +45,12 @@ func (p *Parser) parseLValue() ast.LValue {
 }
 
 func (p *Parser) parseTupleLValue() ast.LValue {
-	lTuple := &ast.LTuple{}
+	lTuple := &ast.LTuple{
+		Location: ast.Location{
+			Line: p.cur.Line,
+			Pos:  p.cur.Character,
+		},
+	}
 
 	ok := p.parseList(lexer.RCurly, func() bool {
 		expr := p.parseLValue()
@@ -59,10 +69,17 @@ func (p *Parser) parseTupleLValue() ast.LValue {
 }
 
 func (p *Parser) parseArgument() ast.Argument {
-	argName := p.cur.Val // TODO: check to make sure no keyword
+	arg := &ast.VariableArr{
+		Variable: p.cur.Val, // TODO: check to make sure no keyword
+		Location: ast.Location{
+			Line: p.cur.Line,
+			Pos:  p.cur.Character,
+		},
+	}
+
 	if !p.expectPeek(lexer.LBrace) {
 		return &ast.VariableArgument{
-			Variable: argName,
+			Variable: p.cur.Val,
 		}
 	}
 
@@ -79,8 +96,5 @@ func (p *Parser) parseArgument() ast.Argument {
 		return nil
 	}
 
-	return &ast.VariableArr{
-		Variable:  argName,
-		Variables: args,
-	}
+	return arg
 }

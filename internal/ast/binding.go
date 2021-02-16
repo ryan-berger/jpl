@@ -6,13 +6,18 @@ import (
 )
 
 type Binding interface {
-	String() string
+	Node
 	binding()
 }
 
 type TypeBind struct {
 	Argument Argument
 	Type     Type
+	Location
+}
+
+func (b *TypeBind) SExpr() string {
+	panic("implement me")
 }
 
 func (b *TypeBind) String() string {
@@ -20,17 +25,25 @@ func (b *TypeBind) String() string {
 }
 func (b *TypeBind) binding() {}
 
-type TupleBinding []Binding
+type TupleBinding struct {
+	Bindings []Binding
+	Location
+}
 
-func (b TupleBinding) String() string {
-	strs := make([]string, len(b))
-	for i, b := range b {
+func (b *TupleBinding) SExpr() string {
+	panic("implement me")
+}
+
+func (b *TupleBinding) String() string {
+	strs := make([]string, len(b.Bindings))
+	for i, b := range b.Bindings {
 		strs[i] = b.String()
 	}
 
 	return fmt.Sprintf("{%s}", strings.Join(strs, ", "))
 }
-func (b TupleBinding) binding() {}
+func (b *TupleBinding) binding() {}
+
 
 type Type interface {
 	String() string
