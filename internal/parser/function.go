@@ -134,4 +134,5 @@ func (p *Parser) parseBinding() ast.Binding {
 var tokenToType = map[lexer.TokenType]ast.Type{
 	lexer.Float: ast.Float,
 	lexer.Int:   ast.Int,
+	lexer.Bool:  ast.Boolean,
 }

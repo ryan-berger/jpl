@@ -44,7 +44,6 @@ func (b *TupleBinding) String() string {
 }
 func (b *TupleBinding) binding() {}
 
-
 type Type interface {
 	String() string
 	typ()
@@ -56,6 +55,9 @@ func (b BasicType) String() string {
 	if b == Int {
 		return "int"
 	}
+	if b == Boolean {
+		return "bool"
+	}
 	return "float"
 }
 
@@ -64,6 +66,7 @@ func (b BasicType) typ() {}
 const (
 	Int BasicType = iota
 	Float
+	Boolean
 )
 
 type ArrType struct {
