@@ -12,7 +12,7 @@ func checkIf(ifExpr *ast.IfExpression, table SymbolTable) (Type, error) {
 		return nil, err
 	}
 	if !condType.Equal(Boolean) {
-		return nil, fmt.Errorf("conditional expression is not Boolean")
+		return nil, fmt.Errorf("conditional expression is not boolean")
 	}
 
 	consType, err := ExpressionType(ifExpr.Consequence, table)
@@ -54,7 +54,7 @@ func checkCallExpr(expr *ast.CallExpression, table SymbolTable) (Type, error) {
 
 	call, ok := symb.(*Function)
 	if !ok {
-		return nil, fmt.Errorf("found function name, expected identifier %s", expr.Identifier)
+		return nil, fmt.Errorf("found identifier, expected function name %s", expr.Identifier)
 	}
 
 	if len(call.Args) != len(expr.Arguments) {
@@ -95,7 +95,7 @@ func checkInfixExpr(expression *ast.InfixExpression, table SymbolTable) (Type, e
 			return nil, fmt.Errorf("type error left operand")
 		}
 		if !rightType.Equal(Boolean) {
-			return nil, fmt.Errorf("type error left operand")
+			return nil, fmt.Errorf("type error right operand")
 		}
 		return Boolean, nil
 	}
@@ -133,7 +133,7 @@ func checkPrefixExpr(expr *ast.PrefixExpression, table SymbolTable) (Type, error
 	switch expr.Op {
 	case "!":
 		if !exprType.Equal(Boolean) {
-			return nil, fmt.Errorf("type error, expected Boolean on right hand side of '!'")
+			return nil, fmt.Errorf("type error, expected boolean on right hand side of '!'")
 		}
 		return Boolean, nil
 	case "-":
@@ -154,7 +154,7 @@ func checkTupleRef(expr *ast.TupleRefExpression, table SymbolTable) (Type, error
 
 	idx, ok := expr.Index.(*ast.IntExpression)
 	if !ok {
-		return nil, fmt.Errorf("expected Integer literal received expression")
+		return nil, fmt.Errorf("expected integer literal received expression")
 	}
 
 	tupType, ok := tup.(*Tuple)
@@ -191,7 +191,7 @@ func checkArrayRef(expr *ast.ArrayRefExpression, table SymbolTable) (Type, error
 			return nil, err
 		}
 		if !idxTyp.Equal(Integer) {
-			return nil, fmt.Errorf("non-intger index expression of array")
+			return nil, fmt.Errorf("non-integer index expression of array")
 		}
 	}
 
@@ -210,7 +210,7 @@ func checkSumTransform(expr *ast.SumTransform, table SymbolTable) (Type, error) 
 		}
 
 		if !bindType.Equal(Integer) {
-			return nil, fmt.Errorf("bindArg expr initializer for %s returns non-Integer",
+			return nil, fmt.Errorf("bindArg expr initializer for %s returns non-integer",
 				binding.Variable)
 		}
 
@@ -295,6 +295,9 @@ func ExpressionType(expression ast.Expression, table SymbolTable) (Type, error) 
 		return checkTuple(expr, table)
 	case *ast.ArrayExpression:
 		return checkArray(expr, table)
+	default:
+		panic("typechecking not implemented")
+
 	}
 	return nil, nil
 }

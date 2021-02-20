@@ -9,10 +9,10 @@ import (
 
 func TestSymbolTable_Copy(t *testing.T) {
 	table1 := NewSymbolTable()
-	table1["test"] = &Identifier{Type: boolean}
-	table1["x"] = &Identifier{Type: boolean}
+	table1["test"] = &Identifier{Type: Boolean}
+	table1["x"] = &Identifier{Type: Boolean}
 	table2 := table1.Copy()
-	table2["y"] = &Identifier{Type: boolean}
+	table2["y"] = &Identifier{Type: Boolean}
 
 	fmt.Println(table1, table2)
 

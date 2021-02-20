@@ -19,6 +19,8 @@ func (p *Parser) parseCommand() ast.Command {
 		return p.parseShowCommand()
 	case lexer.Time:
 		return p.parseTimeCommand()
+	case lexer.Function:
+		return p.parseFunction()
 	default:
 		stmt := p.parseStatement()
 		if stmt != nil {

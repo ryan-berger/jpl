@@ -45,7 +45,7 @@ func (p *Parser) parseFunction() ast.Command {
 
 	function.Statements = p.parseStatements()
 
-	if !p.expectPeek(lexer.RCurly) {
+	if !p.curTokenIs(lexer.RCurly) {
 		return nil
 	}
 	p.advance()
