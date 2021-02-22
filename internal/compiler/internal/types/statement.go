@@ -117,7 +117,7 @@ func functionBinding(fun *ast.Function, table SymbolTable) (*Function, error) {
 			}
 
 			if !retTyp.Equal(function.Return) {
-				return nil, fmt.Errorf("function return expects differnent type")
+				return nil, fmt.Errorf("function return expects different type")
 			}
 			return function, nil
 		}
@@ -128,6 +128,46 @@ func functionBinding(fun *ast.Function, table SymbolTable) (*Function, error) {
 	}
 
 	return function, nil
+}
+
+func bindLVal(value ast.LValue, typ Type, table SymbolTable) error {
+	switch lval := value.(type) {
+	case *ast.LTuple:
+		tup, ok := typ.(*Tuple)
+		if !ok {
+			return fmt.Errorf("expected tuple binding")
+		}
+		if len(tup.Types) != len(lval.Args) {
+			return fmt.Errorf("tuples are different shapes")
+		}
+
+		for i, v := range lval.Args {
+			if err := bindLVal(v, tup.Types[i], table); err != nil {
+				return err
+			}
+		}
+	case *ast.VariableArr:
+		arr, ok := typ.(*Array)
+		if !ok {
+			return fmt.Errorf("type must be array")
+		}
+		if arr.Rank != len(lval.Variables) {
+			return fmt.Errorf("rank incorrect for binding: %s", lval.Variable)
+		}
+		table[lval.Variable] = &Identifier{Type: arr}
+		for _, v := range lval.Variables {
+			if _, ok := table[v]; ok {
+				return fmt.Errorf("symbol already bound %s", lval.Variable)
+			}
+			table[v] = &Identifier{Type: Integer}
+		}
+	case *ast.VariableArgument:
+		if _, ok := table[lval.Variable]; ok {
+			return fmt.Errorf("symbol already bound %s", lval.Variable)
+		}
+		table[lval.Variable] = &Identifier{Type: typ}
+	}
+	return nil
 }
 
 func StatementType(statement ast.Statement, table SymbolTable) (bool, error) {
@@ -145,7 +185,9 @@ func StatementType(statement ast.Statement, table SymbolTable) (bool, error) {
 		if err != nil {
 			return false, nil
 		}
-		fmt.Println(rType)
+		if err = bindLVal(stmt.LValue, rType, table); err != nil {
+			return false, err
+		}
 	case *ast.AssertStatement:
 		exprType, err := ExpressionType(stmt.Expr, table)
 		if err != nil {

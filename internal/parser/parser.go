@@ -43,7 +43,7 @@ func NewParser(tokens []lexer.Token) *Parser {
 	p.registerPrefixFn(lexer.LBrace, p.parseArrayExpression)
 	p.registerPrefixFn(lexer.IntLiteral, p.parseInteger)
 	p.registerPrefixFn(lexer.FloatLiteral, p.parseFloat)
-	p.registerPrefixFn(lexer.Bool, p.parseBoolean)
+	p.registerPrefixFn(lexer.BoolLiteral, p.parseBoolean)
 	p.registerPrefixFn(lexer.Variable, p.parseIdentifier)
 	p.registerPrefixFn(lexer.If, p.parseIf)
 	p.registerPrefixFn(lexer.Array, p.parseArrayTransform)

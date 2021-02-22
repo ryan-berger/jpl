@@ -34,7 +34,7 @@ func (p *Parser) parseType() ast.Type {
 	var t ast.Type
 
 	switch p.cur.Type {
-	case lexer.Float, lexer.Int:
+	case lexer.Float, lexer.Int, lexer.Bool:
 		t = tokenToType[p.cur.Type]
 	case lexer.Float3:
 		t = &ast.TupleType{

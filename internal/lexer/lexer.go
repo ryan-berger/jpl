@@ -185,8 +185,8 @@ var keywords = map[string]TokenType{
 	"else":   Else,
 	"return": Return,
 	"array":  Array,
-	"true":   Bool,
-	"false":  Bool,
+	"true":   BoolLiteral,
+	"false":  BoolLiteral,
 	// builtins
 	"print":     Print,
 	"show":      Show,
@@ -202,6 +202,7 @@ var keywords = map[string]TokenType{
 	"float":  Float,
 	"float3": Float3,
 	"float4": Float4,
+	"bool":   Bool,
 }
 
 func (l *Lexer) LexAll() ([]Token, bool) {

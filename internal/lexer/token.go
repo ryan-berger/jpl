@@ -62,6 +62,7 @@ const (
 	String
 	IntLiteral
 	FloatLiteral
+	BoolLiteral
 
 	// Types
 	Int
@@ -141,6 +142,7 @@ var typeToDump = map[TokenType]string{
 	IntLiteral:   "INTVAL",
 	FloatLiteral: "FLOATVAL",
 	String:       "STRING",
+	BoolLiteral:  "VARIABLE",
 }
 
 func (t *Token) DumpString() string {

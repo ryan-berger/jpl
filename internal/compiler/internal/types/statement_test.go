@@ -101,6 +101,20 @@ return {1, [1, 2]}
 		},
 		returnType: &Tuple{Types: []Type{Integer, &Array{Inner: Integer, Rank: 1}}},
 	},
+	{
+		expr: `fn test(x : {float, bool}) : {int, int} {
+return {1, 1}
+}`,
+		bindings:   []Type{
+			&Tuple{
+				Types: []Type{
+					Float,
+					Boolean,
+				},
+			},
+		},
+		returnType: &Tuple{Types: []Type{Integer, Integer}},
+	},
 }
 
 func TestFunction(t *testing.T) {
