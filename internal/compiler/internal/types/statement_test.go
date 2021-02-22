@@ -53,11 +53,53 @@ var validFunctionTests = []struct {
 	returnType Type
 }{
 	{
+		expr: `fn test() : {} {
+}`,
+		bindings:   []Type{},
+		returnType: &Tuple{},
+	},
+	{
 		expr: `fn test() : int {
 return 0
 }`,
 		bindings:   []Type{},
 		returnType: Integer,
+	},
+	{
+		expr: `fn test() : {int, int} {
+return {1, 2}
+}`,
+		bindings:   []Type{},
+		returnType: &Tuple{Types: []Type{Integer, Integer}},
+	},
+	{
+		expr: `fn test({x : int, y[H, W] : int[,]}, z : int) : {int, int} {
+return {1, 2}
+}`,
+		bindings: []Type{
+			&Tuple{
+				Types: []Type{
+					Integer,
+					&Array{Inner: Integer, Rank: 2},
+				},
+			},
+			Integer,
+		},
+		returnType: &Tuple{Types: []Type{Integer, Integer}},
+	},
+	{
+		expr: `fn test({x : int, y[H, W] : int[,]}) : {int, int[]} {
+return {1, [1, 2]}
+}`,
+		bindings:   []Type{
+			&Tuple{
+				Types: []Type{
+					Integer,
+					&Array{Inner: Integer, Rank: 2},
+				},
+			},
+		},
+		returnType: &Tuple{Types: []Type{Integer, &Array{Inner: Integer, Rank: 1}}},
 	},
 }
 
@@ -68,6 +110,10 @@ func TestFunction(t *testing.T) {
 		symb, err := functionBinding(fn, table)
 
 		assert.Nil(t, err)
-		assert.Equal(t, test.returnType, symb.Return)
+		assert.True(t, test.returnType.Equal(symb.Return))
+		assert.Len(t, symb.Args, len(test.bindings))
+		for i, typ := range test.bindings {
+			assert.True(t, symb.Args[i].Equal(typ))
+		}
 	}
 }

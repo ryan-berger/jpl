@@ -58,5 +58,13 @@ func NewSymbolTable() SymbolTable {
 			Args:   []Type{pict, Integer, Integer, Integer, Integer},
 			Return: pict,
 		},
+		"float": &Function{
+			Args:   []Type{Integer},
+			Return: Float,
+		},
+		"int": &Function{
+			Args:   []Type{Float},
+			Return: Integer,
+		},
 	}
 }

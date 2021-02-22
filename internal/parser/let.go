@@ -83,12 +83,11 @@ func (p *Parser) parseArgument() ast.Argument {
 		}
 	}
 
-	var args []string
 	ok := p.parseList(lexer.RBrace, func() bool {
 		if !p.curTokenIs(lexer.Variable) {
 			return false
 		}
-		args = append(args, p.cur.Val)
+		arg.Variables = append(arg.Variables, p.cur.Val)
 		return true
 	})
 

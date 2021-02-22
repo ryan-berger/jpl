@@ -43,6 +43,7 @@ var okTests = []struct {
 	{"(1 + 2) / 3", Integer},
 	{"(1 + 2) / 3", Integer},
 	{"sum[i : 10] i + 3", Integer},
+	{"array[i : 10] [i]", &Array{Inner: Integer, Rank: 1}},
 	{"if true then 10 else 22", Integer},
 	{"if true then 10.11 else 22.23", Float},
 	{"add_ints(10, 11)", Integer},
@@ -147,6 +148,12 @@ var failureTests = []struct{
 	{"sum[i : 10] true && false", "sum returns non-numeric expression"},
 	{"sum[i : x + 10] 1", "unknown symbol x"},
 	{"sum[i : true] 1", "bindArg expr initializer for i returns non-integer"},
+	{"array[i : 10] j + 10", "unknown symbol j"},
+	{"array[i : 10, i : 10] j + 10", "illegal shadowing in sum expr, var: i"},
+	{"array[i : 10, j: 10] [i + j]", "return type of array expression must be of equal rank of number of bindings"},
+	{"array[i : 10] i", "return type of array expression must be array"},
+	{"array[i : x + 10] 1", "unknown symbol x"},
+	{"array[i : true] 1", "bindArg expr initializer for i returns non-integer"},
 }
 
 func TestCheckFailures(t *testing.T) {
@@ -154,7 +161,7 @@ func TestCheckFailures(t *testing.T) {
 	for _, test := range failureTests {
 		expr := parse(t, test.expr)
 		_, err := ExpressionType(expr, table)
-		assert.NotNil(t, err)
+		assert.NotNil(t, err, test.expr)
 		assert.Equal(t, test.err, err.Error())
 	}
 }

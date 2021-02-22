@@ -228,6 +228,38 @@ func checkSumTransform(expr *ast.SumTransform, table SymbolTable) (Type, error) 
 	return exprType, nil
 }
 
+func checkArrayTransform(expr *ast.ArrayTransform, table SymbolTable) (Type, error) {
+	cpy := table.Copy()
+	for _, binding := range expr.OpBindings {
+		if _, ok := cpy[binding.Variable]; ok {
+			return nil, fmt.Errorf("illegal shadowing in sum expr, var: %s", binding.Variable)
+		}
+		bindType, err := ExpressionType(binding.Expr, cpy)
+		if err != nil {
+			return nil, err
+		}
+
+		if !bindType.Equal(Integer) {
+			return nil, fmt.Errorf("bindArg expr initializer for %s returns non-integer",
+				binding.Variable)
+		}
+
+		cpy[binding.Variable] = &Identifier{Type: Integer}
+	}
+	exprType, err := ExpressionType(expr.Expr, cpy)
+	if err != nil {
+		return nil, err
+	}
+
+	if arr, ok := exprType.(*Array); ok {
+		if arr.Rank != len(expr.OpBindings) {
+			return nil, fmt.Errorf("return type of array expression must be of equal rank of number of bindings")
+		}
+		return exprType, nil
+	}
+	return nil, fmt.Errorf("return type of array expression must be array")
+}
+
 func checkTuple(expr *ast.TupleExpression, table SymbolTable) (Type, error) {
 	tuple := &Tuple{
 		Types: make([]Type, len(expr.Expressions)),
@@ -291,6 +323,8 @@ func ExpressionType(expression ast.Expression, table SymbolTable) (Type, error) 
 		return checkIf(expr, table)
 	case *ast.SumTransform:
 		return checkSumTransform(expr, table)
+	case *ast.ArrayTransform:
+		return checkArrayTransform(expr, table)
 	case *ast.TupleExpression:
 		return checkTuple(expr, table)
 	case *ast.ArrayExpression:
