@@ -1,7 +1,12 @@
 package lexer
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -393,4 +398,43 @@ func TestLexer(t *testing.T) {
 		assert.Equal(t, test.tokens, tokens)
 		fmt.Println("-------------")
 	}
+}
+
+func TestLexerWithAssignments(t *testing.T) {
+	tests := map[string]struct{ input, expected string }{}
+	err := filepath.Walk("../../assignment1/lexer-tests1/", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		fileName := info.Name()
+		switch {
+		case strings.Contains(fileName, "my-output"), info.IsDir():
+			return nil
+		case strings.Contains(fileName, "output"):
+			key := fileName[:len(".output")]
+			b, err := ioutil.ReadFile(path)
+			assert.Nil(t, err)
+			tests[key] = struct{ input, expected string }{input: tests[key].input, expected: string(b)}
+		default:
+			b, err := ioutil.ReadFile(path)
+			assert.Nil(t, err)
+			tests[fileName] = struct{ input, expected string }{input: string(b), expected: tests[fileName].input}
+		}
+
+		return nil
+	})
+
+	for _, test := range tests {
+		buf := bytes.NewBufferString("")
+		l := NewLexer(test.input)
+		tokens, ok := l.LexAll()
+		assert.True(t, ok)
+		for _, tok := range tokens {
+			buf.WriteString(tok.DumpString() + "\n")
+		}
+		buf.WriteString("Compilation succeeded\n")
+		assert.Equal(t, test.expected, buf.String())
+	}
+	assert.Nil(t, err)
 }

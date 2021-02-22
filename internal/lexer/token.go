@@ -123,6 +123,7 @@ var typeToDump = map[TokenType]string{
 	Float:    "VARIABLE",
 	Float3:   "VARIABLE",
 	Float4:   "VARIABLE",
+	Bool:     "VARIABLE",
 
 	// Builtins
 	Read:      "READ",
