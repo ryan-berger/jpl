@@ -11,7 +11,7 @@ import (
 	"github.com/ryan-berger/jpl/internal/parser"
 )
 
-func parseLet(t *testing.T, expr string) ast.Expression {
+func parseLet(t *testing.T, expr string) *ast.LetStatement {
 	tokens, ok := lexer.
 		NewLexer(fmt.Sprintf("let %s", expr)).
 		LexAll()
@@ -26,7 +26,38 @@ func parseLet(t *testing.T, expr string) ast.Expression {
 	assert.Len(t, commands, 1)
 	assert.IsType(t, &ast.LetStatement{}, commands[0])
 
-	return commands[0].(*ast.ReturnStatement).Expr
+	return commands[0].(*ast.LetStatement)
+}
+
+var validLetTests = []struct {
+	expr       string
+} {
+	{
+		expr: "x = 10",
+	},
+	{
+		expr: "x = {1, 2}",
+	},
+	{
+		expr: "{x, y} = {1, 2}",
+	},
+	{
+		expr: "{x, y} = {[1, 2], 2}",
+	},
+	{
+		expr: "{x[L], y} = {[1, 2], 2}",
+	},
+}
+
+func TestLet(t *testing.T) {
+	for _, test := range validLetTests {
+		table := NewSymbolTable()
+		letStmt := parseLet(t, test.expr)
+		rType, err := ExpressionType(letStmt.Expr, table)
+		assert.Nil(t, err)
+		err = bindLVal(letStmt.LValue, rType, table)
+		assert.Nil(t, err)
+	}
 }
 
 func parseFunction(t *testing.T, expr string) *ast.Function {

@@ -137,6 +137,7 @@ func bindLVal(value ast.LValue, typ Type, table SymbolTable) error {
 		if !ok {
 			return fmt.Errorf("expected tuple binding")
 		}
+
 		if len(tup.Types) != len(lval.Args) {
 			return fmt.Errorf("tuples are different shapes")
 		}

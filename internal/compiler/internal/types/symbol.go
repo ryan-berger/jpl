@@ -30,7 +30,12 @@ func (s SymbolTable) Copy() SymbolTable {
 var Integer = &integer{}
 var Float = &float{}
 var Boolean = &boolean{}
-var pict = &Pict{}
+var Pict = &Array{
+	Inner: &Tuple{
+		Types: []Type{Integer, Integer, Integer, Float},
+	},
+	Rank: 2,
+}
 
 func NewSymbolTable() SymbolTable {
 	return map[string]Symbol{
@@ -43,20 +48,20 @@ func NewSymbolTable() SymbolTable {
 			Return: Float,
 		},
 		"has_size": &Function{
-			Args:   []Type{pict, Integer, Integer},
+			Args:   []Type{Pict, Integer, Integer},
 			Return: Boolean,
 		},
 		"sepia": &Function{
-			Args:   []Type{pict},
-			Return: pict,
+			Args:   []Type{Pict},
+			Return: Pict,
 		},
 		"blur": &Function{
-			Args:   []Type{pict, Float},
-			Return: pict,
+			Args:   []Type{Pict, Float},
+			Return: Pict,
 		},
 		"crop": &Function{
-			Args:   []Type{pict, Integer, Integer, Integer, Integer},
-			Return: pict,
+			Args:   []Type{Pict, Integer, Integer, Integer, Integer},
+			Return: Pict,
 		},
 		"float": &Function{
 			Args:   []Type{Integer},
@@ -65,6 +70,15 @@ func NewSymbolTable() SymbolTable {
 		"int": &Function{
 			Args:   []Type{Float},
 			Return: Integer,
+		},
+		"read.image": &Function{
+			Args: []Type{
+				&Array{
+					Inner: Integer,
+					Rank:  1,
+				},
+			},
+			Return: Pict,
 		},
 	}
 }

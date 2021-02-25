@@ -1,0 +1,66 @@
+
+
+fn sub_ints(a : int, b : int) : int {
+  return a - b
+}
+
+show sub_ints(1, 1000000000)
+
+fn sub_floats(a: float, b : float) : float {
+  return a - b
+}
+
+show sub_floats(1., 1000000000.)
+
+fn red(width : int, height : int) : float4[,] {
+  return array[w : width, h : height] {1., 0., 0., 0.}
+}
+
+write image red(800, 600) to "red.png"
+
+
+fn abs(f : float) : float {
+  return if f < 0. then -f else f
+}
+
+fn invert(p[H, W] : float4[,]) : float4[,] {
+  return array[h : H, w : W] {abs(1. - p[w, h]{0}), abs(1. - p[w, h]{1}), abs(1. - p[w, h]{2}), p[w, h]{3} }
+}
+
+read image "sample.png" to sample
+write image invert(sample) to "sample-inverted.png"
+
+
+// TODO: write circle function
+
+
+fn has_size(p[W, H] : float4[,], width : int, height : int) : bool {
+  return height == H && width == W
+} 
+
+assert has_size(sample, 800, 600), "sample image is not 800x600"
+
+fn scale(v : float, s : float) : float {
+  return v * s
+}
+
+fn bound_to_one(v : float) : float {
+  return if v > 1. then 1 else v
+}
+
+fn sepia(p[H, W] : float4[,]) : float4[,] {
+  return array[h : H, w : W] { \
+       bound_to_one(scale(p[h, w]{0}, .393)) + \
+         bound_to_one(scale(p[h, w]{1}, .769)) + \
+         bound_to_one(scale(p[h, w]{2}, .198)), \
+       bound_to_one(scale(p[h, w]{0}, .349)) + \
+         bound_to_one(scale(p[h, w]{1}, .686)) + \
+         bound_to_one(scale(p[h, w]{2}, .168)), \
+       bound_to_one(scale(p[h, w]{0}, .272)) + \
+         bound_to_one(scale(p[h, w]{1}, .534)) + \
+         bound_to_one(scale(p[h, w]{2}, .131)), \
+       p[h, w]{3} \
+  }
+}
+
+

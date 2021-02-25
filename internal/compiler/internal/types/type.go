@@ -37,16 +37,6 @@ func (f *float) Equal(other Type) bool {
 	return ok
 }
 
-type Pict struct{}
-
-func (p *Pict) Size() int {
-	return 24
-}
-
-func (p *Pict) Equal(other Type) bool {
-	return false // TODO??
-}
-
 type Array struct {
 	Inner Type
 	Rank  int
