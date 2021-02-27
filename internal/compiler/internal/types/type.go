@@ -1,14 +1,23 @@
 package types
 
+import (
+	"fmt"
+	"strings"
+)
+
 type Type interface {
-	Size() int
 	Equal(other Type) bool
+	String() string
 }
 
 type boolean struct{}
 
 func (b *boolean) Size() int {
 	return 4
+}
+
+func (b *boolean) String() string {
+	return "bool"
 }
 
 func (b *boolean) Equal(other Type) bool {
@@ -18,23 +27,24 @@ func (b *boolean) Equal(other Type) bool {
 
 type integer struct{}
 
-func (i *integer) Size() int {
-	return 8
-}
 func (i *integer) Equal(other Type) bool {
 	_, ok := other.(*integer)
 	return ok
 }
 
-type float struct{}
-
-func (f *float) Size() int {
-	return 8
+func (i *integer) String() string {
+	return "int"
 }
+
+type float struct{}
 
 func (f *float) Equal(other Type) bool {
 	_, ok := other.(*float)
 	return ok
+}
+
+func (f *float) String() string {
+	return "float"
 }
 
 type Array struct {
@@ -42,25 +52,21 @@ type Array struct {
 	Rank  int
 }
 
-func (a *Array) Size() int {
-	return 8
-}
-
 func (a *Array) Equal(other Type) bool {
 	arr, ok := other.(*Array)
 	return ok && a.Rank == arr.Rank && a.Inner.Equal(arr.Inner)
 }
 
-type Tuple struct {
-	Types []Type
+func (a *Array) String() string {
+	b := make([]byte, a.Rank - 1)
+	for i := 0; i < len(b); i++ {
+		b[i] = ','
+	}
+	return fmt.Sprintf("%s[%s]", a.Inner, string(b))
 }
 
-func (t *Tuple) Size() int {
-	size := 0
-	for _, typ := range t.Types {
-		size += typ.Size()
-	}
-	return size
+type Tuple struct {
+	Types []Type
 }
 
 func (t *Tuple) Equal(other Type) bool {
@@ -80,4 +86,13 @@ func (t *Tuple) Equal(other Type) bool {
 	}
 
 	return true
+}
+
+func (t *Tuple) String() string {
+	strs := make([]string, len(t.Types))
+	for i, typ := range t.Types {
+		strs[i] = typ.String()
+	}
+
+	return fmt.Sprintf("{%s}", strings.Join(strs, ", "))
 }

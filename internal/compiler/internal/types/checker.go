@@ -12,7 +12,7 @@ func checkIf(ifExpr *ast.IfExpression, table SymbolTable) (Type, error) {
 		return nil, err
 	}
 	if !condType.Equal(Boolean) {
-		return nil, fmt.Errorf("conditional expression is not boolean")
+		return nil, NewError(ifExpr.Condition, "expected boolean, received %s", condType)
 	}
 
 	consType, err := ExpressionType(ifExpr.Consequence, table)
@@ -26,7 +26,7 @@ func checkIf(ifExpr *ast.IfExpression, table SymbolTable) (Type, error) {
 	}
 
 	if !consType.Equal(otherType) {
-		return nil, fmt.Errorf("branches do not return same type")
+		return nil, NewError(ifExpr, "branches return different types: %s, %s", consType, otherType)
 	}
 
 	return otherType, nil
@@ -35,7 +35,7 @@ func checkIf(ifExpr *ast.IfExpression, table SymbolTable) (Type, error) {
 func checkIdentifierExpr(expr *ast.IdentifierExpression, table SymbolTable) (Type, error) {
 	symb, ok := table[expr.Identifier]
 	if !ok {
-		return nil, fmt.Errorf("unknown symbol %s", expr.Identifier)
+		return nil, NewError(expr, "unknown symbol %s", expr.Identifier)
 	}
 
 	ident, ok := symb.(*Identifier)
@@ -92,10 +92,13 @@ func checkInfixExpr(expression *ast.InfixExpression, table SymbolTable) (Type, e
 	// if the expression is an and/or, check for Boolean types
 	if expression.Op == "&&" || expression.Op == "||" {
 		if !leftType.Equal(Boolean) {
-			return nil, fmt.Errorf("type error left operand")
+			return nil, NewError(expression.Left,
+				"type error: left operand of %s expression is of type %s expected bool", expression.Op, expression.Left)
 		}
 		if !rightType.Equal(Boolean) {
-			return nil, fmt.Errorf("type error right operand")
+			return nil, NewError(expression.Right,
+				"type error: right operand of %s expression is of type %s expected bool", expression.Op, expression.Right)
+
 		}
 		return Boolean, nil
 	}
@@ -103,14 +106,16 @@ func checkInfixExpr(expression *ast.InfixExpression, table SymbolTable) (Type, e
 	// if we don't have logical operators, we need to make sure that both
 	// expressions are the same and are not Booleans
 	if !isNumeric(leftType) {
-		return nil, fmt.Errorf("type error: left operand not numerical")
+		return nil, NewError(expression.Left,
+			"type error: left type of %s expression must be numeric, received %s", expression.Op, leftType)
 	}
 	if !isNumeric(rightType) {
-		return nil, fmt.Errorf("type error: right operand not numerical")
+		return nil, NewError(expression.Left,
+			"type error: right type of %s expression must be numeric, received %s", expression.Op, rightType)
 	}
 
 	if !leftType.Equal(rightType) {
-		return nil, fmt.Errorf("type mismatch")
+		return nil, NewError(expression, "type error: both sides of numerical operation must be of the same type")
 	}
 
 	switch expression.Op {
@@ -133,12 +138,14 @@ func checkPrefixExpr(expr *ast.PrefixExpression, table SymbolTable) (Type, error
 	switch expr.Op {
 	case "!":
 		if !exprType.Equal(Boolean) {
-			return nil, fmt.Errorf("type error, expected boolean on right hand side of '!'")
+			return nil, NewError(expr,
+				"type error, expected boolean on right hand side of '!', received: %s", exprType)
 		}
 		return Boolean, nil
 	case "-":
 		if !isNumeric(exprType) {
-			return nil, fmt.Errorf("type error, expected numeric type on right hand side of '-'")
+			return nil, NewError(expr,
+				"type error, expected numeric type on right hand side of '-', received: %s", exprType)
 		}
 		return exprType, nil
 	default:
@@ -154,16 +161,16 @@ func checkTupleRef(expr *ast.TupleRefExpression, table SymbolTable) (Type, error
 
 	idx, ok := expr.Index.(*ast.IntExpression)
 	if !ok {
-		return nil, fmt.Errorf("expected integer literal received expression")
+		return nil, NewError(expr.Index, "tuple indexing requires integer literal index")
 	}
 
 	tupType, ok := tup.(*Tuple)
 	if !ok {
-		return nil, fmt.Errorf("tuple reference of non-tuple")
+		return nil, NewError(expr.Tuple, "tuple index of non-tuple type %s", expr)
 	}
 
 	if idx.Val < 0 || int(idx.Val) > len(tupType.Types)-1 {
-		return nil, fmt.Errorf("tuple index out of bounds")
+		return nil, NewError(expr.Index, "tuple index out of bounds")
 	}
 
 	return tupType.Types[idx.Val], nil
@@ -177,11 +184,11 @@ func checkArrayRef(expr *ast.ArrayRefExpression, table SymbolTable) (Type, error
 
 	arrTyp, ok := arr.(*Array)
 	if !ok {
-		return nil, fmt.Errorf("array reference of non-array")
+		return nil, NewError(expr.Array, "array reference of non-array type %s", arr)
 	}
 
 	if arrTyp.Rank != len(expr.Indexes) {
-		return nil, fmt.Errorf("array access of rank %d with %d indexes",
+		return nil, NewError(expr.Array, "array access of rank %d with %d indexes",
 			arrTyp.Rank, len(expr.Indexes))
 	}
 
@@ -191,7 +198,7 @@ func checkArrayRef(expr *ast.ArrayRefExpression, table SymbolTable) (Type, error
 			return nil, err
 		}
 		if !idxTyp.Equal(Integer) {
-			return nil, fmt.Errorf("non-integer index expression of array")
+			return nil, NewError(idxExp, "non-integer index of array-type %s")
 		}
 	}
 
@@ -202,7 +209,7 @@ func checkSumTransform(expr *ast.SumTransform, table SymbolTable) (Type, error) 
 	cpy := table.Copy()
 	for _, binding := range expr.OpBindings {
 		if _, ok := cpy[binding.Variable]; ok {
-			return nil, fmt.Errorf("illegal shadowing in sum expr, var: %s", binding.Variable)
+			return nil, NewError(expr, "illegal shadowing in sum expr, var: %s", binding.Variable)
 		}
 		bindType, err := ExpressionType(binding.Expr, cpy)
 		if err != nil {
@@ -210,7 +217,7 @@ func checkSumTransform(expr *ast.SumTransform, table SymbolTable) (Type, error) 
 		}
 
 		if !bindType.Equal(Integer) {
-			return nil, fmt.Errorf("bindArg expr initializer for %s returns non-integer",
+			return nil, NewError(binding.Expr, "bindArg expr initializer for %s returns non-integer",
 				binding.Variable)
 		}
 
@@ -222,7 +229,7 @@ func checkSumTransform(expr *ast.SumTransform, table SymbolTable) (Type, error) 
 	}
 
 	if !isNumeric(exprType) {
-		return nil, fmt.Errorf("sum returns non-numeric expression")
+		return nil, NewError(expr.Expr, "sum returns non-numeric expression")
 	}
 
 	return exprType, nil
@@ -292,7 +299,7 @@ func checkArray(expr *ast.ArrayExpression, table SymbolTable) (Type, error) {
 		}
 
 		if !curTyp.Equal(typ) {
-			return nil, fmt.Errorf("array literal has mixed types")
+			return nil, NewError(expr, "array literal has mixed types")
 		}
 	}
 

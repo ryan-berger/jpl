@@ -113,11 +113,11 @@ var failureTests = []struct{
 	expr string
 	err string
 }{
-	{"if true then 0 else 2.0", "branches do not return same type"},
+	{"if true then 0 else 2.0", "branches return different types: int, float at position 1:7"},
 	{"if x && y then 0 else 2.0", "unknown symbol x"},
 	{"if true then x + y else 2.0", "unknown symbol x"},
 	{"if true then 2 else x + y", "unknown symbol x"},
-	{"if 22 then 0 else 3", "conditional expression is not boolean"},
+	{"if 22 then 0 else 3", "expected boolean, received int at position 1:10"},
 	{"add_floats + 2", "found function name, expected identifier add_floats"},
 	{"add_float(1, 2)", "unknown symbol add_float"},
 	{"add_floats(1.0, 2.0, 3.4)", "function add_floats expects 2 arguments, received 3"},

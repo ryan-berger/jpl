@@ -4,8 +4,12 @@ type SExpr interface {
 	SExpr() string
 }
 
-type Node interface {
-	String() string
-	SExpr
+type Locationer interface {
 	Loc() (line, char int)
+}
+
+type Node interface {
+	SExpr
+	Locationer
+	String() string
 }

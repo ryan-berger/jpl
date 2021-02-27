@@ -240,7 +240,13 @@ func (p *Parser) parseIdentifier() ast.Expression {
 	if p.peekTokenIs(lexer.LParen) {
 		return p.parseCallExpression()
 	}
-	return &ast.IdentifierExpression{Identifier: val}
+	return &ast.IdentifierExpression{
+		Identifier: val,
+		Location: ast.Location{
+			Line: p.cur.Line,
+			Pos:  p.cur.Character,
+		},
+	}
 }
 
 func (p *Parser) parseCallExpression() ast.Expression {
