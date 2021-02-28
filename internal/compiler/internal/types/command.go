@@ -1,6 +1,8 @@
 package types
 
 import (
+	"fmt"
+
 	"github.com/ryan-berger/jpl/internal/ast"
 )
 
@@ -19,12 +21,15 @@ func checkRead(argument ast.Argument, table SymbolTable) error {
 func CheckCommand(command ast.Command, table SymbolTable) (bool, error) {
 	switch cmd := command.(type) {
 	case ast.Statement:
-		return StatementType(cmd, table)
+		isReturn, err := StatementType(cmd, table)
+		if err != nil {}
+		fmt.Println(isReturn, err)
 	case *ast.Read:
 		if cmd.Type != "image" {
-			panic("oops, not supported yet")
+			return false, NewError(cmd, "oops, read type not supported yet")
 		}
-
+		
+		return false, nil
 	case *ast.Write:
 
 	case *ast.Show:

@@ -198,7 +198,7 @@ func checkArrayRef(expr *ast.ArrayRefExpression, table SymbolTable) (Type, error
 			return nil, err
 		}
 		if !idxTyp.Equal(Integer) {
-			return nil, NewError(idxExp, "non-integer index of array-type %s")
+			return nil, NewError(idxExp, "non-integer index of array type %s", idxTyp)
 		}
 	}
 
@@ -247,7 +247,7 @@ func checkArrayTransform(expr *ast.ArrayTransform, table SymbolTable) (Type, err
 		}
 
 		if !bindType.Equal(Integer) {
-			return nil, fmt.Errorf("bindArg expr initializer for %s returns non-integer",
+			return nil, NewError(binding, "bindArg expr initializer for %s returns non-integer",
 				binding.Variable)
 		}
 
