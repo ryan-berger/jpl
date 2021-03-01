@@ -34,17 +34,15 @@ func (p *Parser) parseType() ast.Type {
 	var t ast.Type
 
 	switch p.cur.Type {
-	case lexer.Float, lexer.Int:
+	case lexer.Float, lexer.Int, lexer.Bool:
 		t = tokenToType[p.cur.Type]
 	case lexer.Float3:
-		t = &ast.ArrType{
-			Type: ast.Float,
-			Rank: 3,
+		t = &ast.TupleType{
+			Types: []ast.Type{ast.Float, ast.Float, ast.Float},
 		}
 	case lexer.Float4:
-		t = &ast.ArrType{
-			Type: ast.Float,
-			Rank: 4,
+		t = &ast.TupleType{
+			Types: []ast.Type{ast.Float, ast.Float, ast.Float, ast.Float},
 		}
 	default:
 		p.errorf("err: expected type received %s at line %d", p.cur.Val, p.cur.Line)

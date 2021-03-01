@@ -5,21 +5,31 @@ import (
 	"strings"
 )
 
+// Statement is the abstract interface for a statement of the form:
+// stmt : let <lvalue> = <expr>
+//      | assert <expr> , <string>
+//      | return <expr>
 type Statement interface {
 	Command
 	statement()
 }
 
+
+// LValue is the interface for an lvalue of the form:
+// lvalue : <argument>
+//        | { <lvalue> , ... }
 type LValue interface {
-	SExpr
-	String() string
+	Node
 	lValue()
 }
 
+// LTuple is the struct that contains the lvalue production {<lvalue> , ...}
 type LTuple struct {
 	Args []LValue
+	Location
 }
 
+// SExpr is an implementation of the SExpr interface
 func (l *LTuple) SExpr() string {
 	panic("implement me")
 }
@@ -33,11 +43,16 @@ func (l *LTuple) String() string {
 }
 func (l *LTuple) lValue() {}
 
+// LetStatement holds an LValue declaration, and the assignment expression Expr for
+// the statement production:
+// let <lvalue> = <expr>
 type LetStatement struct {
 	LValue LValue
 	Expr   Expression
+	Location
 }
 
+// SExpr is an implementation of the SExpr interface
 func (l *LetStatement) SExpr() string {
 	return fmt.Sprintf("(LetStmt (ArgLValue %s) %s)", l.LValue.SExpr(), l.Expr.SExpr())
 }
@@ -49,10 +64,14 @@ func (l *LetStatement) String() string {
 	return fmt.Sprintf("let %s = %s", l.LValue, l.Expr)
 }
 
+// ReturnStatement holds an expression Expr and represents the production:
+// return <expression>
 type ReturnStatement struct {
 	Expr Expression
+	Location
 }
 
+// SExpr is an implementation of the SExpr interface
 func (r *ReturnStatement) SExpr() string {
 	return fmt.Sprintf("(ReturnStmt %s)", r.Expr.SExpr())
 }
@@ -63,11 +82,17 @@ func (r *ReturnStatement) String() string {
 func (r *ReturnStatement) command()   {}
 func (r *ReturnStatement) statement() {}
 
+
+// AssertStatement holds an expression Expr and message to throw if Expr does not evaluate to true.
+// It represents the production:
+// assert <expression> , <string>
 type AssertStatement struct {
 	Expr    Expression
 	Message string
+	Location
 }
 
+// SExpr is an implementation of the SExpr interface
 func (a *AssertStatement) SExpr() string {
 	return fmt.Sprintf("(AssertStmt %s %s)", a.Expr.SExpr(), a.Message)
 }

@@ -6,14 +6,14 @@ import (
 )
 
 type Expression interface {
-	SExpr
-	String() string
+	Node
 	expression()
 }
 
 // IntExpression
 type IntExpression struct {
 	Val int64
+	Location
 }
 
 func (i *IntExpression) SExpr() string {
@@ -28,6 +28,7 @@ func (i *IntExpression) expression() {}
 // IdentifierExpression
 type IdentifierExpression struct {
 	Identifier string
+	Location
 }
 
 func (i *IdentifierExpression) SExpr() string {
@@ -42,6 +43,7 @@ func (i *IdentifierExpression) expression() {}
 type CallExpression struct {
 	Identifier string
 	Arguments  []Expression
+	Location
 }
 
 func (c *CallExpression) SExpr() string {
@@ -66,6 +68,7 @@ func (c *CallExpression) expression() {}
 // FloatExpression
 type FloatExpression struct {
 	Val float64
+	Location
 }
 
 func (f *FloatExpression) SExpr() string {
@@ -79,6 +82,7 @@ func (f *FloatExpression) expression() {}
 
 type BooleanExpression struct {
 	Val bool
+	Location
 }
 
 func (b *BooleanExpression) SExpr() string {
@@ -95,6 +99,7 @@ func (b *BooleanExpression) expression() {}
 
 type TupleExpression struct {
 	Expressions []Expression
+	Location
 }
 
 func (t *TupleExpression) SExpr() string {
@@ -113,6 +118,7 @@ func (t *TupleExpression) expression() {}
 
 type ArrayExpression struct {
 	Expressions []Expression
+	Location
 }
 
 func (a *ArrayExpression) SExpr() string {
@@ -124,7 +130,7 @@ func (a *ArrayExpression) String() string {
 	for i, e := range a.Expressions {
 		strs[i] = e.String()
 	}
-	return fmt.Sprintf("[%s]", strings.Join([]string{}, ", "))
+	return fmt.Sprintf("[%s]", strings.Join(strs, ", "))
 }
 
 func (a *ArrayExpression) expression() {}
@@ -132,6 +138,7 @@ func (a *ArrayExpression) expression() {}
 type ArrayRefExpression struct {
 	Array   Expression
 	Indexes []Expression
+	Location
 }
 
 func (a *ArrayRefExpression) SExpr() string {
@@ -149,6 +156,7 @@ func (a *ArrayRefExpression) expression() {}
 type TupleRefExpression struct {
 	Tuple Expression
 	Index Expression
+	Location
 }
 
 func (t *TupleRefExpression) SExpr() string {
@@ -163,6 +171,7 @@ type IfExpression struct {
 	Condition   Expression
 	Consequence Expression
 	Otherwise   Expression
+	Location
 }
 
 func (i *IfExpression) SExpr() string {
@@ -178,6 +187,7 @@ func (i *IfExpression) expression() {}
 type OpBinding struct {
 	Variable string
 	Expr     Expression
+	Location
 }
 
 func (o *OpBinding) String() string {
@@ -187,6 +197,7 @@ func (o *OpBinding) String() string {
 type ArrayTransform struct {
 	OpBindings []OpBinding
 	Expr       Expression
+	Location
 }
 
 func (a *ArrayTransform) SExpr() string {
@@ -207,6 +218,7 @@ func (a *ArrayTransform) expression() {}
 type SumTransform struct {
 	OpBindings []OpBinding
 	Expr       Expression
+	Location
 }
 
 func (s *SumTransform) SExpr() string {
@@ -226,6 +238,7 @@ type InfixExpression struct {
 	Left  Expression
 	Right Expression
 	Op    string
+	Location
 }
 
 func (i *InfixExpression) SExpr() string {
@@ -240,6 +253,7 @@ func (i *InfixExpression) expression() {}
 type PrefixExpression struct {
 	Op   string
 	Expr Expression
+	Location
 }
 
 func (p *PrefixExpression) SExpr() string {

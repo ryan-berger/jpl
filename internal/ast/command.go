@@ -6,8 +6,7 @@ import (
 )
 
 type Command interface {
-	SExpr
-	String() string
+	Node
 	command()
 }
 
@@ -16,6 +15,7 @@ type Function struct {
 	Bindings   []Binding
 	ReturnType Type
 	Statements []Statement
+	Location
 }
 
 func (f *Function) SExpr() string {
@@ -23,6 +23,7 @@ func (f *Function) SExpr() string {
 }
 
 func (f *Function) command() {}
+func (f *Function) statement() {}
 func (f *Function) String() string {
 	buf := bytes.NewBuffer([]byte{})
 	buf.WriteString(fmt.Sprintf("fn %s (", f.Var))
@@ -45,10 +46,11 @@ type Read struct {
 	Type     string
 	Src      string
 	Argument Argument
+	Location
 }
 
 func (r *Read) SExpr() string {
-	return fmt.Sprintf("(ReadImageCmd %s %s)", r.Src, r.Argument.SExpr(),)
+	return fmt.Sprintf("(ReadImageCmd %s %s)", r.Src, r.Argument.SExpr())
 }
 
 func (r *Read) String() string {
@@ -60,6 +62,7 @@ type Write struct {
 	Type string
 	Expr Expression
 	Dest string
+	Location
 }
 
 func (w *Write) SExpr() string {
@@ -73,12 +76,12 @@ func (w *Write) command() {}
 
 type Show struct {
 	Expr Expression
+	Location
 }
 
 func (s *Show) SExpr() string {
 	return fmt.Sprintf("(ShowCmd %s)", s.Expr.SExpr())
 }
-
 
 func (s *Show) String() string {
 	return fmt.Sprintf("show %s", s.Expr)
@@ -87,12 +90,12 @@ func (s *Show) command() {}
 
 type Print struct {
 	Str string
+	Location
 }
 
 func (p *Print) SExpr() string {
 	return fmt.Sprintf("(PrintCmd %s)", p.Str)
 }
-
 
 func (p *Print) String() string {
 	return fmt.Sprintf("print %s", p.Str)
@@ -102,6 +105,7 @@ func (p *Print) command() {}
 
 type Time struct {
 	Command Command
+	Location
 }
 
 func (t *Time) SExpr() string {

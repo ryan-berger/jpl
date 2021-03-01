@@ -62,6 +62,7 @@ const (
 	String
 	IntLiteral
 	FloatLiteral
+	BoolLiteral
 
 	// Types
 	Int
@@ -72,9 +73,10 @@ const (
 )
 
 type Token struct {
-	Type TokenType
-	Val  string
-	Line int
+	Type      TokenType
+	Val       string
+	Line      int
+	Character int
 }
 
 var typeToDump = map[TokenType]string{
@@ -122,6 +124,7 @@ var typeToDump = map[TokenType]string{
 	Float:    "VARIABLE",
 	Float3:   "VARIABLE",
 	Float4:   "VARIABLE",
+	Bool:     "VARIABLE",
 
 	// Builtins
 	Read:      "READ",
@@ -139,6 +142,7 @@ var typeToDump = map[TokenType]string{
 	IntLiteral:   "INTVAL",
 	FloatLiteral: "FLOATVAL",
 	String:       "STRING",
+	BoolLiteral:  "VARIABLE",
 }
 
 func (t *Token) DumpString() string {
