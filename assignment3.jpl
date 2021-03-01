@@ -64,3 +64,23 @@ fn sepia(p[H, W] : float4[,]) : float4[,] {
 }
 
 
+fn avg_pixels(p[H, W] : float4[,], i : int, j : int) : float4 {
+  let endI = if (i == 0 || i == (H - 1)) then 2 else 3
+  let endJ = if (j == 0 || j == (W - 1)) then 2 else 3
+  let iDiff = if i == 0 then 0 else -1
+  let jDiff = if j == 0 then 0 else -1
+  return { \
+    (sum[curI : endI, curJ : endJ] p[curI + iDiff, curJ + jDiff]{0}) / float(endI * endJ),\
+    (sum[curI : endI, curJ : endJ] p[curI + iDiff, curJ + jDiff]{1}) / float(endI * endJ),\
+    (sum[curI : endI, curJ : endJ] p[curI + iDiff, curJ + jDiff]{2}) / float(endI * endJ),\
+    (sum[curI : endI, curJ : endJ] p[curI + iDiff, curJ + jDiff]{3}) / float(endI * endJ)\
+  }
+}
+
+fn blur(p[H, W] : float4[,]) : float4[,] {
+  return array[i : H, j : W] avg_pixels(p, i, j)
+}
+
+write image blur(sample) to "sample-blur.png"
+
+
