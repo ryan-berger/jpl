@@ -22,5 +22,7 @@ jobs:
           ./assignment1/test-lexer2 ./jpl
       - name: Parser tests
         run: ./assignment2/test-subset-parser
+      - name: Typechecker tests
+        run: ./assignment4/test-subset-typechecker
       - name: Internal tests
         run: go test ./internal/...
