@@ -29,15 +29,13 @@ func (s Table) Copy() Table {
 	return newTable
 }
 
-
-
 func NewSymbolTable() Table {
 	return map[string]Symbol{
-		"add_ints": &Function{
+		"sub_ints": &Function{
 			Args:   []types.Type{types.Integer, types.Integer},
 			Return: types.Integer,
 		},
-		"add_floats": &Function{
+		"sub_floats": &Function{
 			Args:   []types.Type{types.Float, types.Float},
 			Return: types.Float,
 		},
@@ -47,6 +45,10 @@ func NewSymbolTable() Table {
 		},
 		"sepia": &Function{
 			Args:   []types.Type{types.Pict},
+			Return: types.Pict,
+		},
+		"resize": &Function{
+			Args:   []types.Type{types.Pict, types.Integer, types.Integer},
 			Return: types.Pict,
 		},
 		"blur": &Function{

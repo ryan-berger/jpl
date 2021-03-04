@@ -20,6 +20,7 @@ const (
 	Lex
 	Parse
 	TypeCheck
+	Flatten
 )
 
 type Compiler struct {
@@ -85,37 +86,51 @@ func (c *Compiler) parse(tokens []lexer.Token) (ast.Program, error) {
 	return program, nil
 }
 
-func (c *Compiler) compile() error {
-	tokens, err := c.lex()
+func (c *Compiler) typeCheck(program ast.Program) (ast.Program, error) {
+	newProgram, err := typed.Check(program)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if c.mode == Lex {
-		return nil
+	if c.mode == TypeCheck {
+		fmt.Println(newProgram.SExpr())
 	}
 
-	program, err := c.parse(tokens)
-	if err != nil {
-		return err
-	}
+	return newProgram, nil
+}
 
-	if c.mode == Parse {
-		return nil
-	}
-
-	program, err = typed.Check(program)
-
-	if err != nil {
-		return err
-	}
-
+func (c *Compiler) expand(program ast.Program) ast.Program {
 	expanded := expander.Expand(program)
 
-	_, err = typed.Check(expanded)
+	_, err := typed.Check(expanded)
 	if err != nil {
 		panic("nice, you really messed up")
 	}
+
+	if c.mode == Flatten {
+		fmt.Println(expanded.SExpr())
+	}
+
+	return expanded
+}
+
+func (c *Compiler) compile() error {
+	tokens, err := c.lex()
+	if err != nil || c.mode == Lex{
+		return err
+	}
+
+	program, err := c.parse(tokens)
+	if err != nil || c.mode == Parse {
+		return err
+	}
+
+	program, err = c.typeCheck(program)
+	if err != nil || c.mode == TypeCheck {
+		return err
+	}
+
+	program = c.expand(program)
 
 	return nil
 }

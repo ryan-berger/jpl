@@ -8,17 +8,12 @@ import (
 func Check(program ast.Program) (ast.Program, error) {
 	table := symbol.NewSymbolTable()
 
-	i := 0
-	for i < len(program) {
-		isRet, err := checkCommand(program[i], table)
+	for _, cmd := range program {
+		err := checkCommand(cmd, table)
 		if err != nil {
 			return nil, err
 		}
-		if isRet {
-			break
-		}
-		i++
 	}
 
-	return program[:i], nil
+	return program, nil
 }

@@ -1,6 +1,8 @@
 package expander
 
-import "github.com/ryan-berger/jpl/internal/ast"
+import (
+	"github.com/ryan-berger/jpl/internal/ast"
+)
 
 func expandCommand(command ast.Command, next nexter) []ast.Command {
 	switch cmd := command.(type) {
@@ -16,6 +18,8 @@ func expandCommand(command ast.Command, next nexter) []ast.Command {
 		return expandShow(cmd, next)
 	case ast.Statement:
 		return toCommands(expandStatement(cmd, next))
+	default:
+		panic("oops, type not supported")
 	}
 	return nil
 }
@@ -53,8 +57,5 @@ func expandWrite(w *ast.Write, next nexter) []ast.Command {
 
 	w.Expr = ref
 
-	var combined []ast.Command
-	combined = append(combined, toCommands(cmds)...)
-	combined = append(combined, w)
-	return combined
+	return append(toCommands(cmds), w)
 }

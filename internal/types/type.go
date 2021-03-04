@@ -58,6 +58,10 @@ func (a *Array) Equal(other Type) bool {
 }
 
 func (a *Array) String() string {
+	if a == Pict {
+		return "pict" // special case
+	}
+
 	b := make([]byte, a.Rank - 1)
 	for i := 0; i < len(b); i++ {
 		b[i] = ','

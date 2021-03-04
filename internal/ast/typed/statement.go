@@ -43,6 +43,7 @@ func bindArg(argument ast.Argument, typ types.Type, table symbol.Table) error {
 				arg.Variable)
 		}
 		table[arg.Variable] = &symbol.Identifier{Type: typ}
+		arg.Type = typ
 		return nil
 	case *ast.VariableArr:
 		arrTyp, ok := typ.(*types.Array)
@@ -105,28 +106,19 @@ func functionBinding(fun *ast.Function, table symbol.Table) (*symbol.Function, e
 		function.Args[i] = typ
 	}
 
+	hasSeenReturn := false
 	for _, stmt := range fun.Statements {
-		ret, err := statementType(stmt, table)
+		err := statementType(stmt, function.Return, table)
 		if err != nil {
 			return nil, err
 		}
 
-		if ret {
-			retStmt := stmt.(*ast.ReturnStatement)
-			retTyp, err := expressionType(retStmt.Expr, table)
-			if err != nil {
-				return nil, err
-			}
-
-			if !retTyp.Equal(function.Return) {
-				return nil, fmt.Errorf("function return expects different type")
-			}
-			return function, nil
-		}
+		_, isRet := stmt.(*ast.ReturnStatement)
+		hasSeenReturn = hasSeenReturn || isRet
 	}
 	// return has not been found
-	if !function.Return.Equal(&types.Tuple{}) {
-		return nil, NewError(fun, "found no return, expected return of a type")
+	if !hasSeenReturn && !function.Return.Equal(&types.Tuple{}) {
+		return nil, NewError(fun, "return of type expected %s, received none", function.Return)
 	}
 
 	return function, nil
@@ -149,59 +141,49 @@ func bindLVal(value ast.LValue, typ types.Type, table symbol.Table) error {
 				return err
 			}
 		}
-	case *ast.VariableArr:
-		arr, ok := typ.(*types.Array)
-		if !ok {
-			return fmt.Errorf("type must be array")
-		}
-		if arr.Rank != len(lval.Variables) {
-			return fmt.Errorf("rank incorrect for binding: %s", lval.Variable)
-		}
-		table[lval.Variable] = &symbol.Identifier{Type: arr}
-		for _, v := range lval.Variables {
-			if _, ok := table[v]; ok {
-				return fmt.Errorf("symbol already bound %s", lval.Variable)
-			}
-			table[v] = &symbol.Identifier{Type: types.Integer}
-		}
-	case *ast.VariableArgument:
-		if _, ok := table[lval.Variable]; ok {
-			return fmt.Errorf("symbol already bound %s", lval.Variable)
-		}
-		table[lval.Variable] = &symbol.Identifier{Type: typ}
+	case ast.Argument:
+		return bindArg(lval, typ, table)
 	}
 	return nil
 }
 
-func statementType(statement ast.Statement, table symbol.Table) (bool, error) {
+func statementType(statement ast.Statement, retType types.Type, table symbol.Table) error {
 	switch stmt := statement.(type) {
 	case *ast.Function:
 		fn, err := functionBinding(stmt, table)
 		if err != nil {
-			return false, err
+			return err
 		}
 		table[stmt.Var] = fn
 	case *ast.ReturnStatement:
-		return true, nil
+		typ, err := expressionType(stmt.Expr, table)
+		if err != nil {
+			return err
+		}
+
+		if !typ.Equal(retType) {
+			return NewError(stmt.Expr, "return type of %s expected, received %s", retType, typ)
+		}
+		return nil
 	case *ast.LetStatement:
 		rType, err := expressionType(stmt.Expr, table)
 		if err != nil {
-			return false, nil
+			return err
 		}
 		if err = bindLVal(stmt.LValue, rType, table); err != nil {
-			return false, err
+			return err
 		}
 	case *ast.AssertStatement:
 		exprType, err := expressionType(stmt.Expr, table)
 		if err != nil {
-			return false, err
+			return err
 		}
 
 		if !exprType.Equal(types.Boolean) {
-			return false, fmt.Errorf("assert statement expression must be Boolean")
+			return fmt.Errorf("assert statement expression must be Boolean")
 		}
 	default:
 		panic("statement not implemented")
 	}
-	return false, nil
+	return nil
 }

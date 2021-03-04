@@ -27,20 +27,24 @@ func expandFunction(fn *ast.Function, next nexter) ast.Statement {
 }
 
 func expandLet(ls *ast.LetStatement, next nexter) []ast.Statement {
-
+	switch ls.LValue.(type) {
+	case *ast.VariableArgument:
+		exp, stmts := expandExpression(ls.Expr, next)
+		ls.Expr = exp
+		return append(stmts, ls)
+	}
 	return nil
 }
 
 func expandAssert(a *ast.AssertStatement, next nexter) []ast.Statement {
-	ref, stmts := expandExpression(a.Expr, next)
+	ref, stmts := expansionAndLet(a.Expr, next)
 	a.Expr = ref
 
 	return append(stmts, a)
 }
 
 func expandReturn(r *ast.ReturnStatement, next nexter) []ast.Statement {
-	ref, stmts := expandExpression(r.Expr, next)
+	ref, stmts := expansionAndLet(r.Expr, next)
 	r.Expr = ref
-
 	return append(stmts, r)
 }

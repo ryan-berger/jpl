@@ -31,6 +31,7 @@ func checkIf(ifExpr *ast.IfExpression, table symbol.Table) (types.Type, error) {
 		return nil, NewError(ifExpr, "branches return different types: %s, %s", consType, otherType)
 	}
 
+	ifExpr.Type = consType
 	return otherType, nil
 }
 
@@ -45,6 +46,7 @@ func checkIdentifierExpr(expr *ast.IdentifierExpression, table symbol.Table) (ty
 		return nil, fmt.Errorf("found function name, expected identifier %s", expr.Identifier)
 	}
 
+	expr.Type = ident.Type
 	return ident.Type, nil
 }
 
@@ -69,10 +71,11 @@ func checkCallExpr(expr *ast.CallExpression, table symbol.Table) (types.Type, er
 			return nil, err
 		}
 		if !t.Equal(exprType) {
-			return nil, fmt.Errorf("type error at arg %d", i+1)
+			return nil, NewError(expr.Arguments[i], "type error: expected %s received %s", t, exprType)
 		}
 	}
 
+	expr.Type = call.Return
 	return call.Return, nil
 }
 
@@ -102,6 +105,8 @@ func checkInfixExpr(expression *ast.InfixExpression, table symbol.Table) (types.
 				"type error: right operand of %s expression is of type %s expected bool", expression.Op, rightType)
 
 		}
+
+		expression.Type = types.Boolean
 		return types.Boolean, nil
 	}
 
@@ -123,8 +128,10 @@ func checkInfixExpr(expression *ast.InfixExpression, table symbol.Table) (types.
 	switch expression.Op {
 	// comparison operators
 	case "==", "!=", "<=", ">=", "<", ">":
+		expression.Type = types.Boolean
 		return types.Boolean, nil
 	case "+", "-", "*", "/", "%":
+		expression.Type = leftType
 		return leftType, nil
 	default:
 		panic("invalid infix operation")
@@ -143,12 +150,14 @@ func checkPrefixExpr(expr *ast.PrefixExpression, table symbol.Table) (types.Type
 			return nil, NewError(expr,
 				"type error, expected boolean on right hand side of '!', received: %s", exprType)
 		}
+		expr.Type = types.Boolean
 		return types.Boolean, nil
 	case "-":
 		if !isNumeric(exprType) {
 			return nil, NewError(expr,
 				"type error, expected numeric type on right hand side of '-', received: %s", exprType)
 		}
+		expr.Type = exprType
 		return exprType, nil
 	default:
 		panic("invalid prefix operation")
@@ -311,10 +320,13 @@ func checkArray(expr *ast.ArrayExpression, table symbol.Table) (types.Type, erro
 func expressionType(expression ast.Expression, table symbol.Table) (types.Type, error) {
 	switch expr := expression.(type) {
 	case *ast.BooleanExpression:
+		expr.Type = types.Boolean
 		return types.Boolean, nil
 	case *ast.IntExpression:
+		expr.Type = types.Integer
 		return types.Integer, nil
 	case *ast.FloatExpression:
+		expr.Type = types.Float
 		return types.Float, nil
 	case *ast.IdentifierExpression:
 		return checkIdentifierExpr(expr, table)

@@ -11,12 +11,14 @@ var debugLex bool
 var debugParse bool
 var debug bool
 var typed bool
+var flattened bool
 
 func init() {
 	flag.BoolVar(&debugLex, "l", false, "lex")
 	flag.BoolVar(&debugParse, "p", false, "parse")
 	flag.BoolVar(&debug, "d", false, "debug")
 	flag.BoolVar(&typed, "t", false, "types")
+	flag.BoolVar(&flattened, "f", false, "flatten")
 }
 
 func main() {
@@ -37,6 +39,8 @@ func main() {
 		mode = internal.Parse
 	case typed:
 		mode = internal.TypeCheck
+	case flattened:
+		mode = internal.Flatten
 	}
 
 	if mode != 0 {

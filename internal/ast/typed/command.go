@@ -7,63 +7,40 @@ import (
 )
 
 func checkRead(argument ast.Argument, table symbol.Table) error {
-	switch arg := argument.(type) {
-	case *ast.VariableArgument:
-		if _, ok := table[arg.Variable]; ok {
-			return NewError(arg, "variable %s already bound", arg.Variable)
-		}
-		table[arg.Variable] = &symbol.Identifier{Type: types.Integer}
-	case *ast.VariableArr:
-		if len(arg.Variables) != 2 {
-			return NewError(arg, "read variable binding must be of rank two")
-		}
-		if _, ok := table[arg.Variable]; ok {
-			return NewError(arg, "variable %s already bound", arg.Variable)
-		}
-		table[arg.Variable] = &symbol.Identifier{Type: types.Integer}
-
-		for _, v := range arg.Variables {
-			if _, ok := table[v]; ok {
-				return NewError(arg, "variable %s already bound", arg.Variable)
-			}
-			table[v] = &symbol.Identifier{Type: types.Integer}
-		}
-	}
-
-	return nil
+	return bindArg(argument, types.Pict, table)
 }
 
-func checkCommand(command ast.Command, table symbol.Table) (bool, error) {
+func checkCommand(command ast.Command, table symbol.Table) error {
 	switch cmd := command.(type) {
 	case ast.Statement:
-		return statementType(cmd, table)
+		return statementType(cmd, types.Integer, table)
 	case *ast.Read:
 		if cmd.Type != "image" {
-			return false, NewError(cmd, "oops, read type not supported yet")
+			return NewError(cmd, "oops, read type not supported yet")
 		}
 		if err := checkRead(cmd.Argument, table); err != nil {
-			return false, err
+			return err
 		}
-		return false, nil
+		return nil
 	case *ast.Write:
 		typ, err := expressionType(cmd.Expr, table)
 		if err != nil {
-			return false, err
+			return err
 		}
 
 		if !typ.Equal(types.Pict) {
-			return false, NewError(cmd.Expr, "type error: write command expected %s received %s", types.Pict, typ)
+			return NewError(cmd.Expr, "type error: write command expected %s received %s", types.Pict, typ)
 		}
-		return false, nil
+		return nil
 	case *ast.Show:
 		_, err := expressionType(cmd.Expr, table)
-		return false, err
+		return err
 	case *ast.Print:
-		return false, nil
+		return nil
 	case *ast.Time:
 		return checkCommand(cmd.Command, table)
 	default:
 		panic("not implemented for command type")
 	}
-	return false, nil
+	return nil
 }
