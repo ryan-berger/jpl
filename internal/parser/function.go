@@ -44,16 +44,15 @@ func (p *parser) parseFunction() ast.Command {
 	p.advance()
 
 	function.Statements = p.parseStatements()
-
-	if !p.curTokenIs(lexer.RCurly) {
-		return nil
-	}
 	p.advance()
+	p.advance()
+
 	return function
 }
 
 func (p *parser) parseStatements() []ast.Statement {
 	var statements []ast.Statement
+
 
 	for !p.peekTokenIs(lexer.RCurly) && !p.peekTokenIs(lexer.EOF) {
 		stmt := p.parseStatement()
@@ -63,7 +62,6 @@ func (p *parser) parseStatements() []ast.Statement {
 		}
 
 		statements = append(statements, stmt)
-		p.advance()
 	}
 
 	return statements

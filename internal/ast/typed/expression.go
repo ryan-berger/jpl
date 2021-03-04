@@ -51,12 +51,12 @@ func checkIdentifierExpr(expr *ast.IdentifierExpression, table symbol.Table) (ty
 func checkCallExpr(expr *ast.CallExpression, table symbol.Table) (types.Type, error) {
 	symb, ok := table[expr.Identifier]
 	if !ok {
-		return nil, fmt.Errorf("unknown symbol %s", expr.Identifier)
+		return nil, NewError(expr, "unknown symbol %s", expr.Identifier)
 	}
 
 	call, ok := symb.(*symbol.Function)
 	if !ok {
-		return nil, fmt.Errorf("found identifier, expected function name %s", expr.Identifier)
+		return nil, NewError(expr, "found identifier, expected function name %s", expr.Identifier)
 	}
 
 	if len(call.Args) != len(expr.Arguments) {
