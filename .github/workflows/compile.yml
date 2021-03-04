@@ -1,10 +1,10 @@
-name: Compiles the Compiler
+name: Runs automated tests
 
 on: [ push ]
 
 jobs:
-  compiles:
-    name: "Runs `make compile`"
+  test:
+    name: ""
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
