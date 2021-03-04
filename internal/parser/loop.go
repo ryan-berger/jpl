@@ -5,7 +5,7 @@ import (
 	"github.com/ryan-berger/jpl/internal/lexer"
 )
 
-func (p *Parser) parseArrayTransform() ast.Expression {
+func (p *parser) parseArrayTransform() ast.Expression {
 	expr := &ast.ArrayTransform{}
 	if !p.expectPeek(lexer.LBrace) {
 		return nil
@@ -23,7 +23,7 @@ func (p *Parser) parseArrayTransform() ast.Expression {
 	return expr
 }
 
-func (p *Parser) parseSumTransform() ast.Expression {
+func (p *parser) parseSumTransform() ast.Expression {
 	expr := &ast.SumTransform{}
 	if !p.expectPeek(lexer.LBrace) {
 		return nil
@@ -42,7 +42,7 @@ func (p *Parser) parseSumTransform() ast.Expression {
 	return expr
 }
 
-func (p *Parser) parseOpBindings() []ast.OpBinding {
+func (p *parser) parseOpBindings() []ast.OpBinding {
 	var opBindings []ast.OpBinding
 
 	ok := p.parseList(lexer.RBrace, func() bool {

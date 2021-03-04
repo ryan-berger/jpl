@@ -390,8 +390,7 @@ fn example(i : int, j : int) {
 
 func TestLexer(t *testing.T) {
 	for _, test := range tests {
-		l := NewLexer(test.input)
-		tokens, _ := l.LexAll()
+		tokens, _ := Lex(test.input)
 		for _, tok := range tokens {
 			fmt.Println(tok.DumpString())
 		}
@@ -427,8 +426,7 @@ func TestLexerWithAssignments(t *testing.T) {
 
 	for _, test := range tests {
 		buf := bytes.NewBufferString("")
-		l := NewLexer(test.input)
-		tokens, ok := l.LexAll()
+		tokens, ok := Lex(test.input)
 		assert.True(t, ok)
 		for _, tok := range tokens {
 			buf.WriteString(tok.DumpString() + "\n")

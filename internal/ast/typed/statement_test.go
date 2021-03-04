@@ -1,4 +1,4 @@
-package types
+package typed
 
 import (
 	"fmt"
@@ -9,18 +9,16 @@ import (
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/lexer"
 	"github.com/ryan-berger/jpl/internal/parser"
+	"github.com/ryan-berger/jpl/internal/symbol"
+	"github.com/ryan-berger/jpl/internal/types"
 )
 
 func parseLet(t *testing.T, expr string) *ast.LetStatement {
-	tokens, ok := lexer.
-		NewLexer(fmt.Sprintf("let %s", expr)).
-		LexAll()
+	tokens, ok := lexer.Lex(fmt.Sprintf("let %s", expr))
 
 	assert.True(t, ok, "lexer error")
 
-	commands, err := parser.
-		NewParser(tokens).
-		ParseProgram(false)
+	commands, err := parser.Parse(tokens)
 
 	assert.Nil(t, err, "error nil")
 	assert.Len(t, commands, 1)
@@ -30,8 +28,8 @@ func parseLet(t *testing.T, expr string) *ast.LetStatement {
 }
 
 var validLetTests = []struct {
-	expr       string
-} {
+	expr string
+}{
 	{
 		expr: "x = 10",
 	},
@@ -51,9 +49,9 @@ var validLetTests = []struct {
 
 func TestLet(t *testing.T) {
 	for _, test := range validLetTests {
-		table := NewSymbolTable()
+		table := symbol.NewSymbolTable()
 		letStmt := parseLet(t, test.expr)
-		rType, err := ExpressionType(letStmt.Expr, table)
+		rType, err := expressionType(letStmt.Expr, table)
 		assert.Nil(t, err)
 		err = bindLVal(letStmt.LValue, rType, table)
 		assert.Nil(t, err)
@@ -61,15 +59,11 @@ func TestLet(t *testing.T) {
 }
 
 func parseFunction(t *testing.T, expr string) *ast.Function {
-	tokens, ok := lexer.
-		NewLexer(expr).
-		LexAll()
+	tokens, ok := lexer.Lex(expr)
 
 	assert.True(t, ok, "lexer error")
 
-	commands, err := parser.
-		NewParser(tokens).
-		ParseProgram(false)
+	commands, err := parser.Parse(tokens)
 
 	assert.Nil(t, err, "error nil")
 	assert.Len(t, commands, 1)
@@ -80,77 +74,77 @@ func parseFunction(t *testing.T, expr string) *ast.Function {
 
 var validFunctionTests = []struct {
 	expr       string
-	bindings   []Type
-	returnType Type
+	bindings   []types.Type
+	returnType types.Type
 }{
 	{
 		expr: `fn test() : {} {
 }`,
-		bindings:   []Type{},
-		returnType: &Tuple{},
+		bindings:   []types.Type{},
+		returnType: &types.Tuple{},
 	},
 	{
 		expr: `fn test() : int {
 return 0
 }`,
-		bindings:   []Type{},
-		returnType: Integer,
+		bindings:   []types.Type{},
+		returnType: types.Integer,
 	},
 	{
 		expr: `fn test() : {int, int} {
 return {1, 2}
 }`,
-		bindings:   []Type{},
-		returnType: &Tuple{Types: []Type{Integer, Integer}},
+		bindings:   []types.Type{},
+		returnType: &types.Tuple{Types: []types.Type{types.Integer, types.Integer}},
 	},
 	{
 		expr: `fn test({x : int, y[H, W] : int[,]}, z : int) : {int, int} {
 return {1, 2}
 }`,
-		bindings: []Type{
-			&Tuple{
-				Types: []Type{
-					Integer,
-					&Array{Inner: Integer, Rank: 2},
+		bindings: []types.Type{
+			&types.Tuple{
+				Types: []types.Type{
+					types.Integer,
+					&types.Array{Inner: types.Integer, Rank: 2},
 				},
 			},
-			Integer,
+			types.Integer,
 		},
-		returnType: &Tuple{Types: []Type{Integer, Integer}},
+		returnType: &types.Tuple{Types: []types.Type{types.Integer, types.Integer}},
 	},
 	{
 		expr: `fn test({x : int, y[H, W] : int[,]}) : {int, int[]} {
 return {1, [1, 2]}
 }`,
-		bindings:   []Type{
-			&Tuple{
-				Types: []Type{
-					Integer,
-					&Array{Inner: Integer, Rank: 2},
+		bindings: []types.Type{
+			&types.Tuple{
+				Types: []types.Type{
+					types.Integer,
+					&types.Array{Inner: types.Integer, Rank: 2},
 				},
 			},
 		},
-		returnType: &Tuple{Types: []Type{Integer, &Array{Inner: Integer, Rank: 1}}},
+		returnType: &types.Tuple{Types: []types.Type{types.Integer, &types.Array{Inner: types.Integer, Rank: 1}}},
 	},
 	{
 		expr: `fn test(x : {float, bool}) : {int, int} {
 return {1, 1}
 }`,
-		bindings:   []Type{
-			&Tuple{
-				Types: []Type{
-					Float,
-					Boolean,
+		bindings: []types.Type{
+			&types.Tuple{
+				Types: []types.Type{
+					types.Float,
+					types.Boolean,
 				},
 			},
 		},
-		returnType: &Tuple{Types: []Type{Integer, Integer}},
+		returnType: &types.Tuple{Types: []types.Type{types.Integer, types.Integer}},
 	},
 }
 
 func TestFunction(t *testing.T) {
 	for _, test := range validFunctionTests {
-		table := NewSymbolTable()
+		table := symbol.NewSymbolTable()
 		fn := parseFunction(t, test.expr)
 		symb, err := functionBinding(fn, table)
 

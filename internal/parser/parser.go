@@ -7,11 +7,7 @@ import (
 	"github.com/ryan-berger/jpl/internal/lexer"
 )
 
-type Program struct {
-	Commands []ast.Command
-}
-
-type Parser struct {
+type parser struct {
 	tokens   []lexer.Token
 	position int
 	cur      lexer.Token
@@ -23,8 +19,8 @@ type Parser struct {
 	infixParseFns  map[lexer.TokenType]infixParseFn
 }
 
-func NewParser(tokens []lexer.Token) *Parser {
-	p := &Parser{
+func newParser(tokens []lexer.Token) *parser {
+	p := &parser{
 		tokens:   tokens,
 		position: 0,
 
@@ -73,7 +69,7 @@ func NewParser(tokens []lexer.Token) *Parser {
 	return p
 }
 
-func (p *Parser) advance() {
+func (p *parser) advance() {
 	p.cur = p.peek
 	p.peek = p.tokens[p.position]
 	if p.position != len(p.tokens)-1 {
@@ -81,7 +77,7 @@ func (p *Parser) advance() {
 	}
 }
 
-func (p *Parser) expectPeek(tokType lexer.TokenType) bool {
+func (p *parser) expectPeek(tokType lexer.TokenType) bool {
 	if p.peek.Type == tokType {
 		p.advance()
 		return true
@@ -89,40 +85,40 @@ func (p *Parser) expectPeek(tokType lexer.TokenType) bool {
 	return false
 }
 
-func (p *Parser) curTokenIs(tokType lexer.TokenType) bool {
+func (p *parser) curTokenIs(tokType lexer.TokenType) bool {
 	return p.cur.Type == tokType
 }
 
-func (p *Parser) peekTokenIs(tokType lexer.TokenType) bool {
+func (p *parser) peekTokenIs(tokType lexer.TokenType) bool {
 	return p.peek.Type == tokType
 }
 
-func (p *Parser) registerPrefixFn(tokType lexer.TokenType, prefixFn prefixParseFn) {
+func (p *parser) registerPrefixFn(tokType lexer.TokenType, prefixFn prefixParseFn) {
 	p.prefixParseFns[tokType] = prefixFn
 }
 
-func (p *Parser) registerInfixFn(tokType lexer.TokenType, infixFn infixParseFn) {
+func (p *parser) registerInfixFn(tokType lexer.TokenType, infixFn infixParseFn) {
 	p.infixParseFns[tokType] = infixFn
 }
 
-func (p *Parser) curPrecedence() precedence {
+func (p *parser) curPrecedence() precedence {
 	if pr, ok := opPrecedence[p.cur.Type]; ok {
 		return pr
 	}
 	return lowest
 }
-func (p *Parser) peekPrecedence() precedence {
+func (p *parser) peekPrecedence() precedence {
 	if pr, ok := opPrecedence[p.peek.Type]; ok {
 		return pr
 	}
 	return lowest
 }
 
-func (p *Parser) errorf(format string, args ...interface{}) {
+func (p *parser) errorf(format string, args ...interface{}) {
 	p.error = fmt.Errorf(format, args...)
 }
 
-func (p *Parser) ParseProgram(debug bool) ([]ast.Command, error) {
+func (p *parser) parseProgram() ([]ast.Command, error) {
 	var commands []ast.Command
 	if p.curTokenIs(lexer.NewLine) {
 		p.advance() // newline can be at the beginning of the file sometime
@@ -139,15 +135,10 @@ func (p *Parser) ParseProgram(debug bool) ([]ast.Command, error) {
 		p.advance()
 	}
 
-	if debug {
-		for _, c := range commands {
-			expr := c.SExpr()
-			if stmt, ok := c.(ast.Statement); ok {
-				expr = fmt.Sprintf("(StmtCmd %s)", stmt.SExpr())
-			}
-			fmt.Println(expr)
-		}
-	}
-
 	return commands, nil
+}
+
+func Parse(tokens []lexer.Token) (ast.Program, error) {
+	p := newParser(tokens)
+	return p.parseProgram()
 }

@@ -5,7 +5,7 @@ import (
 	"github.com/ryan-berger/jpl/internal/lexer"
 )
 
-func (p *Parser) parseFunction() ast.Command {
+func (p *parser) parseFunction() ast.Command {
 	function := &ast.Function{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -52,7 +52,7 @@ func (p *Parser) parseFunction() ast.Command {
 	return function
 }
 
-func (p *Parser) parseStatements() []ast.Statement {
+func (p *parser) parseStatements() []ast.Statement {
 	var statements []ast.Statement
 
 	for !p.peekTokenIs(lexer.RCurly) && !p.peekTokenIs(lexer.EOF) {
@@ -69,7 +69,7 @@ func (p *Parser) parseStatements() []ast.Statement {
 	return statements
 }
 
-func (p *Parser) parseBindings() []ast.Binding {
+func (p *parser) parseBindings() []ast.Binding {
 	var bindings []ast.Binding
 
 	ok := p.parseList(lexer.RParen, func() bool {
@@ -88,7 +88,7 @@ func (p *Parser) parseBindings() []ast.Binding {
 	return bindings
 }
 
-func (p *Parser) parseTupleBinding() ast.Binding {
+func (p *parser) parseTupleBinding() ast.Binding {
 	binding := &ast.TupleBinding{}
 
 	ok := p.parseList(lexer.RCurly, func() bool {
@@ -107,7 +107,7 @@ func (p *Parser) parseTupleBinding() ast.Binding {
 	return binding
 }
 
-func (p *Parser) parseBinding() ast.Binding {
+func (p *parser) parseBinding() ast.Binding {
 	if p.curTokenIs(lexer.LCurly) {
 		return p.parseTupleBinding()
 	}

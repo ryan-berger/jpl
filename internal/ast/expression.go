@@ -12,7 +12,8 @@ type Expression interface {
 
 // IntExpression
 type IntExpression struct {
-	Val int64
+	Val  int64
+	Type Type
 	Location
 }
 

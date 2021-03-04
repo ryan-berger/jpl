@@ -1,14 +1,14 @@
-package types
+package typed
 
 import (
 	"fmt"
 
-	"github.com/ryan-berger/jpl/internal/ast"
+	"github.com/ryan-berger/jpl/internal/meta"
 )
 
 type Error struct {
 	msg string
-	ast.Locationer
+	meta.Locationer
 }
 
 func (e *Error) Error() string {
@@ -16,7 +16,7 @@ func (e *Error) Error() string {
 	return fmt.Sprintf("%s at position %d:%d", e.msg, line, pos)
 }
 
-func NewError(loc ast.Locationer, msg string, args ...interface{}) error {
+func NewError(loc meta.Locationer, msg string, args ...interface{}) error {
 	return &Error{
 		msg:        fmt.Sprintf(msg, args...),
 		Locationer: loc,

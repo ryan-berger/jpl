@@ -45,7 +45,7 @@ var opPrecedence = map[lexer.TokenType]precedence{
 	lexer.LBrace:             call,
 }
 
-func (p *Parser) parseExpression(pr precedence) ast.Expression {
+func (p *parser) parseExpression(pr precedence) ast.Expression {
 	prefix := p.prefixParseFns[p.cur.Type]
 	if prefix == nil {
 		p.errorf("error, unable to parse prefix operator %s at %d:%d", p.cur.Val, p.cur.Line, p.cur.Character)
@@ -65,7 +65,7 @@ func (p *Parser) parseExpression(pr precedence) ast.Expression {
 	return leftExp
 }
 
-func (p *Parser) parsePrefixExpr() ast.Expression {
+func (p *parser) parsePrefixExpr() ast.Expression {
 	expr := &ast.PrefixExpression{
 		Op: p.cur.Val,
 		Location: ast.Location{
@@ -82,7 +82,7 @@ func (p *Parser) parsePrefixExpr() ast.Expression {
 	return expr
 }
 
-func (p *Parser) parseInfixExpr(left ast.Expression) ast.Expression {
+func (p *parser) parseInfixExpr(left ast.Expression) ast.Expression {
 	expr := &ast.InfixExpression{
 		Op:   p.cur.Val,
 		Left: left,
@@ -94,7 +94,7 @@ func (p *Parser) parseInfixExpr(left ast.Expression) ast.Expression {
 	return expr
 }
 
-func (p *Parser) parseArrayRefExpr(arr ast.Expression) ast.Expression {
+func (p *parser) parseArrayRefExpr(arr ast.Expression) ast.Expression {
 	arrRefExpr := &ast.ArrayRefExpression{
 		Array: arr,
 	}
@@ -119,7 +119,7 @@ func (p *Parser) parseArrayRefExpr(arr ast.Expression) ast.Expression {
 	return arrRefExpr
 }
 
-func (p *Parser) parseTupleRefExpr(tuple ast.Expression) ast.Expression {
+func (p *parser) parseTupleRefExpr(tuple ast.Expression) ast.Expression {
 	arrRefExpr := &ast.TupleRefExpression{
 		Tuple: tuple,
 	}
@@ -131,7 +131,7 @@ func (p *Parser) parseTupleRefExpr(tuple ast.Expression) ast.Expression {
 	return arrRefExpr
 }
 
-func (p *Parser) parseGroupedExpression() ast.Expression {
+func (p *parser) parseGroupedExpression() ast.Expression {
 	p.advance()
 
 	exp := p.parseExpression(lowest) // TODO: handle error
@@ -148,7 +148,7 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 	return exp
 }
 
-func (p *Parser) parseTupleExpression() ast.Expression {
+func (p *parser) parseTupleExpression() ast.Expression {
 	tupleExpr := &ast.TupleExpression{}
 
 	ok := p.parseList(lexer.RCurly, func() bool {
@@ -167,7 +167,7 @@ func (p *Parser) parseTupleExpression() ast.Expression {
 	return tupleExpr
 }
 
-func (p *Parser) parseArrayExpression() ast.Expression {
+func (p *parser) parseArrayExpression() ast.Expression {
 	arrayExpr := &ast.ArrayExpression{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -192,7 +192,7 @@ func (p *Parser) parseArrayExpression() ast.Expression {
 	return arrayExpr
 }
 
-func (p *Parser) parseInteger() ast.Expression {
+func (p *parser) parseInteger() ast.Expression {
 	expr := &ast.IntExpression{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -209,7 +209,7 @@ func (p *Parser) parseInteger() ast.Expression {
 	return expr
 }
 
-func (p *Parser) parseFloat() ast.Expression {
+func (p *parser) parseFloat() ast.Expression {
 	expr := &ast.FloatExpression{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -225,7 +225,7 @@ func (p *Parser) parseFloat() ast.Expression {
 	return expr
 }
 
-func (p *Parser) parseBoolean() ast.Expression {
+func (p *parser) parseBoolean() ast.Expression {
 	return &ast.BooleanExpression{
 		Val: p.cur.Val == "true",
 		Location: ast.Location{
@@ -235,7 +235,7 @@ func (p *Parser) parseBoolean() ast.Expression {
 	}
 }
 
-func (p *Parser) parseIdentifier() ast.Expression {
+func (p *parser) parseIdentifier() ast.Expression {
 	val := p.cur.Val
 	if p.peekTokenIs(lexer.LParen) {
 		return p.parseCallExpression()
@@ -249,7 +249,7 @@ func (p *Parser) parseIdentifier() ast.Expression {
 	}
 }
 
-func (p *Parser) parseCallExpression() ast.Expression {
+func (p *parser) parseCallExpression() ast.Expression {
 	callExpr := &ast.CallExpression{
 		Identifier: p.cur.Val,
 		Location: ast.Location{
@@ -276,7 +276,7 @@ func (p *Parser) parseCallExpression() ast.Expression {
 	return callExpr
 }
 
-func (p *Parser) parseIf() ast.Expression {
+func (p *parser) parseIf() ast.Expression {
 	expr := &ast.IfExpression{
 		Location: ast.Location{
 			Line: p.cur.Line,

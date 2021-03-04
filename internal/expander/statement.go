@@ -1,0 +1,46 @@
+package expander
+
+import "github.com/ryan-berger/jpl/internal/ast"
+
+func expandStatement(statement ast.Statement, next nexter) []ast.Statement {
+	switch stmt := statement.(type) {
+	case *ast.Function:
+		return []ast.Statement{expandFunction(stmt, next)}
+	case *ast.LetStatement:
+		return expandLet(stmt, next)
+	case *ast.AssertStatement:
+		return expandAssert(stmt, next)
+	case *ast.ReturnStatement:
+		return expandReturn(stmt, next)
+	}
+	return nil
+}
+
+func expandFunction(fn *ast.Function, next nexter) ast.Statement {
+	stmts := fn.Statements
+	var newStmts []ast.Statement
+	for _, s := range stmts {
+		newStmts = append(newStmts, expandStatement(s, next)...)
+	}
+
+	return nil
+}
+
+func expandLet(ls *ast.LetStatement, next nexter) []ast.Statement {
+
+	return nil
+}
+
+func expandAssert(a *ast.AssertStatement, next nexter) []ast.Statement {
+	ref, stmts := expandExpression(a.Expr, next)
+	a.Expr = ref
+
+	return append(stmts, a)
+}
+
+func expandReturn(r *ast.ReturnStatement, next nexter) []ast.Statement {
+	ref, stmts := expandExpression(r.Expr, next)
+	r.Expr = ref
+
+	return append(stmts, r)
+}
