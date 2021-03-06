@@ -1,4 +1,4 @@
-package typed
+package checker
 
 import (
 	"fmt"
@@ -7,33 +7,6 @@ import (
 	"github.com/ryan-berger/jpl/internal/symbol"
 	"github.com/ryan-berger/jpl/internal/types"
 )
-
-func toType(typ ast.Type) types.Type {
-	switch t := typ.(type) {
-	case ast.BasicType:
-		switch t {
-		case ast.Int:
-			return types.Integer
-		case ast.Float:
-			return types.Float
-		case ast.Boolean:
-			return types.Boolean
-		}
-	case *ast.ArrType:
-		return &types.Array{Inner: toType(t.Type), Rank: t.Rank}
-	case *ast.TupleType:
-		typs := make([]types.Type, len(t.Types))
-		for i, typ := range t.Types {
-			typs[i] = toType(typ)
-		}
-		return &types.Tuple{
-			Types: typs,
-		}
-	default:
-		panic("invalid type")
-	}
-	return nil
-}
 
 func bindArg(argument ast.Argument, typ types.Type, table symbol.Table) error {
 	switch arg := argument.(type) {
@@ -77,11 +50,10 @@ func bind(binding ast.Binding, table symbol.Table) (types.Type, error) {
 		}
 		return tup, nil
 	case *ast.TypeBind:
-		typ := toType(b.Type)
-		if err := bindArg(b.Argument, typ, table); err != nil {
+		if err := bindArg(b.Argument, b.Type, table); err != nil {
 			return nil, err
 		}
-		return typ, nil
+		return b.Type, nil
 	default:
 		panic("")
 	}
@@ -91,7 +63,7 @@ func bind(binding ast.Binding, table symbol.Table) (types.Type, error) {
 func functionBinding(fun *ast.Function, table symbol.Table) (*symbol.Function, error) {
 	function := &symbol.Function{
 		Args:   make([]types.Type, len(fun.Bindings)),
-		Return: toType(fun.ReturnType),
+		Return: fun.ReturnType,
 	}
 	cpy := table.Copy()
 	if _, ok := cpy[fun.Var]; ok {

@@ -158,13 +158,13 @@ var errorTests = []struct {
 	expr     string
 	expected string
 }{
-	{"", "error, unable to parse prefix operator  at 0:0"},
-	{"if )", "error, unable to parse prefix operator ) at 1:3"},
-	{"if 3 + 3 th", "error, expected 'then' received 'th' at 1:9"},
-	{"if 4 + 3 then 30 els 10", "error, expected 'else' received 'els' at 1:17"},
-	{"[1, 2, 3, 4][]", "error, expected expression, found ']' at 1:13"},
-	{"11111111111111111111111111111111111111111111111", "error, integer literal 11111111111111111111111111111111111111111111111 too large for a 64 bit integer at 1:0"},
-	{"(3 + 4\n", "err: illegal token. Expected ), found \n at 1:6"},
+	{"", "unable to parse prefix operator"},
+	{"if )", "unable to parse prefix operator )"},
+	{"if 3 + 3 th", "expected 'then' received 'th'"},
+	{"if 4 + 3 then 30 els 10", "expected 'else' received 'els'"},
+	{"[1, 2, 3, 4][]", "expected expression, found ']'"},
+	{"11111111111111111111111111111111111111111111111", "integer literal 11111111111111111111111111111111111111111111111 too large for a 64 bit integer"},
+	{"(3 + 4\n", "illegal token. Expected ')', found \n"},
 }
 
 func TestParseErrors(t *testing.T) {
@@ -174,7 +174,7 @@ func TestParseErrors(t *testing.T) {
 		parser := newParser(tokens)
 		parser.parseExpression(lowest) // parse expression
 		assert.NotNil(t, parser.error)
-		assert.Equal(t, test.expected, parser.error.Error())
+		assert.Contains(t, parser.error.Error(), test.expected)
 	}
 
 }

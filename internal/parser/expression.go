@@ -48,7 +48,7 @@ var opPrecedence = map[lexer.TokenType]precedence{
 func (p *parser) parseExpression(pr precedence) ast.Expression {
 	prefix := p.prefixParseFns[p.cur.Type]
 	if prefix == nil {
-		p.errorf("error, unable to parse prefix operator %s at %d:%d", p.cur.Val, p.cur.Line, p.cur.Character)
+		p.errorf(p.cur, "unable to parse prefix operator %s", p.cur.Val)
 		return nil
 	}
 
@@ -112,7 +112,7 @@ func (p *parser) parseArrayRefExpr(arr ast.Expression) ast.Expression {
 	}
 
 	if len(arrRefExpr.Indexes) == 0 {
-		p.errorf("error, expected expression, found ']' at %d:%d", p.cur.Line, p.cur.Character)
+		p.errorf(p.cur, "expected expression, found ']'")
 		return nil
 	}
 
@@ -141,7 +141,7 @@ func (p *parser) parseGroupedExpression() ast.Expression {
 	}
 
 	if !p.expectPeek(lexer.RParen) {
-		p.errorf("err: illegal token. Expected ), found %s at %d:%d", p.peek.Val, p.peek.Line, p.peek.Character)
+		p.errorf(p.peek, "illegal token. Expected ')', found %s", p.peek.Val)
 		return nil
 	}
 
@@ -201,7 +201,7 @@ func (p *parser) parseInteger() ast.Expression {
 	}
 	val, err := strconv.ParseInt(p.cur.Val, 10, 64)
 	if err != nil {
-		p.errorf("error, integer literal %s too large for a 64 bit integer at %d:%d", p.cur.Val, p.cur.Line, p.cur.Character)
+		p.errorf(p.cur, "integer literal %s too large for a 64 bit integer", p.cur.Val)
 		return nil
 	}
 
@@ -218,7 +218,7 @@ func (p *parser) parseFloat() ast.Expression {
 	}
 	val, err := strconv.ParseFloat(p.cur.Val, 64)
 	if err != nil {
-		p.errorf("error, float %s too large for a 64 bit float at %d:%d", p.cur.Val, p.cur.Line, p.cur.Character)
+		p.errorf(p.cur, "float %s too large for a 64 bit float", p.cur.Val)
 		return nil
 	}
 	expr.Val = val
@@ -294,7 +294,7 @@ func (p *parser) parseIf() ast.Expression {
 	}
 
 	if !p.expectPeek(lexer.Then) {
-		p.errorf("error, expected 'then' received '%s' at %d:%d", p.peek.Val, p.peek.Line, p.peek.Character)
+		p.errorf(p.peek, "expected 'then' received '%s'", p.peek.Val)
 		return nil
 	}
 	p.advance()
@@ -308,7 +308,7 @@ func (p *parser) parseIf() ast.Expression {
 	}
 
 	if !p.expectPeek(lexer.Else) {
-		p.errorf("error, expected 'else' received '%s' at %d:%d", p.peek.Val, p.peek.Line, p.peek.Character)
+		p.errorf(p.peek, "expected 'else' received '%s'", p.peek.Val)
 		return nil
 	}
 	p.advance()

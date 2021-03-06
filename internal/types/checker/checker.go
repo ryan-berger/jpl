@@ -1,4 +1,4 @@
-package typed
+package checker
 
 import (
 	"github.com/ryan-berger/jpl/internal/ast"

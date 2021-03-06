@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/ryan-berger/jpl/internal/ast"
+	"github.com/ryan-berger/jpl/internal/errors"
 	"github.com/ryan-berger/jpl/internal/lexer"
+	"github.com/ryan-berger/jpl/internal/meta"
 )
 
 type parser struct {
@@ -114,8 +116,8 @@ func (p *parser) peekPrecedence() precedence {
 	return lowest
 }
 
-func (p *parser) errorf(format string, args ...interface{}) {
-	p.error = fmt.Errorf(format, args...)
+func (p *parser) errorf(loc meta.Locationer, format string, args ...interface{}) {
+	p.error = errors.ParseError(fmt.Sprintf(format, args...), loc)
 }
 
 func (p *parser) parseProgram() ([]ast.Command, error) {

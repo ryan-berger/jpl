@@ -3,6 +3,7 @@ package parser
 import (
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/lexer"
+	"github.com/ryan-berger/jpl/internal/types"
 )
 
 func (p *parser) parseFunction() ast.Command {
@@ -129,8 +130,8 @@ func (p *parser) parseBinding() ast.Binding {
 	return binding
 }
 
-var tokenToType = map[lexer.TokenType]ast.Type{
-	lexer.Float: ast.Float,
-	lexer.Int:   ast.Int,
-	lexer.Bool:  ast.Boolean,
+var tokenToType = map[lexer.TokenType]types.Type{
+	lexer.Float: types.Float,
+	lexer.Int:   types.Integer,
+	lexer.Bool:  types.Boolean,
 }

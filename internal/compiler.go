@@ -7,10 +7,10 @@ import (
 	"os"
 
 	"github.com/ryan-berger/jpl/internal/ast"
-	"github.com/ryan-berger/jpl/internal/ast/typed"
 	"github.com/ryan-berger/jpl/internal/expander"
 	"github.com/ryan-berger/jpl/internal/lexer"
 	"github.com/ryan-berger/jpl/internal/parser"
+	"github.com/ryan-berger/jpl/internal/types/checker"
 )
 
 type PrintMode int
@@ -87,7 +87,7 @@ func (c *Compiler) parse(tokens []lexer.Token) (ast.Program, error) {
 }
 
 func (c *Compiler) typeCheck(program ast.Program) (ast.Program, error) {
-	newProgram, err := typed.Check(program)
+	newProgram, err := checker.Check(program)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (c *Compiler) typeCheck(program ast.Program) (ast.Program, error) {
 func (c *Compiler) expand(program ast.Program) ast.Program {
 	expanded := expander.Expand(program)
 
-	_, err := typed.Check(expanded)
+	_, err := checker.Check(expanded)
 	if err != nil {
 		panic("nice, you really messed up")
 	}

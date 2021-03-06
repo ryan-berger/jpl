@@ -3,6 +3,8 @@ package ast
 import (
 	"fmt"
 	"strings"
+
+	"github.com/ryan-berger/jpl/internal/types"
 )
 
 type Binding interface {
@@ -12,7 +14,7 @@ type Binding interface {
 
 type TypeBind struct {
 	Argument Argument
-	Type     Type
+	Type     types.Type
 	Location
 }
 
@@ -44,10 +46,7 @@ func (b *TupleBinding) String() string {
 }
 func (b *TupleBinding) binding() {}
 
-type Type interface {
-	String() string
-	typ()
-}
+
 
 type BasicType int
 
@@ -70,7 +69,7 @@ const (
 )
 
 type ArrType struct {
-	Type Type
+	Type types.Type
 	Rank int
 }
 
@@ -84,7 +83,7 @@ func (a *ArrType) String() string {
 func (a *ArrType) typ() {}
 
 type TupleType struct {
-	Types []Type
+	Types []types.Type
 }
 
 func (t *TupleType) String() string {
