@@ -2,54 +2,50 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"io/ioutil"
+	"os"
 
-	"github.com/ryan-berger/jpl/internal/lexer"
-	"github.com/ryan-berger/jpl/internal/parser"
+	"github.com/ryan-berger/jpl/internal"
 )
 
 var debugLex bool
 var debugParse bool
 var debug bool
+var typed bool
+var flattened bool
+
 func init() {
 	flag.BoolVar(&debugLex, "l", false, "lex")
 	flag.BoolVar(&debugParse, "p", false, "parse")
 	flag.BoolVar(&debug, "d", false, "debug")
+	flag.BoolVar(&typed, "t", false, "types")
+	flag.BoolVar(&flattened, "f", false, "flatten")
 }
 
 func main() {
 	flag.Parse()
 
-	file, err := ioutil.ReadFile(flag.Arg(0))
+	file, err := os.Open(flag.Arg(0))
 	if err != nil {
 		panic(err)
 	}
 
-	l := lexer.NewLexer(string(file))
-	tokens, success := l.LexAll()
+	opts := []internal.CompilerOpts{internal.WithReader(file)}
 
-	if debugLex {
-		for _, tok := range tokens {
-			fmt.Println(tok.DumpString())
-		}
-
-		if success {
-			fmt.Println("Compilation succeeded")
-		} else {
-			fmt.Println("Compilation failed")
-		}
-		return
+	var mode internal.PrintMode
+	switch {
+	case debugLex:
+		mode = internal.Lex
+	case debugParse:
+		mode = internal.Parse
+	case typed:
+		mode = internal.TypeCheck
+	case flattened:
+		mode = internal.Flatten
 	}
 
-	p := parser.NewParser(tokens)
-	_, err = p.ParseProgram(debugParse)
-	if err != nil {
-		if debug {
-			fmt.Println(err)
-		}
-		fmt.Println("Compilation failed")
-		return
+	if mode != 0 {
+		opts = append(opts, internal.WithPrintMode(mode))
 	}
-	fmt.Println("Compilation succeeded")
+
+	internal.NewCompiler(opts...).Compile()
 }

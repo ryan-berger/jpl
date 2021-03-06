@@ -5,7 +5,7 @@ import (
 	"github.com/ryan-berger/jpl/internal/lexer"
 )
 
-func (p *Parser) parseTypeExpression() ast.Type {
+func (p *parser) parseTypeExpression() ast.Type {
 	t := p.parseType()
 
 	// handle type nesting
@@ -27,24 +27,22 @@ func (p *Parser) parseTypeExpression() ast.Type {
 	return t
 }
 
-func (p *Parser) parseType() ast.Type {
+func (p *parser) parseType() ast.Type {
 	if p.curTokenIs(lexer.LCurly) {
 		return p.parseTupleType()
 	}
 	var t ast.Type
 
 	switch p.cur.Type {
-	case lexer.Float, lexer.Int:
+	case lexer.Float, lexer.Int, lexer.Bool:
 		t = tokenToType[p.cur.Type]
 	case lexer.Float3:
-		t = &ast.ArrType{
-			Type: ast.Float,
-			Rank: 3,
+		t = &ast.TupleType{
+			Types: []ast.Type{ast.Float, ast.Float, ast.Float},
 		}
 	case lexer.Float4:
-		t = &ast.ArrType{
-			Type: ast.Float,
-			Rank: 4,
+		t = &ast.TupleType{
+			Types: []ast.Type{ast.Float, ast.Float, ast.Float, ast.Float},
 		}
 	default:
 		p.errorf("err: expected type received %s at line %d", p.cur.Val, p.cur.Line)
@@ -54,7 +52,7 @@ func (p *Parser) parseType() ast.Type {
 	return t
 }
 
-func (p *Parser) parseTupleType() ast.Type {
+func (p *parser) parseTupleType() ast.Type {
 	tupleType := &ast.TupleType{}
 
 	ok := p.parseList(lexer.RCurly, func() bool {

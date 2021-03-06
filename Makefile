@@ -1,6 +1,6 @@
 TEST=test.jpl
 
-.SILENT: run
+.SILENT: run run-a4t run-a4f
 all: run
 
 compile: cmd/compiler.go
@@ -8,6 +8,12 @@ compile: cmd/compiler.go
 
 run:
 	./jpl -p $(TEST)
+
+run-a4t:
+	./jpl -t $(TEST)
+
+run-a4f:
+	./jpl -f $(TEST)
 
 clean:
 	rm -rf jpl

@@ -12,23 +12,21 @@ import (
 func TestParse_Let(t *testing.T) {
 	test := `let {x[W,H], y, z} = {(10*3)+10, 3, 4}`
 
-	tokens, ok := lexer.NewLexer(test).LexAll()
+	tokens, ok := lexer.Lex(test)
 	assert.True(t, ok)
 
-	p := NewParser(tokens)
-	assert.Nil(t, p.error)
-	fmt.Println(p.ParseProgram(false))
+
+	fmt.Println(Parse(tokens))
 }
 
 func TestParse_Fn(t *testing.T) {
 	test := `
 print "test"
 `
-	tokens, ok := lexer.NewLexer(test).LexAll()
+	tokens, ok := lexer.Lex(test)
 	assert.True(t, ok)
 
-	p := NewParser(tokens)
-	cmds, err := p.ParseProgram(false)
+	cmds, err := Parse(tokens)
 	fmt.Println(cmds)
 	assert.Nil(t, err)
 }
@@ -36,9 +34,8 @@ print "test"
 func TestParse_Cmd(t *testing.T) {
 	test := `show x + 10`
 
-	tokens, ok := lexer.NewLexer(test).LexAll()
+	tokens, ok := lexer.Lex(test)
 	assert.True(t, ok)
 
-	p := NewParser(tokens)
-	p.ParseProgram(false)
+	Parse(tokens)
 }

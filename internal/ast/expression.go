@@ -3,6 +3,8 @@ package ast
 import (
 	"fmt"
 	"strings"
+
+	"github.com/ryan-berger/jpl/internal/types"
 )
 
 type Expression interface {
@@ -12,11 +14,15 @@ type Expression interface {
 
 // IntExpression
 type IntExpression struct {
-	Val int64
+	Val  int64
+	Type types.Type
 	Location
 }
 
 func (i *IntExpression) SExpr() string {
+	if i.Type != nil {
+		return fmt.Sprintf("(IntExpr %s %d)", i.Type, i.Val)
+	}
 	return fmt.Sprintf("(IntExpr %d)", i.Val)
 }
 
@@ -28,10 +34,14 @@ func (i *IntExpression) expression() {}
 // IdentifierExpression
 type IdentifierExpression struct {
 	Identifier string
+	Type       types.Type
 	Location
 }
 
 func (i *IdentifierExpression) SExpr() string {
+	if i.Type != nil {
+		return fmt.Sprintf("(VarExpr %s %s)", i.Type, i.Identifier)
+	}
 	return fmt.Sprintf("(VarExpr %s)", i.Identifier)
 }
 
@@ -43,6 +53,7 @@ func (i *IdentifierExpression) expression() {}
 type CallExpression struct {
 	Identifier string
 	Arguments  []Expression
+	Type       types.Type
 	Location
 }
 
@@ -50,6 +61,10 @@ func (c *CallExpression) SExpr() string {
 	strs := make([]string, len(c.Arguments))
 	for i, expr := range c.Arguments {
 		strs[i] = expr.SExpr()
+	}
+
+	if c.Type != nil {
+		return fmt.Sprintf("(CallExpr %s %s %s)", c.Type, c.Identifier, strings.Join(strs, " "))
 	}
 
 	return fmt.Sprintf("(CallExpr %s %s)", c.Identifier, strings.Join(strs, " "))
@@ -67,11 +82,15 @@ func (c *CallExpression) expression() {}
 
 // FloatExpression
 type FloatExpression struct {
-	Val float64
+	Val  float64
+	Type types.Type
 	Location
 }
 
 func (f *FloatExpression) SExpr() string {
+	if f.Type != nil {
+		return fmt.Sprintf("(FloatExpr %s %d)", f.Type, int64(f.Val))
+	}
 	return fmt.Sprintf("(FloatExpr %d)", int64(f.Val))
 }
 
@@ -82,11 +101,15 @@ func (f *FloatExpression) expression() {}
 
 type BooleanExpression struct {
 	Val bool
+	Type types.Type
 	Location
 }
 
 func (b *BooleanExpression) SExpr() string {
-	panic("implement me")
+	if b.Type != nil {
+		return fmt.Sprintf("(VarExpr %s %t)", b.Type, b.Val)
+	}
+	return fmt.Sprintf("(VarExpr %t)", b.Val)
 }
 
 func (b *BooleanExpression) String() string {
@@ -118,6 +141,7 @@ func (t *TupleExpression) expression() {}
 
 type ArrayExpression struct {
 	Expressions []Expression
+	Type        types.Type
 	Location
 }
 
@@ -138,6 +162,7 @@ func (a *ArrayExpression) expression() {}
 type ArrayRefExpression struct {
 	Array   Expression
 	Indexes []Expression
+	Type    types.Type
 	Location
 }
 
@@ -156,6 +181,7 @@ func (a *ArrayRefExpression) expression() {}
 type TupleRefExpression struct {
 	Tuple Expression
 	Index Expression
+	Type  types.Type
 	Location
 }
 
@@ -171,6 +197,7 @@ type IfExpression struct {
 	Condition   Expression
 	Consequence Expression
 	Otherwise   Expression
+	Type        types.Type
 	Location
 }
 
@@ -187,6 +214,7 @@ func (i *IfExpression) expression() {}
 type OpBinding struct {
 	Variable string
 	Expr     Expression
+	Type     types.Type
 	Location
 }
 
@@ -197,6 +225,7 @@ func (o *OpBinding) String() string {
 type ArrayTransform struct {
 	OpBindings []OpBinding
 	Expr       Expression
+	Type       types.Type
 	Location
 }
 
@@ -218,6 +247,7 @@ func (a *ArrayTransform) expression() {}
 type SumTransform struct {
 	OpBindings []OpBinding
 	Expr       Expression
+	Type       types.Type
 	Location
 }
 
@@ -238,6 +268,7 @@ type InfixExpression struct {
 	Left  Expression
 	Right Expression
 	Op    string
+	Type  types.Type
 	Location
 }
 
@@ -253,6 +284,7 @@ func (i *InfixExpression) expression() {}
 type PrefixExpression struct {
 	Op   string
 	Expr Expression
+	Type types.Type
 	Location
 }
 

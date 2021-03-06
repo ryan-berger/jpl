@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// Lexer holds state while we lex. Heavily inspired by "Writing an Interpreter in Go"
-type Lexer struct {
+// lexer holds state while we lex. Heavily inspired by "Writing an Interpreter in Go"
+type lexer struct {
 	input        string
 	position     int
 	readPosition int
@@ -15,8 +15,8 @@ type Lexer struct {
 	ch           byte
 }
 
-func NewLexer(input string) *Lexer {
-	l := &Lexer{
+func newLexer(input string) *lexer {
+	l := &lexer{
 		input:        input,
 		position:     0,
 		readPosition: 0,
@@ -28,7 +28,21 @@ func NewLexer(input string) *Lexer {
 	return l
 }
 
-func (l *Lexer) readChar() {
+func Lex(input string) ([]Token, bool) {
+	l := newLexer(input)
+	tokens := make([]Token, 0)
+	for tok := l.NextToken(); tok.Type != EOF; tok = l.NextToken() {
+		if len(tokens) != 0 && (tokens[len(tokens)-1].Type == NewLine && tok.Type == NewLine) {
+			continue
+		}
+		tokens = append(tokens, tok)
+	}
+	// TODO: Don't do this, just whyyyyy
+	tokens = append(tokens, Token{Type: EOF, Val: ""})
+	return tokens, len(tokens) == 1 || len(tokens) >= 2 && tokens[len(tokens)-2].Type != ILLEGAL
+}
+
+func (l *lexer) readChar() {
 	if l.readPosition >= len(l.input) {
 		l.ch = 0
 	} else {
@@ -39,7 +53,7 @@ func (l *Lexer) readChar() {
 	l.linePos++
 }
 
-func (l *Lexer) readIdentifier() string {
+func (l *lexer) readIdentifier() string {
 	pos := l.position
 	for isAlphabetic(l.ch) || isNumeric(l.ch) || l.ch == '_' || l.ch == '.' {
 		l.readChar()
@@ -47,7 +61,7 @@ func (l *Lexer) readIdentifier() string {
 	return l.input[pos:l.position]
 }
 
-func (l *Lexer) errorf(msg string, args ...interface{}) Token {
+func (l *lexer) errorf(msg string, args ...interface{}) Token {
 	// jump to the end
 	l.readPosition = len(l.input) + 1
 	l.ch = 0
@@ -61,7 +75,7 @@ func (l *Lexer) errorf(msg string, args ...interface{}) Token {
 }
 
 // readComment reads a single line comment
-func (l *Lexer) readComment() {
+func (l *lexer) readComment() {
 	l.readChar() // advance so we are in line with the comment
 	for l.ch != '\n' && l.readPosition <= len(l.input) {
 		l.readChar()
@@ -69,7 +83,7 @@ func (l *Lexer) readComment() {
 }
 
 // readMultilineComment reads a multi-line comment
-func (l *Lexer) readMultilineComment() *Token {
+func (l *lexer) readMultilineComment() *Token {
 	l.readChar()
 	l.readChar() // advance so we are in line with the comment
 
@@ -94,7 +108,7 @@ func (l *Lexer) readMultilineComment() *Token {
 	return nil
 }
 
-func (l *Lexer) readString() Token {
+func (l *lexer) readString() Token {
 	pos := l.position
 	l.readChar() // advance past the first quotation mark
 
@@ -110,7 +124,7 @@ func (l *Lexer) readString() Token {
 	return l.newOverflowedToken(String, str)
 }
 
-func (l *Lexer) readDigits() string {
+func (l *lexer) readDigits() string {
 	pos := l.position
 	for isNumeric(l.ch) {
 		l.readChar()
@@ -118,7 +132,7 @@ func (l *Lexer) readDigits() string {
 	return l.input[pos:l.position]
 }
 
-func (l *Lexer) readNumber() Token {
+func (l *lexer) readNumber() Token {
 	first := l.readDigits()
 
 	if l.ch != '.' {
@@ -143,14 +157,14 @@ func invalidChar(ch byte) bool {
 	return (ch < 32 || ch > 126) && ch != 10
 }
 
-func (l *Lexer) peek() byte {
+func (l *lexer) peek() byte {
 	if l.readPosition >= len(l.input) {
 		return 0
 	}
 	return l.input[l.readPosition]
 }
 
-func (l *Lexer) newToken(tokType TokenType, ch byte) Token {
+func (l *lexer) newToken(tokType TokenType, ch byte) Token {
 	return Token{
 		Type:      tokType,
 		Val:       string(ch),
@@ -159,7 +173,7 @@ func (l *Lexer) newToken(tokType TokenType, ch byte) Token {
 	}
 }
 
-func (l *Lexer) newOverflowedToken(tokType TokenType, str string) Token {
+func (l *lexer) newOverflowedToken(tokType TokenType, str string) Token {
 	return Token{
 		Type:      tokType,
 		Val:       str,
@@ -168,7 +182,7 @@ func (l *Lexer) newOverflowedToken(tokType TokenType, str string) Token {
 	}
 }
 
-func (l *Lexer) newTokenString(tokType TokenType, str string) Token {
+func (l *lexer) newTokenString(tokType TokenType, str string) Token {
 	return Token{
 		Type:      tokType,
 		Val:       str,
@@ -185,8 +199,8 @@ var keywords = map[string]TokenType{
 	"else":   Else,
 	"return": Return,
 	"array":  Array,
-	"true":   Bool,
-	"false":  Bool,
+	"true":   BoolLiteral,
+	"false":  BoolLiteral,
 	// builtins
 	"print":     Print,
 	"show":      Show,
@@ -202,9 +216,10 @@ var keywords = map[string]TokenType{
 	"float":  Float,
 	"float3": Float3,
 	"float4": Float4,
+	"bool":   Bool,
 }
 
-func (l *Lexer) LexAll() ([]Token, bool) {
+func (l *lexer) LexAll() ([]Token, bool) {
 	tokens := make([]Token, 0)
 	for tok := l.NextToken(); tok.Type != EOF; tok = l.NextToken() {
 		if len(tokens) != 0 && (tokens[len(tokens)-1].Type == NewLine && tok.Type == NewLine) {
@@ -223,7 +238,7 @@ func (l *Lexer) LexAll() ([]Token, bool) {
 // out in order to avoid unnecessary recursion
 // if a lexical error is encountered, an error token is returned for use
 // in the NextToken function
-func (l *Lexer) searchNextToken() *Token {
+func (l *lexer) searchNextToken() *Token {
 	for {
 		switch l.ch {
 		case ' ':
@@ -256,7 +271,7 @@ func (l *Lexer) searchNextToken() *Token {
 	}
 }
 
-func (l *Lexer) NextToken() Token {
+func (l *lexer) NextToken() Token {
 	var t Token
 
 	// make sure we are in line with the next token

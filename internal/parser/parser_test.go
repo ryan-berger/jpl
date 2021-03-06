@@ -14,7 +14,7 @@ func TestParser_advance(t *testing.T) {
 		{Type: lexer.Or, Val: "||"},
 		{Type: lexer.Not, Val: "!"},
 	}
-	p := NewParser(tokens)
+	p := newParser(tokens)
 	assert.Equal(t, p.tokens[0], p.cur)
 	assert.Equal(t, p.tokens[1], p.peek)
 }

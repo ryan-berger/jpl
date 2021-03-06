@@ -62,6 +62,7 @@ const (
 	String
 	IntLiteral
 	FloatLiteral
+	BoolLiteral
 
 	// Types
 	Int
@@ -76,6 +77,10 @@ type Token struct {
 	Val       string
 	Line      int
 	Character int
+}
+
+func (t *Token) Loc() (int, int) {
+	return t.Line, t.Character
 }
 
 var typeToDump = map[TokenType]string{
@@ -123,6 +128,7 @@ var typeToDump = map[TokenType]string{
 	Float:    "VARIABLE",
 	Float3:   "VARIABLE",
 	Float4:   "VARIABLE",
+	Bool:     "VARIABLE",
 
 	// Builtins
 	Read:      "READ",
@@ -140,6 +146,7 @@ var typeToDump = map[TokenType]string{
 	IntLiteral:   "INTVAL",
 	FloatLiteral: "FLOATVAL",
 	String:       "STRING",
+	BoolLiteral:  "VARIABLE",
 }
 
 func (t *Token) DumpString() string {
