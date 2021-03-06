@@ -7,7 +7,7 @@ import (
 	"github.com/ryan-berger/jpl/internal/lexer"
 )
 
-func (p *Parser) parseCommand() ast.Command {
+func (p *parser) parseCommand() ast.Command {
 	switch p.cur.Type {
 	case lexer.Read:
 		return p.parseReadCommand()
@@ -31,7 +31,7 @@ func (p *Parser) parseCommand() ast.Command {
 	}
 }
 
-func (p *Parser) parseStatement() ast.Statement {
+func (p *parser) parseStatement() ast.Statement {
 	switch p.cur.Type {
 	case lexer.Let:
 		return p.parseLetStatement()
@@ -44,7 +44,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	}
 }
 
-func (p *Parser) parseAssertStatement() ast.Statement {
+func (p *parser) parseAssertStatement() ast.Statement {
 	stmt := &ast.AssertStatement{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -72,7 +72,7 @@ func (p *Parser) parseAssertStatement() ast.Statement {
 	return stmt
 }
 
-func (p *Parser) parseReadCommand() ast.Command {
+func (p *parser) parseReadCommand() ast.Command {
 	read := &ast.Read{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -113,7 +113,7 @@ func (p *Parser) parseReadCommand() ast.Command {
 	return read
 }
 
-func (p *Parser) parseWriteCommand() ast.Command {
+func (p *parser) parseWriteCommand() ast.Command {
 	write := &ast.Write{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -153,7 +153,7 @@ func (p *Parser) parseWriteCommand() ast.Command {
 	return write
 }
 
-func (p *Parser) parsePrintCommand() ast.Command {
+func (p *parser) parsePrintCommand() ast.Command {
 	pr := &ast.Print{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -171,7 +171,7 @@ func (p *Parser) parsePrintCommand() ast.Command {
 	return pr
 }
 
-func (p *Parser) parseShowCommand() ast.Command {
+func (p *parser) parseShowCommand() ast.Command {
 	show := &ast.Show{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -189,7 +189,7 @@ func (p *Parser) parseShowCommand() ast.Command {
 	return show
 }
 
-func (p *Parser) parseTimeCommand() ast.Command {
+func (p *parser) parseTimeCommand() ast.Command {
 	time := &ast.Time{
 		Location: ast.Location{
 			Line: p.cur.Line,

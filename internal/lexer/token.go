@@ -79,6 +79,10 @@ type Token struct {
 	Character int
 }
 
+func (t *Token) Loc() (int, int) {
+	return t.Line, t.Character
+}
+
 var typeToDump = map[TokenType]string{
 	ILLEGAL: "ERROR",
 	EOF:     "END_OF_FILE",

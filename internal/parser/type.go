@@ -5,7 +5,7 @@ import (
 	"github.com/ryan-berger/jpl/internal/lexer"
 )
 
-func (p *Parser) parseTypeExpression() ast.Type {
+func (p *parser) parseTypeExpression() ast.Type {
 	t := p.parseType()
 
 	// handle type nesting
@@ -27,7 +27,7 @@ func (p *Parser) parseTypeExpression() ast.Type {
 	return t
 }
 
-func (p *Parser) parseType() ast.Type {
+func (p *parser) parseType() ast.Type {
 	if p.curTokenIs(lexer.LCurly) {
 		return p.parseTupleType()
 	}
@@ -52,7 +52,7 @@ func (p *Parser) parseType() ast.Type {
 	return t
 }
 
-func (p *Parser) parseTupleType() ast.Type {
+func (p *parser) parseTupleType() ast.Type {
 	tupleType := &ast.TupleType{}
 
 	ok := p.parseList(lexer.RCurly, func() bool {

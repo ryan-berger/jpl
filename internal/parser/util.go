@@ -2,7 +2,7 @@ package parser
 
 import "github.com/ryan-berger/jpl/internal/lexer"
 
-func (p *Parser) parseList(end lexer.TokenType, parseFn func() bool) bool {
+func (p *parser) parseList(end lexer.TokenType, parseFn func() bool) bool {
 	if p.expectPeek(end) {
 		return true
 	}

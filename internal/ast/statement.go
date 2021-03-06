@@ -20,6 +20,7 @@ type Statement interface {
 //        | { <lvalue> , ... }
 type LValue interface {
 	Node
+	// Type() Type
 	lValue()
 }
 

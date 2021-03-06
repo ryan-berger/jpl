@@ -144,9 +144,9 @@ var tests = []struct {
 
 func TestPrecedenceParsing(t *testing.T) {
 	for _, test := range tests {
-		tokens, ok := lexer.NewLexer(test.expr).LexAll()
+		tokens, ok := lexer.Lex(test.expr)
 		assert.True(t, ok)
-		parser := NewParser(tokens)
+		parser := newParser(tokens)
 		expr := parser.parseExpression(lowest) // parse expression
 		assert.Nil(t, parser.error)
 		assert.NotNil(t, expr)
@@ -169,9 +169,9 @@ var errorTests = []struct {
 
 func TestParseErrors(t *testing.T) {
 	for _, test := range errorTests {
-		tokens, ok := lexer.NewLexer(test.expr).LexAll()
+		tokens, ok := lexer.Lex(test.expr)
 		assert.True(t, ok)
-		parser := NewParser(tokens)
+		parser := newParser(tokens)
 		parser.parseExpression(lowest) // parse expression
 		assert.NotNil(t, parser.error)
 		assert.Equal(t, test.expected, parser.error.Error())

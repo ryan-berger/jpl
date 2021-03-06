@@ -2,7 +2,7 @@ package parser
 
 import "github.com/ryan-berger/jpl/internal/ast"
 
-func  (p *Parser) parseReturnStatement() ast.Statement {
+func  (p *parser) parseReturnStatement() ast.Statement {
 	ret := &ast.ReturnStatement{
 		Location: ast.Location{
 			Line: p.cur.Line,
