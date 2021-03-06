@@ -7,6 +7,7 @@ import (
 
 type Type interface {
 	Equal(other Type) bool
+	Size() int
 	String() string
 }
 
@@ -27,6 +28,10 @@ func (b *boolean) Equal(other Type) bool {
 
 type integer struct{}
 
+func (i *integer) Size() int {
+	return 8
+}
+
 func (i *integer) Equal(other Type) bool {
 	_, ok := other.(*integer)
 	return ok
@@ -37,6 +42,10 @@ func (i *integer) String() string {
 }
 
 type float struct{}
+
+func (f *float) Size() int {
+	return 0
+}
 
 func (f *float) Equal(other Type) bool {
 	_, ok := other.(*float)
@@ -50,6 +59,10 @@ func (f *float) String() string {
 type Array struct {
 	Inner Type
 	Rank  int
+}
+
+func (a *Array) Size() int {
+	return (a.Rank + 1) * 8
 }
 
 func (a *Array) Equal(other Type) bool {
@@ -71,6 +84,10 @@ func (a *Array) String() string {
 
 type Tuple struct {
 	Types []Type
+}
+
+func (t *Tuple) Size() int {
+	return 0
 }
 
 func (t *Tuple) Equal(other Type) bool {
