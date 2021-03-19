@@ -52,11 +52,11 @@ func dataWalk(n ast.Node, namer namer, names constantMapper) []data {
 	case *ast.AssertStatement:
 		name := namer()
 		names[node] = name
-		return []data{{Name: name, Value: node.Message}}
+		return []data{{Name: name, Value: node.Message, Type: str}}
 	case *ast.Print:
 		name := namer()
 		names[node] = name
-		return []data{{Name: name, Value: node.Str}}
+		return []data{{Name: name, Value: node.Str, Type: str}}
 	default:
 		return nil
 	}

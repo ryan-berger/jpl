@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,6 +41,7 @@ func expand(t *testing.T, program string) ast.Program {
 func TestData(t *testing.T) {
 	program := expand(t, `let x = 10
 print "hello world"`)
-	_, mapper := dataSection(program)
+	p, mapper := dataSection(program)
+	fmt.Println(p)
 	textSection(program, mapper)
 }

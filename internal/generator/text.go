@@ -12,27 +12,40 @@ const prologue = `section .text
 _main:
 `
 
-type frame struct {
-}
-
-func calculateProgramSize(program ast.Program) int {
+func calculateProgramSize(program ast.Program) (frame, int) {
 	size := 0
+	f := make(frame)
 	for _, cmd := range program {
 		let, ok := cmd.(*ast.LetStatement)
 		if !ok {
 			continue
 		}
+
 		size += let.Expr.
 			Typ().Size()
+		ident := let.LValue.(*ast.VariableArgument).Variable
+		f[ident] = size
 	}
-	return size
+
+	if extra := size % 16; extra != 0 {
+		size += extra
+	}
+
+	return f, size
 }
+
+const fnPrologue = `push rbp
+mov rbp, rsp
+sub rsp %d`
 
 func textSection(program ast.Program, mapper constantMapper) string {
 	buf := bytes.NewBufferString(prologue)
 
-	programSize := calculateProgramSize(program)
-	fmt.Println(programSize)
+	_, programSize := calculateProgramSize(program)
+
+	buf.WriteString(fmt.Sprintf(fnPrologue, programSize))
+	fmt.Println(buf.String())
+
 
 	return buf.String()
 }
