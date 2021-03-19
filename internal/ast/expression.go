@@ -9,6 +9,7 @@ import (
 
 type Expression interface {
 	Node
+	Typ() types.Type
 	expression()
 }
 
@@ -29,6 +30,11 @@ func (i *IntExpression) SExpr() string {
 func (i *IntExpression) String() string {
 	return fmt.Sprintf("%d", i.Val)
 }
+
+func (i *IntExpression) Typ() types.Type {
+	return i.Type
+}
+
 func (i *IntExpression) expression() {}
 
 // IdentifierExpression
@@ -48,6 +54,11 @@ func (i *IdentifierExpression) SExpr() string {
 func (i *IdentifierExpression) String() string {
 	return i.Identifier
 }
+
+func (i *IdentifierExpression) Typ() types.Type {
+	return i.Type
+}
+
 func (i *IdentifierExpression) expression() {}
 
 type CallExpression struct {
@@ -78,6 +89,11 @@ func (c *CallExpression) String() string {
 
 	return fmt.Sprintf("%s(%s)", c.Identifier, strings.Join(strs, ", "))
 }
+
+func (c *CallExpression) Typ() types.Type {
+	return c.Type
+}
+
 func (c *CallExpression) expression() {}
 
 // FloatExpression
@@ -97,10 +113,15 @@ func (f *FloatExpression) SExpr() string {
 func (f *FloatExpression) String() string {
 	return fmt.Sprintf("%f", f.Val)
 }
+
+func (f *FloatExpression) Typ() types.Type {
+	return f.Type
+}
+
 func (f *FloatExpression) expression() {}
 
 type BooleanExpression struct {
-	Val bool
+	Val  bool
 	Type types.Type
 	Location
 }
@@ -118,10 +139,16 @@ func (b *BooleanExpression) String() string {
 	}
 	return "false"
 }
+
+func (b *BooleanExpression) Typ() types.Type {
+	return b.Type
+}
+
 func (b *BooleanExpression) expression() {}
 
 type TupleExpression struct {
 	Expressions []Expression
+	Type        types.Type
 	Location
 }
 
@@ -135,6 +162,10 @@ func (t *TupleExpression) String() string {
 		strs[i] = expr.String()
 	}
 	return fmt.Sprintf("{%s}", strings.Join(strs, ", "))
+}
+
+func (t *TupleExpression) Typ() types.Type {
+	return t.Type
 }
 
 func (t *TupleExpression) expression() {}
@@ -157,6 +188,10 @@ func (a *ArrayExpression) String() string {
 	return fmt.Sprintf("[%s]", strings.Join(strs, ", "))
 }
 
+func (a *ArrayExpression) Typ() types.Type {
+	return a.Type
+}
+
 func (a *ArrayExpression) expression() {}
 
 type ArrayRefExpression struct {
@@ -176,6 +211,11 @@ func (a *ArrayRefExpression) String() string {
 	}
 	return fmt.Sprintf("%s[%s]", a.Array, strings.Join(strs, ", "))
 }
+
+func (a *ArrayRefExpression) Typ() types.Type {
+	return a.Type
+}
+
 func (a *ArrayRefExpression) expression() {}
 
 type TupleRefExpression struct {
@@ -188,9 +228,15 @@ type TupleRefExpression struct {
 func (t *TupleRefExpression) SExpr() string {
 	panic("implement me")
 }
+
 func (t *TupleRefExpression) String() string {
 	return fmt.Sprintf("%s{%s}", t.Tuple, t.Index)
 }
+
+func (t *TupleRefExpression) Typ() types.Type {
+	return t.Type
+}
+
 func (t *TupleRefExpression) expression() {}
 
 type IfExpression struct {
@@ -209,6 +255,11 @@ func (i *IfExpression) String() string {
 	return fmt.Sprintf("if %s then %s else %s",
 		i.Condition.String(), i.Consequence.String(), i.Otherwise.String())
 }
+
+func (i *IfExpression) Typ() types.Type {
+	return i.Type
+}
+
 func (i *IfExpression) expression() {}
 
 type OpBinding struct {
@@ -231,6 +282,10 @@ type ArrayTransform struct {
 
 func (a *ArrayTransform) SExpr() string {
 	panic("implement me")
+}
+
+func (a *ArrayTransform) Typ() types.Type {
+	return a.Type
 }
 
 func (a *ArrayTransform) String() string {
@@ -262,6 +317,10 @@ func (s *SumTransform) String() string {
 	}
 	return fmt.Sprintf("sum[%s] %s", strings.Join(bindings, ", "), s.Expr)
 }
+
+func (s *SumTransform) Typ() types.Type {
+	return s.Type
+}
 func (s *SumTransform) expression() {}
 
 type InfixExpression struct {
@@ -279,6 +338,11 @@ func (i *InfixExpression) SExpr() string {
 func (i *InfixExpression) String() string {
 	return fmt.Sprintf("(%s %s %s)", i.Left, i.Op, i.Right)
 }
+
+func (i *InfixExpression) Typ() types.Type {
+	return i.Type
+}
+
 func (i *InfixExpression) expression() {}
 
 type PrefixExpression struct {
@@ -286,6 +350,10 @@ type PrefixExpression struct {
 	Expr Expression
 	Type types.Type
 	Location
+}
+
+func (p *PrefixExpression) Typ() types.Type {
+	return p.Type
 }
 
 func (p *PrefixExpression) SExpr() string {
