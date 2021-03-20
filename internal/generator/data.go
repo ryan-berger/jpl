@@ -52,11 +52,23 @@ func dataWalk(n ast.Node, namer namer, names constantMapper) []data {
 	case *ast.AssertStatement:
 		name := namer()
 		names[node] = name
-		return []data{{Name: name, Value: node.Message, Type: str}}
+		return []data{
+			{
+				Name:  name,
+				Value: fmt.Sprintf(`%s\n`, node.Message[1:len(node.Message)-1]),
+				Type:  str,
+			},
+		}
 	case *ast.Print:
 		name := namer()
 		names[node] = name
-		return []data{{Name: name, Value: node.Str, Type: str}}
+		return []data{
+			{
+				Name:  name,
+				Value: fmt.Sprintf(`%s\n`, node.Str[1:len(node.Str)-1]),
+				Type:  str,
+			},
+		}
 	default:
 		return nil
 	}
@@ -80,9 +92,10 @@ func dataSection(program ast.Program) (string, constantMapper) {
 		}
 
 		if d.Type == str {
-			buf.WriteString(fmt.Sprintf("\t%s: db `%s`, 0", d.Name, d.Value))
+			buf.WriteString(fmt.Sprintf("\t%s: db `%s`, 0\n", d.Name, d.Value))
 		}
 	}
+	buf.WriteByte('\n')
 
 	return buf.String(), mapper
 }

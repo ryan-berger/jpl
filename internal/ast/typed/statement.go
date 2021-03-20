@@ -35,14 +35,14 @@ func toType(typ ast.Type) types.Type {
 	return nil
 }
 
-func bindArg(argument ast.Argument, typ types.Type, table symbol.Table) error {
+func bindArg(argument ast.Argument, typ types.Type, table *symbol.Table) error {
 	switch arg := argument.(type) {
 	case *ast.VariableArgument:
-		if _, ok := table[arg.Variable]; ok {
+		if _, ok := table.Get(arg.Variable); ok {
 			return fmt.Errorf("cannot bindArg variable %s, variable is already bound",
 				arg.Variable)
 		}
-		table[arg.Variable] = &symbol.Identifier{Type: typ}
+		table.Set(arg.Variable, &symbol.Identifier{Type: typ})
 		arg.Type = typ
 		return nil
 	case *ast.VariableArr:
@@ -54,15 +54,15 @@ func bindArg(argument ast.Argument, typ types.Type, table symbol.Table) error {
 			return fmt.Errorf("dimension incorrect for binding %s", arg)
 		}
 
-		table[arg.Variable] = &symbol.Identifier{Type: arrTyp}
+		table.Set(arg.Variable, &symbol.Identifier{Type: arrTyp})
 		for _, v := range arg.Variables {
-			table[v] = &symbol.Identifier{Type: types.Integer}
+			table.Set(v, &symbol.Identifier{Type: types.Integer})
 		}
 	}
 	return nil
 }
 
-func bind(binding ast.Binding, table symbol.Table) (types.Type, error) {
+func bind(binding ast.Binding, table *symbol.Table) (types.Type, error) {
 	switch b := binding.(type) {
 	case *ast.TupleBinding:
 		tup := &types.Tuple{
@@ -88,13 +88,13 @@ func bind(binding ast.Binding, table symbol.Table) (types.Type, error) {
 	return nil, nil
 }
 
-func functionBinding(fun *ast.Function, table symbol.Table) (*symbol.Function, error) {
+func functionBinding(fun *ast.Function, table *symbol.Table) (*symbol.Function, error) {
 	function := &symbol.Function{
 		Args:   make([]types.Type, len(fun.Bindings)),
 		Return: toType(fun.ReturnType),
 	}
 	cpy := table.Copy()
-	if _, ok := cpy[fun.Var]; ok {
+	if _, ok := cpy.Get(fun.Var); ok {
 		return nil, fmt.Errorf("error, function name %s already declared", fun.Var)
 	}
 
@@ -124,7 +124,7 @@ func functionBinding(fun *ast.Function, table symbol.Table) (*symbol.Function, e
 	return function, nil
 }
 
-func bindLVal(value ast.LValue, typ types.Type, table symbol.Table) error {
+func bindLVal(value ast.LValue, typ types.Type, table *symbol.Table) error {
 	switch lval := value.(type) {
 	case *ast.LTuple:
 		tup, ok := typ.(*types.Tuple)
@@ -147,14 +147,14 @@ func bindLVal(value ast.LValue, typ types.Type, table symbol.Table) error {
 	return nil
 }
 
-func statementType(statement ast.Statement, retType types.Type, table symbol.Table) error {
+func statementType(statement ast.Statement, retType types.Type, table *symbol.Table) error {
 	switch stmt := statement.(type) {
 	case *ast.Function:
 		fn, err := functionBinding(stmt, table)
 		if err != nil {
 			return err
 		}
-		table[stmt.Var] = fn
+		table.Set(stmt.Var, fn)
 	case *ast.ReturnStatement:
 		typ, err := expressionType(stmt.Expr, table)
 		if err != nil {

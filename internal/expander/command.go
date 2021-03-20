@@ -38,6 +38,14 @@ func expandShow(sh *ast.Show, next nexter) []ast.Command {
 func expandTime(time *ast.Time, next nexter) []ast.Command {
 	start := let(next(), functionCall("get_time"))
 	cmds := expandCommand(time.Command, next)
+
+	size := len(cmds)
+	if size != 0 {
+		if _, ok := cmds[size - 1].(*ast.ReturnStatement); ok {
+			return append([]ast.Command{start}, cmds...)
+		}
+	}
+
 	end := let(next(), functionCall("get_time"))
 	sub := let(next(),
 		functionCall("sub_floats",
@@ -48,8 +56,8 @@ func expandTime(time *ast.Time, next nexter) []ast.Command {
 
 	commands := []ast.Command{start}
 	commands = append(commands, cmds...)
-	commands = append(commands, sub, p, s)
-	return cmds
+	commands = append(commands, end, sub, p, s)
+	return commands
 }
 
 func expandWrite(w *ast.Write, next nexter) []ast.Command {

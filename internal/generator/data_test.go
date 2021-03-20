@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,37 +11,36 @@ import (
 	"github.com/ryan-berger/jpl/internal/expander"
 	"github.com/ryan-berger/jpl/internal/lexer"
 	"github.com/ryan-berger/jpl/internal/parser"
+	"github.com/ryan-berger/jpl/internal/symbol"
 )
 
-func expand(t *testing.T, program string) ast.Program {
+func expand(t *testing.T, program string) (ast.Program, *symbol.Table) {
 	tokens, ok := lexer.Lex(program)
 	assert.True(t, ok)
 
 	tree, err := parser.Parse(tokens)
 	if err != nil {
 		assert.FailNow(t, err.Error())
-		return nil
+		return nil, nil
 	}
 
-	tree, err = typed.Check(tree)
+	tree, _, err = typed.Check(tree)
 	if err != nil {
 		assert.FailNow(t, err.Error())
-		return nil
+		return nil, nil
 	}
 
-	tree, err = typed.Check(expander.Expand(tree))
+	tree, table, err := typed.Check(expander.Expand(tree))
 	if err != nil {
 		assert.FailNow(t, err.Error())
-		return nil
+		return nil, nil
 	}
 
-	return tree
+	return tree, table
 }
 
 func TestData(t *testing.T) {
-	program := expand(t, `let x = 10
-print "hello world"`)
-	p, mapper := dataSection(program)
-	fmt.Println(p)
-	textSection(program, mapper)
+	program, table := expand(t, `let z = sub_ints(7, 2)
+return z`)
+	Generate(program, table, os.Stdout)
 }

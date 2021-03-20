@@ -5,17 +5,20 @@ import (
 	"fmt"
 
 	"github.com/ryan-berger/jpl/internal/ast"
+	"github.com/ryan-berger/jpl/internal/symbol"
 )
 
-const prologue = `section .text
+const textProlouge = `section .text
 
+main:
 _main:
+
 `
 
-func calculateProgramSize(program ast.Program) (frame, int) {
+func (g *generator) calculateProgramSize() {
 	size := 0
 	f := make(frame)
-	for _, cmd := range program {
+	for _, cmd := range g.program {
 		let, ok := cmd.(*ast.LetStatement)
 		if !ok {
 			continue
@@ -31,21 +34,51 @@ func calculateProgramSize(program ast.Program) (frame, int) {
 		size += extra
 	}
 
-	return f, size
+	if size == 0 {
+		size = 16
+	}
+
+	g.frame = f
+	g.size = size
+
+	g.buf.WriteString(fmt.Sprintf(fnPrologue, size))
 }
 
 const fnPrologue = `push rbp
 mov rbp, rsp
-sub rsp %d`
+sub rsp, %d
 
-func textSection(program ast.Program, mapper constantMapper) string {
-	buf := bytes.NewBufferString(prologue)
+`
 
-	_, programSize := calculateProgramSize(program)
+func (g *generator) textSection() {
+	g.buf.WriteString(textProlouge)
 
-	buf.WriteString(fmt.Sprintf(fnPrologue, programSize))
-	fmt.Println(buf.String())
+	g.calculateProgramSize()
 
+	for _, cmd := range g.program {
+		g.genCommand(cmd)
+	}
+}
 
-	return buf.String()
+type generator struct {
+	program ast.Program
+	table   *symbol.Table
+	mapper  constantMapper
+
+	frame frame
+	size  int
+
+	buf *bytes.Buffer
+}
+
+func (g *generator) generate() string {
+	g.buf.WriteString(filePrologue)
+
+	dataString, mapper := dataSection(g.program)
+	g.buf.WriteString(dataString)
+
+	g.mapper = mapper
+	g.textSection()
+
+	return g.buf.String()
 }

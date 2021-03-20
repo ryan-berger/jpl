@@ -1,2 +1,2 @@
-let z = sub_ints(7, 2)
-return z
+read image "foo.png" to img
+write image blur(img, 3.14) to "foo.png"

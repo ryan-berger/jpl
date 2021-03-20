@@ -1,6 +1,8 @@
 package expander
 
-import "github.com/ryan-berger/jpl/internal/ast"
+import (
+	"github.com/ryan-berger/jpl/internal/ast"
+)
 
 func expandStatement(statement ast.Statement, next nexter) []ast.Statement {
 	switch stmt := statement.(type) {

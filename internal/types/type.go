@@ -44,7 +44,7 @@ func (i *integer) String() string {
 type float struct{}
 
 func (f *float) Size() int {
-	return 0
+	return 8
 }
 
 func (f *float) Equal(other Type) bool {

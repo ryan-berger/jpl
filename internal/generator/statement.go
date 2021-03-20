@@ -15,48 +15,139 @@ func ident(let *ast.LetStatement) string {
 	return arg.Variable
 }
 
-func genCommand(command ast.Command, f frame) {
+const assertAsm = `cmp dword [rbp - %d], 0
+jne %[2]s
+lea rdi, [rel %s]
+call _fail_assertion
+%[2]s
 
+`
+
+const printAsm = `lea rdi, [rel %s]
+call _print
+
+`
+
+func (g *generator) genCommand(command ast.Command) {
+
+	switch cmd := command.(type) {
+	case *ast.AssertStatement:
+		loc := g.frame[cmd.Expr.String()]
+		msg := g.mapper[cmd]
+		g.buf.WriteString(fmt.Sprintf(assertAsm, loc, ".SKIP", msg))
+	case *ast.Print:
+		msg := g.mapper[cmd]
+		g.buf.WriteString(fmt.Sprintf(printAsm, msg))
+	case ast.Statement:
+		g.genStatement(cmd)
+	}
 }
 
-func genStatement(
-	statement ast.Statement,
-	consts map[ast.Statement]string,
-	f frame) string {
+const returnInt = `mov rax, [rbp - %d]
+add rsp, %d
+pop rbp
+ret
+`
+
+func (g *generator) genStatement(
+	statement ast.Statement) {
 	switch stmt := statement.(type) {
 	case *ast.LetStatement:
-		return genLetStatement(stmt, consts, f)
+		g.genLetStatement(stmt, g.frame)
+	case *ast.ReturnStatement:
+		ident := stmt.Expr.(*ast.IdentifierExpression).Identifier
+		g.buf.WriteString(fmt.Sprintf(returnInt, g.frame[ident], g.size))
 	}
-	return ""
 }
 
 const letConstant = `mov rbx, [rel %s]
-mov [rbp - %d], rbx`
+mov [rbp - %d], rbx
 
-const moveVar = `mov rbx [rbp - %d]
-mov [rbp - %d], rbp`
+`
 
-func genLetStatement(
+const moveNumber = `mov rbx [rbp - %d]
+mov [rbp - %d], rbp
+
+`
+
+const moveBool = `mov ebx, [rbp - %d]
+mov [rbp - %d], ebx
+
+`
+
+func (g *generator) genLetStatement(
 	let *ast.LetStatement,
-	consts map[ast.Statement]string,
-	f frame) string {
+	f frame) {
 
+	loc := f[ident(let)]
 	switch exp := let.Expr.(type) {
 	case *ast.FloatExpression, *ast.IntExpression:
-		constName := consts[let]
-		loc := f[ident(let)]
-		return fmt.Sprintf(letConstant, constName, loc)
+		constName := g.mapper[let]
+
+		g.buf.WriteString(fmt.Sprintf(letConstant, constName, loc))
 	case *ast.IdentifierExpression:
-		typ := exp.Type
-		switch {
-		case typ.Equal(types.Float) ||
-			typ.Equal(types.Integer):
-			locL := f[ident(let)]
-			locR := f[exp.Identifier]
+		locR := f[exp.Identifier]
 
-			return fmt.Sprintf(moveVar,locL, locR)
+		switch exp.Type {
+		case types.Integer, types.Float:
+			g.buf.WriteString(fmt.Sprintf(moveNumber, loc, locR))
+		case types.Boolean:
+			g.buf.WriteString(fmt.Sprintf(moveBool, loc, locR))
 		}
-
+	case *ast.CallExpression:
+		g.callExpressionPlanner(loc, exp, f)
 	}
-	return ""
+}
+
+var intRegisters = []string{"rdi", "rsi", "rdx", "rcx", "r8", "r9"}
+var floatRegisters = []string{
+	"xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7",
+}
+
+var intArg = `mov %s, [rbp - %d]
+`
+
+var floatArg = `movsd %s, [rbp - %d]
+`
+
+func (g *generator) callExpressionPlanner(
+	retLoc int, expr *ast.CallExpression, f frame) {
+	
+	intReg := 0   // keep track of number of int/bool args used
+	floatReg := 0 // keep track of number of float args used
+
+	// stackSize := 0
+	// stackArg := bytes.NewBuffer([]byte{})
+
+	for _, arg := range expr.Arguments {
+		ref := arg.(*ast.IdentifierExpression)
+		loc := f[ref.Identifier]
+		switch typ := arg.Typ(); typ {
+		case types.Integer:
+			g.buf.WriteString(fmt.Sprintf(intArg, intRegisters[intReg], loc))
+			intReg++
+		case types.Boolean:
+			intReg++
+		case types.Float:
+			g.buf.WriteString(fmt.Sprintf(floatArg, floatRegisters[floatReg], loc))
+			floatReg++
+		default:
+			arr, ok := typ.(*types.Array)
+			if ok {
+				arr.Size()
+				continue
+			}
+
+		}
+	}
+
+	g.buf.WriteString(fmt.Sprintf("call _%s\n", expr.Identifier))
+	switch expr.Type {
+	case types.Integer:
+		g.buf.WriteString(fmt.Sprintf("mov [rbp - %d], rax\n\n", retLoc))
+	case types.Boolean:
+		g.buf.WriteString(fmt.Sprintf("movsd [rbp - %d], eax\n\n", retLoc))
+	case types.Float:
+		g.buf.WriteString(fmt.Sprintf("movsd [rbp - %d], xmm0\n\n", retLoc))
+	}
 }
