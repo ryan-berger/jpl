@@ -19,7 +19,7 @@ func (p *parser) parseLetStatement() ast.Statement {
 	}
 
 	if !p.expectPeek(lexer.Assign) {
-		p.errorf("err: illegal token. Expected '=', found %s at line %d", p.peek.Val, p.peek.Line)
+		p.errorf(p.peek, "illegal token. Expected '=', found %s", p.peek.Val)
 		return nil
 	}
 
@@ -40,7 +40,7 @@ func (p *parser) parseLValue() ast.LValue {
 	case p.curTokenIs(lexer.Variable):
 		return p.parseArgument()
 	}
-	p.errorf("err: illegal token. Expected argument or '{', found %s at line %d", p.cur.Val, p.cur.Line)
+	p.errorf(p.cur, "illegal token. Expected argument or '{', found '%s'", p.cur.Val)
 	return nil
 }
 

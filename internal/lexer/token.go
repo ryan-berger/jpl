@@ -79,7 +79,7 @@ type Token struct {
 	Character int
 }
 
-func (t *Token) Loc() (int, int) {
+func (t Token) Loc() (int, int) {
 	return t.Line, t.Character
 }
 

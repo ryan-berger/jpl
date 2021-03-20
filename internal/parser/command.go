@@ -58,12 +58,12 @@ func (p *parser) parseAssertStatement() ast.Statement {
 	}
 
 	if !p.expectPeek(lexer.Comma) {
-		p.errorf("error, expected comma received: %s at %d:%d", p.peek.Val, p.peek.Line, p.peek.Character)
+		p.errorf(p.peek, "expected comma received: %s", p.peek.Val)
 		return nil
 	}
 
 	if !p.expectPeek(lexer.String) {
-		p.errorf("error, expected string received: %s at %d:%d", p.peek.Val, p.peek.Line, p.peek.Character)
+		p.errorf(p.peek, "expected string received: %s", p.peek.Val)
 		return nil
 	}
 
@@ -80,26 +80,26 @@ func (p *parser) parseReadCommand() ast.Command {
 		},
 	}
 	if !p.expectPeek(lexer.Variable) {
-		p.errorf("err: illegal token. Expected read type found %s at %d:%d", p.peek.Val, p.peek.Line, p.peek.Character)
+		p.errorf(p.peek, "illegal token expected read type found %s", p.peek.Val)
 		return nil
 	}
 
 	if p.cur.Val != "image" && p.cur.Val != "video" {
-		p.errorf("err: unsupported read type %s, at %d:%d", p.peek.Val, p.peek.Line, p.peek.Character)
+		p.errorf(p.peek, "err: unsupported read type %s", p.peek.Val)
 		return nil
 	}
 
 	read.Type = p.cur.Val
 
 	if !p.expectPeek(lexer.String) {
-		p.errorf("err: illegal token. Expected string, found %s at %d:%d", p.peek.Val, p.peek.Line, p.peek.Character)
+		p.errorf(p.peek, "illegal token. Expected string, found %s", p.peek.Val)
 		return nil
 	}
 
 	read.Src = p.cur.Val
 
 	if !p.expectPeek(lexer.To) {
-		p.errorf("err: illegal token. Expected 'to', found %s at line at %d:%d", p.peek.Val, p.peek.Line, p.peek.Character)
+		p.errorf(p.peek,"err: illegal token. Expected 'to', found %s", p.peek.Val)
 		return nil
 	}
 	p.advance()
@@ -121,12 +121,12 @@ func (p *parser) parseWriteCommand() ast.Command {
 		},
 	}
 	if !p.expectPeek(lexer.Variable) {
-		p.errorf("err: illegal token. Expected write type, found %s at %d:%d", p.peek.Val, p.peek.Line, p.peek.Character)
+		p.errorf(p.peek,"illegal token. Expected write type, found %s", p.peek.Val)
 		return nil
 	}
 
 	if p.cur.Val != "image" && p.cur.Val != "video" {
-		p.errorf("err: unsupported write type %s, at %d:%d", p.peek.Val, p.peek.Line, p.peek.Character)
+		p.errorf(p.peek,"err: unsupported write type %s", p.peek.Val)
 		return nil
 	}
 
@@ -139,12 +139,12 @@ func (p *parser) parseWriteCommand() ast.Command {
 	}
 
 	if !p.expectPeek(lexer.To) {
-		p.errorf("err: illegal token. Expected 'to', found %s at %d:%d", p.peek.Val, p.peek.Line, p.peek.Character)
+		p.errorf(p.peek, "illegal token. Expected 'to', found %s", p.peek.Val)
 		return nil
 	}
 
 	if !p.expectPeek(lexer.String) {
-		p.errorf("err: illegal token. Expected string, found %s at %d:%d", p.peek.Val, p.peek.Line, p.peek.Character)
+		p.errorf(p.peek, "illegal token. Expected string, found %s", p.peek.Val)
 		return nil
 	}
 	write.Dest = p.cur.Val
@@ -162,7 +162,7 @@ func (p *parser) parsePrintCommand() ast.Command {
 	}
 
 	if !p.expectPeek(lexer.String) {
-		p.errorf("err: illegal token. Expected string, found %s at %d:%d", p.peek.Val, p.peek.Line, p.peek.Character)
+		p.errorf(p.peek, "illegal token. Expected string, found %s", p.peek.Val)
 		return nil
 	}
 
