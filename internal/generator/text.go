@@ -24,8 +24,10 @@ func (g *generator) calculateProgramSize() {
 		if read, ok := cmd.(*ast.Read); ok {
 			size += types.Pict.Size()
 
+			// TODO: Later, we will need to do a switch on this to handle the rank of the variable
 			ident := read.Argument.(*ast.VariableArgument).Variable
 			f[ident] = size
+			continue
 		}
 
 		let, ok := cmd.(*ast.LetStatement)
@@ -36,18 +38,20 @@ func (g *generator) calculateProgramSize() {
 		size += let.Expr.
 			Typ().Size()
 
+		// TODO: Later, we will need to do a switch on this to handle the rank of the variable
 		ident := let.LValue.(*ast.VariableArgument).Variable
 		f[ident] = size
 	}
 
-	if extra := size % 16; extra != 0 {
+	if extra := size % 16; extra != 0 { // pad the stack frame
 		size += extra
 	}
 
-	if size == 0 {
+	if size == 0 { // if the stack size is 0, it is not a multiple of 16
 		size = 16
 	}
 
+	// set up local frame, size
 	g.frame = f
 	g.size = size
 

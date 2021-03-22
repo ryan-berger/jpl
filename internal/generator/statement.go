@@ -56,24 +56,24 @@ call _show
 func (g *generator) genCommand(command ast.Command) {
 	switch cmd := command.(type) {
 	case *ast.AssertStatement:
-		loc := g.frame[cmd.Expr.String()]
-		msg := g.mapper[cmd]
-		lbl := g.newLabel()
+		loc := g.frame[cmd.Expr.String()] // get location of condition we are testing
+		msg := g.mapper[cmd]              // message for assert
+		lbl := g.newLabel()               // generate new label
 		g.buf.WriteString(fmt.Sprintf(assertAsm, loc, lbl, msg))
-	case *ast.Read:
-		loc := g.frame[cmd.Argument.String()]
-		fileName := g.mapper[cmd]
+	case *ast.Read: // TODO: we'll need to switch on argument type just in case it is an array argument
+		loc := g.frame[cmd.Argument.String()] // identifier
+		fileName := g.mapper[cmd]             // name of the file
 		g.buf.WriteString(fmt.Sprintf(readAsm, loc, fileName))
 	case *ast.Write:
-		loc := g.frame[cmd.Expr.String()]
-		fileName := g.mapper[cmd]
-		g.buf.WriteString(fmt.Sprintf(writeAsm, cmd.String(), loc, loc + 8, loc + 16, fileName))
+		loc := g.frame[cmd.Expr.String()] // get identifier we are writing (this is safe from the problem the read will have)
+		fileName := g.mapper[cmd]         // name of file
+		g.buf.WriteString(fmt.Sprintf(writeAsm, cmd.String(), loc, loc+8, loc+16, fileName))
 	case *ast.Print:
-		msg := g.mapper[cmd]
+		msg := g.mapper[cmd] // print message
 		g.buf.WriteString(fmt.Sprintf(printAsm, msg))
 	case *ast.Show:
-		typ := g.mapper[cmd]
-		loc := g.frame[cmd.Expr.String()]
+		typ := g.mapper[cmd]              // type string
+		loc := g.frame[cmd.Expr.String()] // location of variable
 		g.buf.WriteString(fmt.Sprintf(showAsm, typ, loc))
 	case ast.Statement:
 		g.genStatement(cmd)
@@ -175,20 +175,21 @@ func (g *generator) callExpressionPlanner(
 			intReg++
 		case types.Boolean:
 			g.buf.WriteString(fmt.Sprintf(boolArg, loc, intRegisters[intReg]))
-			intReg++
+			intReg++ // booleans eat an int register (albeit it is a 32 bit value)
 		case types.Float:
 			g.buf.WriteString(fmt.Sprintf(floatArg, floatRegisters[floatReg], loc))
 			floatReg++
 		default:
 			arr, ok := typ.(*types.Array)
 			if ok {
-				for i := 0; i < arr.Rank+1; i++ { // add one to rank so that we can pass a pointer to data in, not just w, h
+				for i := 0; i < arr.Rank+1; i++ { // add one to rank so that we can pass a pointer to data in, not just dimensions
 					stackArg.WriteString(fmt.Sprintf("mov rbx, [rbp - %d]\n", loc+stackSize))
 					stackArg.WriteString(fmt.Sprintf("mov [rsp + %d], rbx\n", stackSize))
 					stackSize += 8
 				}
 				continue
 			}
+
 
 		}
 	}
