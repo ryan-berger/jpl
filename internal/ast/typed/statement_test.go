@@ -1,4 +1,4 @@
-package checker
+package typed
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-package checker
+package typed
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/ryan-berger/jpl/internal/types"
 )
 
-func checkIf(ifExpr *ast.IfExpression, table symbol.Table) (types.Type, error) {
+func checkIf(ifExpr *ast.IfExpression, table *symbol.Table) (types.Type, error) {
 	condType, err := expressionType(ifExpr.Condition, table)
 	if err != nil {
 		return nil, err
@@ -35,8 +35,8 @@ func checkIf(ifExpr *ast.IfExpression, table symbol.Table) (types.Type, error) {
 	return otherType, nil
 }
 
-func checkIdentifierExpr(expr *ast.IdentifierExpression, table symbol.Table) (types.Type, error) {
-	symb, ok := table[expr.Identifier]
+func checkIdentifierExpr(expr *ast.IdentifierExpression, table *symbol.Table) (types.Type, error) {
+	symb, ok := table.Get(expr.Identifier)
 	if !ok {
 		return nil, NewError(expr, "unknown symbol %s", expr.Identifier)
 	}
@@ -50,8 +50,8 @@ func checkIdentifierExpr(expr *ast.IdentifierExpression, table symbol.Table) (ty
 	return ident.Type, nil
 }
 
-func checkCallExpr(expr *ast.CallExpression, table symbol.Table) (types.Type, error) {
-	symb, ok := table[expr.Identifier]
+func checkCallExpr(expr *ast.CallExpression, table *symbol.Table) (types.Type, error) {
+	symb, ok := table.Get(expr.Identifier)
 	if !ok {
 		return nil, NewError(expr, "unknown symbol %s", expr.Identifier)
 	}
@@ -83,7 +83,7 @@ func isNumeric(typ types.Type) bool {
 	return typ.Equal(types.Float) || typ.Equal(types.Integer)
 }
 
-func checkInfixExpr(expression *ast.InfixExpression, table symbol.Table) (types.Type, error) {
+func checkInfixExpr(expression *ast.InfixExpression, table *symbol.Table) (types.Type, error) {
 	leftType, leftErr := expressionType(expression.Left, table)
 	if leftErr != nil {
 		return nil, leftErr
@@ -139,7 +139,7 @@ func checkInfixExpr(expression *ast.InfixExpression, table symbol.Table) (types.
 	return nil, nil
 }
 
-func checkPrefixExpr(expr *ast.PrefixExpression, table symbol.Table) (types.Type, error) {
+func checkPrefixExpr(expr *ast.PrefixExpression, table *symbol.Table) (types.Type, error) {
 	exprType, err := expressionType(expr.Expr, table)
 	if err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ func checkPrefixExpr(expr *ast.PrefixExpression, table symbol.Table) (types.Type
 	}
 }
 
-func checkTupleRef(expr *ast.TupleRefExpression, table symbol.Table) (types.Type, error) {
+func checkTupleRef(expr *ast.TupleRefExpression, table *symbol.Table) (types.Type, error) {
 	tup, err := expressionType(expr.Tuple, table)
 	if err != nil {
 		return nil, err
@@ -187,7 +187,7 @@ func checkTupleRef(expr *ast.TupleRefExpression, table symbol.Table) (types.Type
 	return tupType.Types[idx.Val], nil
 }
 
-func checkArrayRef(expr *ast.ArrayRefExpression, table symbol.Table) (types.Type, error) {
+func checkArrayRef(expr *ast.ArrayRefExpression, table *symbol.Table) (types.Type, error) {
 	arr, err := expressionType(expr.Array, table)
 	if err != nil {
 		return nil, err
@@ -216,10 +216,10 @@ func checkArrayRef(expr *ast.ArrayRefExpression, table symbol.Table) (types.Type
 	return arrTyp.Inner, nil
 }
 
-func checkSumTransform(expr *ast.SumTransform, table symbol.Table) (types.Type, error) {
+func checkSumTransform(expr *ast.SumTransform, table *symbol.Table) (types.Type, error) {
 	cpy := table.Copy()
 	for _, binding := range expr.OpBindings {
-		if _, ok := cpy[binding.Variable]; ok {
+		if _, ok := cpy.Get(binding.Variable); ok {
 			return nil, NewError(expr, "illegal shadowing in sum expr, var: %s", binding.Variable)
 		}
 		bindType, err := expressionType(binding.Expr, cpy)
@@ -232,7 +232,7 @@ func checkSumTransform(expr *ast.SumTransform, table symbol.Table) (types.Type, 
 				binding.Variable)
 		}
 
-		cpy[binding.Variable] = &symbol.Identifier{Type: types.Integer}
+		cpy.Set(binding.Variable, &symbol.Identifier{Type: types.Integer})
 	}
 	exprType, err := expressionType(expr.Expr, cpy)
 	if err != nil {
@@ -246,10 +246,10 @@ func checkSumTransform(expr *ast.SumTransform, table symbol.Table) (types.Type, 
 	return exprType, nil
 }
 
-func checkArrayTransform(expr *ast.ArrayTransform, table symbol.Table) (types.Type, error) {
+func checkArrayTransform(expr *ast.ArrayTransform, table *symbol.Table) (types.Type, error) {
 	cpy := table.Copy()
 	for _, binding := range expr.OpBindings {
-		if _, ok := cpy[binding.Variable]; ok {
+		if _, ok := cpy.Get(binding.Variable); ok {
 			return nil, fmt.Errorf("illegal shadowing in sum expr, var: %s", binding.Variable)
 		}
 		bindType, err := expressionType(binding.Expr, cpy)
@@ -262,7 +262,7 @@ func checkArrayTransform(expr *ast.ArrayTransform, table symbol.Table) (types.Ty
 				binding.Variable)
 		}
 
-		cpy[binding.Variable] = &symbol.Identifier{Type: types.Integer}
+		cpy.Set(binding.Variable, &symbol.Identifier{Type: types.Integer})
 	}
 	exprType, err := expressionType(expr.Expr, cpy)
 	if err != nil {
@@ -278,7 +278,7 @@ func checkArrayTransform(expr *ast.ArrayTransform, table symbol.Table) (types.Ty
 	return nil, NewError(expr.Expr, "return type of array expression must be array")
 }
 
-func checkTuple(expr *ast.TupleExpression, table symbol.Table) (types.Type, error) {
+func checkTuple(expr *ast.TupleExpression, table *symbol.Table) (types.Type, error) {
 	tuple := &types.Tuple{
 		Types: make([]types.Type, len(expr.Expressions)),
 	}
@@ -293,7 +293,7 @@ func checkTuple(expr *ast.TupleExpression, table symbol.Table) (types.Type, erro
 	return tuple, nil
 }
 
-func checkArray(expr *ast.ArrayExpression, table symbol.Table) (types.Type, error) {
+func checkArray(expr *ast.ArrayExpression, table *symbol.Table) (types.Type, error) {
 	if len(expr.Expressions) == 0 {
 		return &types.Array{Inner: types.Integer, Rank: 1}, nil
 	}
@@ -317,7 +317,7 @@ func checkArray(expr *ast.ArrayExpression, table symbol.Table) (types.Type, erro
 	return &types.Array{Inner: typ, Rank: 1}, nil
 }
 
-func expressionType(expression ast.Expression, table symbol.Table) (types.Type, error) {
+func expressionType(expression ast.Expression, table *symbol.Table) (types.Type, error) {
 	switch expr := expression.(type) {
 	case *ast.BooleanExpression:
 		expr.Type = types.Boolean

@@ -9,14 +9,15 @@ func expansionAndLet(
 	expr ast.Expression,
 	next nexter,
 ) (ast.Expression, []ast.Statement) {
-	newExp, stmts := expandExpression(expr, next)
-	if call, ok := newExp.(*ast.CallExpression); ok {
-		l := let(next(), call)
-		stmts = append(stmts, l)
-
-		return refExpr(ident(l.LValue)), stmts
+	if _, ok := expr.(*ast.IdentifierExpression); ok {
+		return expr, nil
 	}
-	return newExp, stmts
+
+	newExp, stmts := expandExpression(expr, next)
+	l := let(next(), newExp)
+	stmts = append(stmts, l)
+
+	return refExpr(ident(l.LValue)), stmts
 }
 
 func expandExpression(expression ast.Expression, next nexter) (ast.Expression, []ast.Statement) {
@@ -24,8 +25,7 @@ func expandExpression(expression ast.Expression, next nexter) (ast.Expression, [
 	case *ast.IdentifierExpression:
 		return expr, nil
 	case *ast.IntExpression, *ast.FloatExpression:
-		l := let(next(), expr)
-		return refExpr(ident(l.LValue)), []ast.Statement{l}
+		return expr, []ast.Statement{}
 	case *ast.CallExpression:
 		var stmts []ast.Statement
 		for i, arg := range expr.Arguments {

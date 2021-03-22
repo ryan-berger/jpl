@@ -2,6 +2,7 @@ package parser
 
 import "github.com/ryan-berger/jpl/internal/lexer"
 
+// parseList takes an end character and calls parseFn to parse items between commas
 func (p *parser) parseList(end lexer.TokenType, parseFn func() bool) bool {
 	if p.expectPeek(end) {
 		return true

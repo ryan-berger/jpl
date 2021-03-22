@@ -1,7 +1,6 @@
 read image "photo.png" to photo
-assert has_width(photo, 800), "Photo must be 800 pixels wide"
-assert has_height(photo, 600), "Photo must be 600 pixels tall"
-let middle = cut_center(photo)
+assert has_size(photo, 800, 600), "Photo must be 800x600 pixels"
+let middle = photo
 write image sepia(middle) to "profile.png"
 return 10
 time write image sepia(middle) to "profile.png"

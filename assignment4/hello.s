@@ -3,6 +3,7 @@
 ;;; Then ./a.out
 ;;; You should see "Hello, World!" printed
 
+global main
 global _main
 extern _print
 
@@ -11,6 +12,7 @@ const0: db `Hello, World!\n`, 0
 const1: dq 0
 
 section .text
+main:
 _main:
 	push rbp
 	mov rbp, rsp

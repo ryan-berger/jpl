@@ -7,10 +7,12 @@ import (
 	"os"
 
 	"github.com/ryan-berger/jpl/internal/ast"
+	"github.com/ryan-berger/jpl/internal/ast/typed"
 	"github.com/ryan-berger/jpl/internal/expander"
+	"github.com/ryan-berger/jpl/internal/generator"
 	"github.com/ryan-berger/jpl/internal/lexer"
 	"github.com/ryan-berger/jpl/internal/parser"
-	"github.com/ryan-berger/jpl/internal/types/checker"
+	"github.com/ryan-berger/jpl/internal/symbol"
 )
 
 type PrintMode int
@@ -21,6 +23,7 @@ const (
 	Parse
 	TypeCheck
 	Flatten
+	ASM
 )
 
 type Compiler struct {
@@ -87,7 +90,7 @@ func (c *Compiler) parse(tokens []lexer.Token) (ast.Program, error) {
 }
 
 func (c *Compiler) typeCheck(program ast.Program) (ast.Program, error) {
-	newProgram, err := checker.Check(program)
+	newProgram, _, err := typed.Check(program)
 	if err != nil {
 		return nil, err
 	}
@@ -99,19 +102,23 @@ func (c *Compiler) typeCheck(program ast.Program) (ast.Program, error) {
 	return newProgram, nil
 }
 
-func (c *Compiler) expand(program ast.Program) ast.Program {
+func (c *Compiler) expand(program ast.Program) (ast.Program, *symbol.Table) {
 	expanded := expander.Expand(program)
 
-	_, err := checker.Check(expanded)
+	_, table, err := typed.Check(expanded)
 	if err != nil {
-		panic("nice, you really messed up")
+		panic(fmt.Sprintf("nice, you really messed up, %s", err))
 	}
 
-	if c.mode == Flatten {
-		fmt.Println(expanded.SExpr())
-	}
+	return expanded, table
+}
 
-	return expanded
+func (c *Compiler) generate(program ast.Program, table *symbol.Table) {
+	w := ioutil.Discard
+	if c.mode == ASM {
+		w = os.Stdout
+	}
+	generator.Generate(program, table, w)
 }
 
 func (c *Compiler) compile() error {
@@ -130,8 +137,13 @@ func (c *Compiler) compile() error {
 		return err
 	}
 
-	program = c.expand(program)
+	program, table := c.expand(program)
+	if c.mode == Flatten {
+		fmt.Println(program.SExpr())
+		return nil
+	}
 
+	c.generate(program, table)
 	return nil
 }
 
