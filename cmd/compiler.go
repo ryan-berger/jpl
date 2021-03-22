@@ -14,6 +14,8 @@ var typed bool
 var flattened bool
 var asm bool
 
+var outFile string
+
 func init() {
 	flag.BoolVar(&debugLex, "l", false, "lex")
 	flag.BoolVar(&debugParse, "p", false, "parse")
@@ -21,6 +23,7 @@ func init() {
 	flag.BoolVar(&typed, "t", false, "types")
 	flag.BoolVar(&flattened, "f", false, "flatten")
 	flag.BoolVar(&asm, "s", false, "flatten")
+	flag.StringVar(&outFile, "o", "", "out file")
 }
 
 func main() {
@@ -49,6 +52,14 @@ func main() {
 
 	if mode != 0 {
 		opts = append(opts, internal.WithPrintMode(mode))
+	}
+
+	if outFile != "" {
+		file, err := os.Create(outFile)
+		if err != nil {
+			panic(err)
+		}
+		opts = append(opts, internal.WithWriter(file))
 	}
 
 	internal.NewCompiler(opts...).Compile()
