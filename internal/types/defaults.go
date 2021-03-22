@@ -12,7 +12,7 @@ var Boolean = &boolean{}
 // Pict is shorthand for [,]{float, float, float, float}
 var Pict = &Array{
 	Inner: &Tuple{
-		Types: []Type{Integer, Integer, Integer, Float},
+		Types: []Type{Float, Float, Float, Float},
 	},
 	Rank: 2,
 }

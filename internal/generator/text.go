@@ -6,6 +6,7 @@ import (
 
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/symbol"
+	"github.com/ryan-berger/jpl/internal/types"
 )
 
 const textProlouge = `section .text
@@ -18,7 +19,15 @@ _main:
 func (g *generator) calculateProgramSize() {
 	size := 0
 	f := make(frame)
+
 	for _, cmd := range g.program {
+		if read, ok := cmd.(*ast.Read); ok {
+			size += types.Pict.Size()
+
+			ident := read.Argument.(*ast.VariableArgument).Variable
+			f[ident] = size
+		}
+
 		let, ok := cmd.(*ast.LetStatement)
 		if !ok {
 			continue
@@ -26,6 +35,7 @@ func (g *generator) calculateProgramSize() {
 
 		size += let.Expr.
 			Typ().Size()
+
 		ident := let.LValue.(*ast.VariableArgument).Variable
 		f[ident] = size
 	}
@@ -68,6 +78,8 @@ type generator struct {
 	frame frame
 	size  int
 
+	curLabel int
+
 	buf *bytes.Buffer
 }
 
@@ -81,4 +93,10 @@ func (g *generator) generate() string {
 	g.textSection()
 
 	return g.buf.String()
+}
+
+func (g *generator) newLabel() string {
+	lbl := fmt.Sprintf("lbl%d", g.curLabel)
+	g.curLabel++
+	return lbl
 }

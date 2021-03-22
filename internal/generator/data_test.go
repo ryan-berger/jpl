@@ -40,7 +40,9 @@ func expand(t *testing.T, program string) (ast.Program, *symbol.Table) {
 }
 
 func TestData(t *testing.T) {
-	program, table := expand(t, `let z = sub_ints(7, 2)
-return z`)
+	program, table := expand(t, `
+read image "foo.png" to img
+
+assert has_size(img, 10, 10), "Please do not modify foo.png, it should be 10x10"`)
 	Generate(program, table, os.Stdout)
 }

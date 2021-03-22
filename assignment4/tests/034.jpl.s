@@ -25,11 +25,14 @@ _main:
 	push rbp
 	mov rbp, rsp
 	sub rsp, 64
+
 	lea rdi, [rbp - 24]
 	lea rsi, [rel const0] ; foo.png
 	call _read_image
+
 	mov rbx, [rel const1] ; 3.14
 	mov [rbp - 32], rbx
+
 	lea rdi, [rbp - 56]
 	movsd xmm0, [rbp - 32]
 	sub rsp, 32
@@ -41,6 +44,7 @@ _main:
 	mov [rsp + 16], rbx
 	call _blur
 	add rsp, 32
+
 	lea rdi, [rel const0] ; foo.png
 	sub rsp, 32
 	mov rbx, [rbp - 56]

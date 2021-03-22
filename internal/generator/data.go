@@ -41,6 +41,24 @@ func dataWalk(n ast.Node, namer namer, names constantMapper) []data {
 			datum = append(datum, dataWalk(cmd, namer, names)...)
 		}
 		return datum
+	case *ast.Show:
+		name := namer()
+		names[node] = name
+		typeStr := node.Expr.
+			Typ().
+			String()
+
+		return []data{{Name: name, Value: typeStr, Type: str}}
+	case *ast.Read:
+		name := namer()
+		names[node] = name
+
+		return []data{{Name: name, Value: node.Src[1 : len(node.Src)-1], Type: str}}
+	case *ast.Write:
+		name := namer()
+		names[node] = name
+
+		return []data{{Name: name, Value: node.Dest[1 : len(node.Dest)-1], Type: str}}
 	case *ast.LetStatement:
 		if isFloat(node.Expr) || isInteger(node.Expr) {
 			name := namer()
@@ -75,7 +93,7 @@ func dataWalk(n ast.Node, namer namer, names constantMapper) []data {
 }
 
 func dataSection(program ast.Program) (string, constantMapper) {
-	counter := 0
+	counter := -1
 	namer := func() string {
 		counter++
 		return fmt.Sprintf("const%d", counter)
@@ -96,6 +114,5 @@ func dataSection(program ast.Program) (string, constantMapper) {
 		}
 	}
 	buf.WriteByte('\n')
-
 	return buf.String(), mapper
 }

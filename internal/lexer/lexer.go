@@ -219,19 +219,6 @@ var keywords = map[string]TokenType{
 	"bool":   Bool,
 }
 
-func (l *lexer) LexAll() ([]Token, bool) {
-	tokens := make([]Token, 0)
-	for tok := l.NextToken(); tok.Type != EOF; tok = l.NextToken() {
-		if len(tokens) != 0 && (tokens[len(tokens)-1].Type == NewLine && tok.Type == NewLine) {
-			continue
-		}
-		tokens = append(tokens, tok)
-	}
-	// TODO: Don't do this, just whyyyyy
-	tokens = append(tokens, Token{Type: EOF, Val: ""})
-	return tokens, len(tokens) == 1 || len(tokens) >= 2 && tokens[len(tokens)-2].Type != ILLEGAL
-}
-
 // searchNextToken looks for the next token for the given input
 // this allows the lexer to be much more specific and avoid recursion.
 // all characters such as /, /*, and \ that can be ignored are filtered
