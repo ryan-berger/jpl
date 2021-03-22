@@ -36,5 +36,9 @@ func (p Program) Loc() (int, int) {
 }
 
 func (p Program) String() string {
-	return ""
+	buf := bytes.NewBufferString("")
+	for _, cmd := range p {
+		buf.WriteString(cmd.String() + "\n")
+	}
+	return buf.String()
 }

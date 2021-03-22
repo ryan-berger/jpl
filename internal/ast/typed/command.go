@@ -6,11 +6,11 @@ import (
 	"github.com/ryan-berger/jpl/internal/types"
 )
 
-func checkRead(argument ast.Argument, table symbol.Table) error {
+func checkRead(argument ast.Argument, table *symbol.Table) error {
 	return bindArg(argument, types.Pict, table)
 }
 
-func checkCommand(command ast.Command, table symbol.Table) error {
+func checkCommand(command ast.Command, table *symbol.Table) error {
 	switch cmd := command.(type) {
 	case ast.Statement:
 		return statementType(cmd, types.Integer, table)

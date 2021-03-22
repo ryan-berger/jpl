@@ -13,6 +13,14 @@ func let(counter int, expr ast.Expression) *ast.LetStatement {
 	}
 }
 
+func constInt(val int64) *ast.IntExpression {
+	return &ast.IntExpression{Val: val}
+}
+
+func returnStmt(expr ast.Expression) *ast.ReturnStatement {
+	return &ast.ReturnStatement{Expr: expr}
+}
+
 func ident(value ast.LValue) string {
 	arg, ok := value.(*ast.VariableArgument)
 	if !ok {

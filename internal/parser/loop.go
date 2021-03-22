@@ -48,14 +48,14 @@ func (p *parser) parseOpBindings() []ast.OpBinding {
 	ok := p.parseList(lexer.RBrace, func() bool {
 		var opBinding ast.OpBinding
 		if !p.curTokenIs(lexer.Variable) {
-			p.errorf("expecting variable, received %s at line %d", p.peek.Val, p.peek.Line)
+			p.errorf(p.peek,"expecting variable, received %s", p.peek.Val)
 			return false
 		}
 
 		opBinding.Variable = p.cur.Val
 
 		if !p.expectPeek(lexer.Colon) {
-			p.errorf("expecting ':', received %s at line %d", p.peek.Val, p.peek.Line)
+			p.errorf(p.peek, "expecting ':', received %s", p.peek.Val)
 			return false
 		}
 		p.advance()

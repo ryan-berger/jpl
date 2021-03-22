@@ -32,30 +32,30 @@ func Lex(input string) ([]Token, bool) {
 	l := newLexer(input)
 	tokens := make([]Token, 0)
 	for tok := l.NextToken(); tok.Type != EOF; tok = l.NextToken() {
-		if len(tokens) != 0 && (tokens[len(tokens)-1].Type == NewLine && tok.Type == NewLine) {
+		if len(tokens) != 0 && (tokens[len(tokens)-1].Type == NewLine && tok.Type == NewLine) { // handle newline
 			continue
 		}
 		tokens = append(tokens, tok)
 	}
-	// TODO: Don't do this, just whyyyyy
+
 	tokens = append(tokens, Token{Type: EOF, Val: ""})
 	return tokens, len(tokens) == 1 || len(tokens) >= 2 && tokens[len(tokens)-2].Type != ILLEGAL
 }
 
 func (l *lexer) readChar() {
 	if l.readPosition >= len(l.input) {
-		l.ch = 0
+		l.ch = 0 // we've reached EOF
 	} else {
-		l.ch = l.input[l.readPosition]
+		l.ch = l.input[l.readPosition] // move the new
 	}
-	l.position = l.readPosition
-	l.readPosition++
+	l.position = l.readPosition // move the readPosition (peek) to the new position
+	l.readPosition++            // move read position up
 	l.linePos++
 }
 
 func (l *lexer) readIdentifier() string {
 	pos := l.position
-	for isAlphabetic(l.ch) || isNumeric(l.ch) || l.ch == '_' || l.ch == '.' {
+	for isAlphabetic(l.ch) || isNumeric(l.ch) || l.ch == '_' || l.ch == '.' { // run to end of identifier
 		l.readChar()
 	}
 	return l.input[pos:l.position]
@@ -217,19 +217,6 @@ var keywords = map[string]TokenType{
 	"float3": Float3,
 	"float4": Float4,
 	"bool":   Bool,
-}
-
-func (l *lexer) LexAll() ([]Token, bool) {
-	tokens := make([]Token, 0)
-	for tok := l.NextToken(); tok.Type != EOF; tok = l.NextToken() {
-		if len(tokens) != 0 && (tokens[len(tokens)-1].Type == NewLine && tok.Type == NewLine) {
-			continue
-		}
-		tokens = append(tokens, tok)
-	}
-	// TODO: Don't do this, just whyyyyy
-	tokens = append(tokens, Token{Type: EOF, Val: ""})
-	return tokens, len(tokens) == 1 || len(tokens) >= 2 && tokens[len(tokens)-2].Type != ILLEGAL
 }
 
 // searchNextToken looks for the next token for the given input

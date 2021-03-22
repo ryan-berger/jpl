@@ -5,15 +5,15 @@ import (
 	"github.com/ryan-berger/jpl/internal/symbol"
 )
 
-func Check(program ast.Program) (ast.Program, error) {
+func Check(program ast.Program) (ast.Program, *symbol.Table, error) {
 	table := symbol.NewSymbolTable()
 
 	for _, cmd := range program {
 		err := checkCommand(cmd, table)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
-	return program, nil
+	return program, table, nil
 }

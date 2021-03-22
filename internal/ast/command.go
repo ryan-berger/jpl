@@ -3,6 +3,8 @@ package ast
 import (
 	"bytes"
 	"fmt"
+
+	"github.com/ryan-berger/jpl/internal/types"
 )
 
 type Command interface {
@@ -13,7 +15,7 @@ type Command interface {
 type Function struct {
 	Var        string
 	Bindings   []Binding
-	ReturnType Type
+	ReturnType types.Type
 	Statements []Statement
 	Location
 }
