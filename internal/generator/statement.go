@@ -151,6 +151,9 @@ var boolArg = `mov ebx, [rbp - %d]
 mov %s, rbx
 `
 
+var moveToStack = `mov [rsp + %d], rbx
+`
+
 func (g *generator) callExpressionPlanner(
 	retLoc int, expr *ast.CallExpression, f frame) {
 
@@ -171,12 +174,27 @@ func (g *generator) callExpressionPlanner(
 		loc := f[ref.Identifier]
 		switch typ := arg.Typ(); typ {
 		case types.Integer:
+			if intReg >= len(intRegisters) {
+				stackArg.WriteString(fmt.Sprintf(intArg, fmt.Sprintf("rbx"), loc))
+				stackArg.WriteString(fmt.Sprintf(moveToStack, loc+stackSize))
+				stackSize += typ.Size()
+				continue
+			}
 			g.buf.WriteString(fmt.Sprintf(intArg, intRegisters[intReg], loc))
 			intReg++
 		case types.Boolean:
+			if intReg >= len(intRegisters) {
+				reg := fmt.Sprintf("[rsp - %d]", loc+stackSize)
+				stackArg.WriteString(fmt.Sprintf(boolArg, loc, reg))
+				stackSize += typ.Size()
+				continue
+			}
 			g.buf.WriteString(fmt.Sprintf(boolArg, loc, intRegisters[intReg]))
 			intReg++ // booleans eat an int register (albeit it is a 32 bit value)
 		case types.Float:
+			if floatReg >= len(floatRegisters) {
+				continue
+			}
 			g.buf.WriteString(fmt.Sprintf(floatArg, floatRegisters[floatReg], loc))
 			floatReg++
 		default:
