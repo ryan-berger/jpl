@@ -42,7 +42,8 @@ func expand(t *testing.T, program string) (ast.Program, *symbol.Table) {
 func TestData(t *testing.T) {
 	program, table := expand(t, `
 read image "foo.png" to img
+write image blur(img, 3.14) to "foo.png"
 
-assert has_size(img, 10, 10), "Please do not modify foo.png, it should be 10x10"`)
+let x = if 1 == 1 then 0 else 2`)
 	Generate(program, table, os.Stdout)
 }
