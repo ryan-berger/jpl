@@ -7,7 +7,7 @@ compile: cmd/compiler.go
 	go build -o jpl cmd/compiler.go
 
 run:
-	./jpl -p $(TEST)
+	./jpl -s $(TEST)
 
 run-a4t:
 	./jpl -t $(TEST)
