@@ -40,6 +40,12 @@ func WithPrintMode(p PrintMode) CompilerOpts {
 	}
 }
 
+func WithWriter(w io.Writer) CompilerOpts {
+	return func(c *Compiler) {
+		c.output = w
+	}
+}
+
 func WithReader(r io.Reader) CompilerOpts {
 	return func(c *Compiler) {
 		c.input = r
@@ -49,7 +55,7 @@ func WithReader(r io.Reader) CompilerOpts {
 func NewCompiler(opts ...CompilerOpts) *Compiler {
 	c := &Compiler{
 		input:  os.Stdin,
-		output: os.Stdout,
+		output: ioutil.Discard,
 	}
 
 	for _, opt := range opts {
@@ -114,11 +120,10 @@ func (c *Compiler) expand(program ast.Program) (ast.Program, *symbol.Table) {
 }
 
 func (c *Compiler) generate(program ast.Program, table *symbol.Table) {
-	w := ioutil.Discard
 	if c.mode == ASM {
-		w = os.Stdout
+		c.output = os.Stdout
 	}
-	generator.Generate(program, table, w)
+	generator.Generate(program, table, c.output)
 }
 
 func (c *Compiler) compile() error {
