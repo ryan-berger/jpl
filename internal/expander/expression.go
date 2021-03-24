@@ -1,6 +1,9 @@
 package expander
 
-import "github.com/ryan-berger/jpl/internal/ast"
+import (
+	"github.com/ryan-berger/jpl/internal/ast"
+	"github.com/ryan-berger/jpl/internal/ast/dsl"
+)
 
 // expansionAndLet takes in an expression and if it is an ast.CallExpression it will convert
 // it to a let. This method should only be used when an ast.CallExpression is not allowed in an
@@ -8,28 +11,52 @@ import "github.com/ryan-berger/jpl/internal/ast"
 func expansionAndLet(
 	expr ast.Expression,
 	next nexter,
-) (ast.Expression, []ast.Statement) {
-	if _, ok := expr.(*ast.IdentifierExpression); ok {
-		return expr, nil
+) (*ast.IdentifierExpression, []ast.Statement) {
+	if e, ok := expr.(*ast.IdentifierExpression); ok {
+		return e, nil
 	}
 
 	newExp, stmts := expandExpression(expr, next)
-	l := let(next(), newExp)
-	stmts = append(stmts, l)
+	name := next()
+	l := dsl.Let(
+		dsl.LIdent(name), newExp) // let ident = newExp
 
-	return refExpr(ident(l.LValue)), stmts
+	stmts = append(stmts, l)
+	return dsl.Ident(name), stmts
 }
+
+func expandInfixExpression(expr ast.Expression, next nexter) (ast.Expression, []ast.Statement) {
+	switch exp := expr.(type) {
+	case *ast.FloatExpression, *ast.IntExpression:
+		return expansionAndLet(expr, next)
+	case *ast.InfixExpression:
+		if exp.Op == "&&" || exp.Op == "||" {
+			return exp, nil
+		}
+
+		lExp, lStatements := expansionAndLet(exp.Left, next)
+		rExp, rStatements := expansionAndLet(exp.Right, next)
+		var stmts []ast.Statement
+		stmts = append(stmts, lStatements...)
+		stmts = append(stmts, rStatements...)
+
+		return &ast.InfixExpression{Left: lExp, Right: rExp, Op: exp.Op}, stmts
+	default:
+		return expandExpression(expr, next)
+	}
+}
+
 
 func expandExpression(expression ast.Expression, next nexter) (ast.Expression, []ast.Statement) {
 	switch expr := expression.(type) {
 	case *ast.IdentifierExpression:
 		return expr, nil
-	case *ast.IntExpression, *ast.FloatExpression:
+	case *ast.IntExpression, *ast.FloatExpression, *ast.BooleanExpression:
 		return expr, nil
 	case *ast.IfExpression:
 		return expr, nil
 	case *ast.InfixExpression:
-		return expr, nil
+		return expandInfixExpression(expr, next)
 	case *ast.CallExpression:
 		var stmts []ast.Statement
 		for i, arg := range expr.Arguments {

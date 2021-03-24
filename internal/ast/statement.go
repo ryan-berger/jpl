@@ -104,3 +104,23 @@ func (a *AssertStatement) String() string {
 
 func (a *AssertStatement) command()   {}
 func (a *AssertStatement) statement() {}
+
+
+type AttributeStatement struct {
+	Annotation string
+}
+
+func (a *AttributeStatement) SExpr() string {
+	return fmt.Sprintf("(Attribute %s)", a.Annotation)
+}
+
+func (a AttributeStatement) Loc() (int, int) {
+	return 0, 0
+}
+
+func (a AttributeStatement) String() string {
+	return fmt.Sprintf("attribute %s", a.Annotation)
+}
+
+func (a AttributeStatement) command() {}
+func (a AttributeStatement) statement() {}

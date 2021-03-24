@@ -1,16 +1,19 @@
 package expander
 
 import (
+	"fmt"
+
 	"github.com/ryan-berger/jpl/internal/ast"
+	"github.com/ryan-berger/jpl/internal/ast/dsl"
 )
 
-type nexter func() int
+type nexter func() string
 
 func defaultNexter() nexter {
 	N := 0
-	return func() int {
+	return func() string {
 		N++
-		return N
+		return fmt.Sprintf("t.%d", N)
 	}
 }
 
@@ -37,8 +40,11 @@ func Expand(program ast.Program) ast.Program {
 
 	if size := len(expanded);
 		size == 0 || !isReturn(expanded[size-1]) { // add a return at last since there is none
-		l := let(next(), constInt(0))
-		ret := returnStmt(refExpr(ident(l.LValue)))
+		name := next()
+		l := dsl.Let(
+			dsl.LIdent(name), dsl.Int(0))
+		ret := dsl.Return(dsl.Ident(name))
+
 		expanded = append(expanded, l, ret)
 	}
 
