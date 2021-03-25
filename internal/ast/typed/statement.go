@@ -13,7 +13,7 @@ func bindArg(argument ast.Argument, typ types.Type, table *symbol.Table) error {
 	switch arg := argument.(type) {
 	case *ast.VariableArgument:
 		if _, ok := table.Get(arg.Variable); ok {
-			return fmt.Errorf("cannot bindArg variable %s, variable is already bound",
+			return NewError(arg, "cannot bindArg variable %s, variable is already bound",
 				arg.Variable)
 		}
 		table.Set(arg.Variable, &symbol.Identifier{Type: typ})
@@ -22,10 +22,10 @@ func bindArg(argument ast.Argument, typ types.Type, table *symbol.Table) error {
 	case *ast.VariableArr:
 		arrTyp, ok := typ.(*types.Array)
 		if !ok {
-			return fmt.Errorf("array bindArg to non-array type for binding %s", arg.Variable)
+			return NewError(arg, "array bindArg to non-array type for binding %s", arg.Variable)
 		}
 		if len(arg.Variables) != arrTyp.Rank {
-			return fmt.Errorf("dimension incorrect for binding %s", arg)
+			return NewError(arg, "dimension incorrect for binding %s", arg)
 		}
 
 		table.Set(arg.Variable, &symbol.Identifier{Type: arrTyp})
@@ -122,12 +122,6 @@ func bindLVal(value ast.LValue, typ types.Type, table *symbol.Table) error {
 
 func statementType(statement ast.Statement, retType types.Type, table *symbol.Table) error {
 	switch stmt := statement.(type) {
-	case *ast.Function:
-		fn, err := functionBinding(stmt, table)
-		if err != nil {
-			return err
-		}
-		table.Set(stmt.Var, fn)
 	case *ast.ReturnStatement:
 		typ, err := expressionType(stmt.Expr, table)
 		if err != nil {

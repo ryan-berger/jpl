@@ -59,6 +59,10 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		file.Truncate(0)
+		file.Seek(0, 0)
+
+		defer file.Close()
 		opts = append(opts, internal.WithWriter(file))
 	}
 

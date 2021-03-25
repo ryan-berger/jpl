@@ -44,6 +44,14 @@ func TestData(t *testing.T) {
 read image "foo.png" to img
 write image blur(img, 3.14) to "foo.png"
 
-let x = if 1 == 1 then 0 else 2`)
+let x = if 1 == 1 then 0 else 2
+fn test() : {} {
+  let y = 10
+  let z = 22
+}
+
+let g = test()`)
+
+
 	Generate(program, table, os.Stdout)
 }

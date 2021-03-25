@@ -6,8 +6,6 @@ import (
 
 func expandStatement(statement ast.Statement, next nexter) []ast.Statement {
 	switch stmt := statement.(type) {
-	case *ast.Function:
-		return []ast.Statement{expandFunction(stmt, next)}
 	case *ast.LetStatement:
 		return expandLet(stmt, next)
 	case *ast.AssertStatement:
@@ -15,16 +13,6 @@ func expandStatement(statement ast.Statement, next nexter) []ast.Statement {
 	case *ast.ReturnStatement:
 		return expandReturn(stmt, next)
 	}
-	return nil
-}
-
-func expandFunction(fn *ast.Function, next nexter) ast.Statement {
-	stmts := fn.Statements
-	var newStmts []ast.Statement
-	for _, s := range stmts {
-		newStmts = append(newStmts, expandStatement(s, next)...)
-	}
-
 	return nil
 }
 
