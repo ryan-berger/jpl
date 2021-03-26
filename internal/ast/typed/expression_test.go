@@ -1,8 +1,12 @@
 package typed
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"testing"
+
+	_ "embed"
 
 	"github.com/stretchr/testify/assert"
 
@@ -164,5 +168,40 @@ func TestCheckFailures(t *testing.T) {
 		assert.NotNil(t, err, test.expr)
 		assert.Contains(t, err.Error(), test.err)
 	}
+}
+
+func parseAll(t *testing.T, program string) ast.Program {
+	tokens, ok := lexer.Lex(program)
+	assert.True(t, ok, "lexer error")
+
+	commands, err := parser.Parse(tokens)
+	assert.NoError(t, err, program)
+	return commands
+}
+
+//go:embed testdata/error-tests/*.jpl
+var tests embed.FS
+func TestFailures(t *testing.T) {
+	var cases []string
+	err := fs.WalkDir(tests, "testdata/error-tests", func(path string, d fs.DirEntry, err error) error {
+		if d.IsDir() {
+			return nil
+		}
+
+		b, e := tests.ReadFile(path)
+		if e != nil {
+			return e
+		}
+		cases = append(cases, string(b))
+		return nil
+	})
+	assert.NoError(t, err)
+
+	for _, c := range cases {
+		program := parseAll(t, c)
+		_, _, err := Check(program)
+		assert.Error(t, err)
+	}
+
 }
 
