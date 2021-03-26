@@ -50,7 +50,40 @@ func checkIdentifierExpr(expr *ast.IdentifierExpression, table *symbol.Table) (t
 	return ident.Type, nil
 }
 
+func checkDimExpr(expr *ast.CallExpression, table *symbol.Table) (types.Type, error) {
+	if len(expr.Arguments) != 2 {
+		return nil, NewError(
+			expr,
+			"function dim expects 2 arguments, received %d", len(expr.Arguments))
+	}
+
+	arrTyp, err := expressionType(expr.Arguments[0], table)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := arrTyp.(*types.Array); !ok {
+		return nil, NewError(expr.Arguments[0], "type error: expected array type, received %s", arrTyp.String())
+	}
+
+	dimTyp, err := expressionType(expr.Arguments[1], table)
+	if err != nil {
+		return nil, err
+	}
+
+	if !dimTyp.Equal(types.Integer) {
+		return nil, NewError(expr.Arguments[1], "type error: expected int received %s", dimTyp.String())
+	}
+
+	return types.Integer, nil
+}
+
 func checkCallExpr(expr *ast.CallExpression, table *symbol.Table) (types.Type, error) {
+	// special case for dim
+	if expr.Identifier == "dim" {
+		return checkDimExpr(expr, table)
+	}
+
 	symb, ok := table.Get(expr.Identifier)
 	if !ok {
 		return nil, NewError(expr, "unknown symbol %s", expr.Identifier)
@@ -62,7 +95,7 @@ func checkCallExpr(expr *ast.CallExpression, table *symbol.Table) (types.Type, e
 	}
 
 	if len(call.Args) != len(expr.Arguments) {
-		return nil, fmt.Errorf("function %s expects %d arguments, received %d", expr.Identifier, len(call.Args), len(expr.Arguments))
+		return nil, NewError(expr, "function %s expects %d arguments, received %d", expr.Identifier, len(call.Args), len(expr.Arguments))
 	}
 
 	for i, t := range call.Args {

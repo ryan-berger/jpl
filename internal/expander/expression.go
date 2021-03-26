@@ -30,7 +30,7 @@ func expandInfixExpression(expr ast.Expression, next nexter) (ast.Expression, []
 	case *ast.FloatExpression, *ast.IntExpression:
 		return expansionAndLet(expr, next)
 	case *ast.InfixExpression:
-		if exp.Op == "&&" || exp.Op == "||" {
+		if exp.Op == "&&" || exp.Op == "||" { // TODO: generate function calls for these
 			return exp, nil
 		}
 

@@ -13,8 +13,8 @@ func bindArg(argument ast.Argument, typ types.Type, table *symbol.Table) error {
 	switch arg := argument.(type) {
 	case *ast.VariableArgument:
 		if _, ok := table.Get(arg.Variable); ok {
-			return NewError(arg,
-				"cannot bindArg variable %s, variable is already bound", arg.Variable)
+			return NewError(arg, "cannot bindArg variable %s, variable is already bound",
+				arg.Variable)
 		}
 		table.Set(arg.Variable, &symbol.Identifier{Type: typ})
 		arg.Type = typ
@@ -122,12 +122,6 @@ func bindLVal(value ast.LValue, typ types.Type, table *symbol.Table) error {
 
 func statementType(statement ast.Statement, retType types.Type, table *symbol.Table) error {
 	switch stmt := statement.(type) {
-	case *ast.Function:
-		fn, err := functionBinding(stmt, table)
-		if err != nil {
-			return err
-		}
-		table.Set(stmt.Var, fn)
 	case *ast.ReturnStatement:
 		typ, err := expressionType(stmt.Expr, table)
 		if err != nil {

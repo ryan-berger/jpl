@@ -65,7 +65,16 @@ sub rsp, %d
 `
 
 func (g *generator) textSection() {
-	g.buf.WriteString(textProlouge)
+	g.buf.WriteString("section .text\n\n")
+
+	// function time
+	for _, cmd := range g.program {
+		if fn, ok := cmd.(*ast.Function); ok {
+			g.genFunction(fn)
+		}
+	}
+
+	g.buf.WriteString("main:\n_main:\n")
 
 	g.calculateProgramSize()
 

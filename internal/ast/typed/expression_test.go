@@ -51,6 +51,8 @@ var okTests = []struct {
 	{"if true then 10.11 else 22.23", types.Float},
 	{"sub_ints(10, 11)", types.Integer},
 	{"sub_floats(1.0, 1.1)", types.Float},
+	{"dim([1, 2, 3], 1)", types.Integer},
+	{"dim([1.0, 2.0, 3.0], 1)", types.Integer},
 	{"{1, 2.0}", &types.Tuple{Types: []types.Type{types.Integer, types.Float}}},
 	{"{1, 2.0}{1}", types.Float},
 	{"[[1, 2, 3, 4]][0][0]", types.Integer},
@@ -158,6 +160,9 @@ var failureTests = []struct{
 	{"array[i : 10] i", "return type of array expression must be array"},
 	{"array[i : x + 10] 1", "unknown symbol x"},
 	{"array[i : true] 1", "bindArg expr initializer for i returns non-integer"},
+	{"dim(1, 1)", "expected array type, received int"},
+	{"dim([1, 2, 3], 1.0)", "expected int received float"},
+	{"dim([1, 2, 3], 1, 3)", "function dim expects 2 arguments, received 3"},
 }
 
 func TestCheckFailures(t *testing.T) {

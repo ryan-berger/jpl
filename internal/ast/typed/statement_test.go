@@ -13,49 +13,41 @@ import (
 	"github.com/ryan-berger/jpl/internal/types"
 )
 
-func parseLet(t *testing.T, expr string) *ast.LetStatement {
+func parseLet(t *testing.T, expr string) (*ast.LetStatement, error) {
 	tokens, ok := lexer.Lex(fmt.Sprintf("let %s", expr))
 
 	assert.True(t, ok, "lexer error")
 
 	commands, err := parser.Parse(tokens)
 
-	assert.Nil(t, err, "error nil")
 	assert.Len(t, commands, 1)
 	assert.IsType(t, &ast.LetStatement{}, commands[0])
 
-	return commands[0].(*ast.LetStatement)
+	return commands[0].(*ast.LetStatement), err
 }
 
-var validLetTests = []struct {
-	expr string
-}{
-	{
-		expr: "x = 10",
-	},
-	{
-		expr: "x = {1, 2}",
-	},
-	{
-		expr: "{x, y} = {1, 2}",
-	},
-	{
-		expr: "{x, y} = {[1, 2], 2}",
-	},
-	{
-		expr: "{x[L], y} = {[1, 2], 2}",
-	},
+var validLetTests = []string{
+	"x = 10",
+	"x = {1, 2}",
+	"{x, y} = {1, 2}",
+	"{x, y} = {[1, 2], 2}",
+	"{x[L], y} = {[1, 2], 2}",
 }
 
 func TestLet(t *testing.T) {
 	for _, test := range validLetTests {
 		table := symbol.NewSymbolTable()
-		letStmt := parseLet(t, test.expr)
+		letStmt, err := parseLet(t, test)
+		assert.NoError(t, err)
 		rType, err := expressionType(letStmt.Expr, table)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		err = bindLVal(letStmt.LValue, rType, table)
 		assert.Nil(t, err)
 	}
+}
+
+var invalidTests []struct{
+
 }
 
 func parseFunction(t *testing.T, expr string) *ast.Function {

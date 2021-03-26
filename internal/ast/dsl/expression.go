@@ -13,8 +13,36 @@ func Int(val int64) *ast.IntExpression {
 	return &ast.IntExpression{Val: val}
 }
 
+func Float(val float64) *ast.FloatExpression {
+	return &ast.FloatExpression{Val: val}
+}
+
+func Bool(val bool) *ast.BooleanExpression {
+	return &ast.BooleanExpression{Val: val}
+}
+
 func Ident(val string) *ast.IdentifierExpression {
 	return &ast.IdentifierExpression{
 		Identifier: val,
+	}
+}
+
+func Tuple(exps ...ast.Expression) *ast.TupleExpression {
+	return &ast.TupleExpression{Expressions: exps}
+}
+
+func Infix(op string, l, r ast.Expression) *ast.InfixExpression {
+	return &ast.InfixExpression{
+		Left:  l,
+		Right: r,
+		Op:    op,
+	}
+}
+
+func If(cond, otherwise, consequence ast.Expression) *ast.IfExpression {
+	return &ast.IfExpression{
+		Condition:   cond,
+		Consequence: consequence,
+		Otherwise:   otherwise,
 	}
 }

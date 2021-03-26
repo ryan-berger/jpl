@@ -17,12 +17,42 @@ func expandCommand(command ast.Command, next nexter) []ast.Command {
 		return expandTime(cmd, next)
 	case *ast.Show:
 		return expandShow(cmd, next)
+	case *ast.Function:
+		return []ast.Command{expandFunction(cmd, next)}
 	case ast.Statement:
 		return toCommands(expandStatement(cmd, next))
 	default:
 		panic("oops, type not supported")
 	}
 	return nil
+}
+
+func expandFunction(fn *ast.Function, next nexter) ast.Command {
+	stmts := fn.Statements
+	var expanded []ast.Statement
+	for _, s := range stmts {
+		expanded = append(expanded, expandStatement(s, next)...)
+
+		if size := len(expanded); size != 0 {
+			if isReturn(expanded[size-1]) { // exit early, we've hit our return
+				fn.Statements = expanded
+				return fn
+			}
+		}
+	}
+
+	if size := len(expanded);
+		size == 0 || !isReturn(expanded[size-1]) { // add a return at last since there is none
+		name := next()
+		l := dsl.Let(
+			dsl.LIdent(name), dsl.Tuple())
+		ret := dsl.Return(dsl.Ident(name))
+
+		expanded = append(expanded, l, ret)
+	}
+
+	fn.Statements = expanded
+	return fn
 }
 
 func expandShow(sh *ast.Show, next nexter) []ast.Command {

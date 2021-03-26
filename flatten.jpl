@@ -1,5 +1,2 @@
-read image "foo.png" to img
-let x = 10
-write image blur(img, 3.14) to "foo.png"
-
-let x = if 1 == 1 then 0 else 2
+let x = 2.0 / 3.2
+show x

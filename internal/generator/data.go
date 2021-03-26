@@ -32,6 +32,12 @@ func dataWalk(n ast.Node, namer namer, names constantMapper, reverse map[string]
 			datum = append(datum, dataWalk(cmd, namer, names, reverse)...)
 		}
 		return datum
+	case *ast.Function:
+		var datum []data
+		for _, stmt := range node.Statements {
+			datum = append(datum, dataWalk(stmt, namer, names, reverse)...)
+		}
+		return datum
 	case *ast.Show:
 		typeStr := node.Expr.
 			Typ().

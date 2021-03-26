@@ -27,6 +27,7 @@ func (p *parser) parseFunction() ast.Command {
 	function.Bindings = p.parseBindings()
 
 	if !p.expectPeek(lexer.Colon) {
+		p.error = NewError(p.peek, "expected ':' received %s", p.peek.Val)
 		return nil
 	}
 	p.advance()
@@ -44,28 +45,34 @@ func (p *parser) parseFunction() ast.Command {
 	}
 	p.advance()
 
-	function.Statements = p.parseStatements()
-	p.advance()
-	p.advance()
+	stmts, err := p.parseStatements()
+	if err != nil {
+		return nil
+	}
 
+	function.Statements = stmts
+	p.advance()
 	return function
 }
 
-func (p *parser) parseStatements() []ast.Statement {
+func (p *parser) parseStatements() ([]ast.Statement, error) {
 	var statements []ast.Statement
 
-
-	for !p.peekTokenIs(lexer.RCurly) && !p.peekTokenIs(lexer.EOF) {
+	for !p.curTokenIs(lexer.RCurly) && !p.curTokenIs(lexer.EOF) {
 		stmt := p.parseStatement()
 
 		if stmt == nil {
-			return nil
+			if p.error == nil {
+				panic("error not handled somewhere")
+			}
+			return nil, nil
 		}
 
 		statements = append(statements, stmt)
+		p.advance()
 	}
 
-	return statements
+	return statements, nil
 }
 
 func (p *parser) parseBindings() []ast.Binding {
