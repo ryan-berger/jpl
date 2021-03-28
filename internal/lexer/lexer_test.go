@@ -399,6 +399,7 @@ func TestLexer(t *testing.T) {
 	}
 }
 
+
 func TestLexerWithAssignments(t *testing.T) {
 	tests := map[string]struct{ input, expected string }{}
 	err := filepath.Walk("../../assignment1/lexer-tests1/", func(path string, info os.FileInfo, err error) error {

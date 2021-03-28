@@ -27,21 +27,19 @@ func parseExpression(t *testing.T, expr string) ast.Expression {
 	return commands[0].(*ast.ReturnStatement).Expr
 }
 
-func newNexter() func() int {
+func newNexter() func() string {
 	N := 0
-	next := func() int {
+	next := func() string {
 		N++
-		return N
+		return fmt.Sprintf("t.%d", N)
 	}
 	return next
 }
 
 func TestExpressionExpansion(t *testing.T)  {
-	exp := parseExpression(t, "resize(crop(sepia(img), 50, 250, 650, 650), 300, 200)")
+	exp := parseExpression(t, "(true || false) && false")
 	_, smts := expansionAndLet(exp, newNexter())
 	for _, s := range smts {
 		fmt.Println(s)
 	}
-
-
 }

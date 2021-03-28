@@ -14,14 +14,17 @@ func checkCommand(command ast.Command, table *symbol.Table) error {
 	switch cmd := command.(type) {
 	case ast.Statement:
 		return statementType(cmd, types.Integer, table)
+	case *ast.Function:
+		fn, err := functionBinding(cmd, table)
+		if err != nil {
+			return err
+		}
+		table.Set(cmd.Var, fn)
 	case *ast.Read:
 		if cmd.Type != "image" {
 			return NewError(cmd, "oops, read type not supported yet")
 		}
-		if err := checkRead(cmd.Argument, table); err != nil {
-			return err
-		}
-		return nil
+		return checkRead(cmd.Argument, table)
 	case *ast.Write:
 		typ, err := expressionType(cmd.Expr, table)
 		if err != nil {

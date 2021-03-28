@@ -25,7 +25,6 @@ func (f *Function) SExpr() string {
 }
 
 func (f *Function) command() {}
-func (f *Function) statement() {}
 func (f *Function) String() string {
 	buf := bytes.NewBuffer([]byte{})
 	buf.WriteString(fmt.Sprintf("fn %s (", f.Var))
