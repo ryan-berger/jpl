@@ -321,6 +321,7 @@ func checkArrayTransform(expr *ast.ArrayTransform, table *symbol.Table) (types.T
 		}
 		return exprType, nil
 	}
+	expr.Type = exprType
 	return nil, NewError(expr.Expr, "return type of array expression must be array")
 }
 
