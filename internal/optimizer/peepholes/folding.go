@@ -30,6 +30,9 @@ func foldBoolExpr(l, r ast.Expression, op string) ast.Expression {
 func foldInteger(l, r ast.Expression, op string) ast.Expression {
 	lInt := l.(*ast.IntExpression).Val
 	rInt := r.(*ast.IntExpression).Val
+	if rInt == 0 { // TODO: actually handle this
+		panic("divide by zero")
+	}
 	switch op {
 	case "+":
 		return dsl.Int(lInt + rInt)

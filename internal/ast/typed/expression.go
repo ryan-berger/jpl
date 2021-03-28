@@ -280,28 +280,41 @@ func checkSumTransform(expr *ast.SumTransform, table *symbol.Table) (types.Type,
 }
 
 func checkArrayTransform(expr *ast.ArrayTransform, table *symbol.Table) (types.Type, error) {
+	// copy symbol table to use as a local copy
 	cpy := table.Copy()
+
+	// loop over bindings and
 	for _, binding := range expr.OpBindings {
+		// make sure no variable shadowing is going on
 		if _, ok := cpy.Get(binding.Variable); ok {
-			return nil, fmt.Errorf("illegal shadowing in sum expr, var: %s", binding.Variable)
+			return nil, NewError(binding,
+				"illegal shadowing in sum expr, var: %s", binding.Variable)
 		}
+
+		// typecheck the binding type <var> : <expression> <-- this here
 		bindType, err := expressionType(binding.Expr, cpy)
 		if err != nil {
 			return nil, err
 		}
 
+		// the binding type must be an integer
 		if !bindType.Equal(types.Integer) {
 			return nil, NewError(binding, "bindArg expr initializer for %s returns non-integer",
 				binding.Variable)
 		}
 
+		// set the variable up in the local symbol table as an integer
 		cpy.Set(binding.Variable, &symbol.Identifier{Type: types.Integer})
 	}
+
+	// get the expression type of the right hand side of the expression
 	exprType, err := expressionType(expr.Expr, cpy)
 	if err != nil {
 		return nil, err
 	}
 
+	// make sure that it is some sort of array expression. If it isn't, then maybe we should be
+	// using a sum[]?
 	if arr, ok := exprType.(*types.Array); ok {
 		if arr.Rank != len(expr.OpBindings) {
 			return nil, NewError(expr.Expr, "return type of array expression must be of equal rank of number of bindings")
