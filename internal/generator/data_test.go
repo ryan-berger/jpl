@@ -45,9 +45,10 @@ read image "foo.png" to img
 write image blur(img, 3.14) to "foo.png"
 
 let x = if 1 == 1 then 0 else 2
-fn test() : {} {
+fn test() : int {
   let y = 10
   let z = 22
+  return y + x
 }
 
 let g = test()`)

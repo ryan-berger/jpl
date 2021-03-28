@@ -74,7 +74,7 @@ func (g *generator) genCommand(command ast.Command) {
 		panic("should not be generating assembly for time commands")
 	case *ast.Function: // nop
 	case ast.Statement:
-		g.genStatement(cmd)
+		g.genStatement(cmd, g.frame, g.size)
 	}
 }
 
@@ -85,17 +85,19 @@ ret
 `
 
 func (g *generator) genStatement(
-	statement ast.Statement) {
+	statement ast.Statement,
+	f frame,
+	size int) {
 	switch stmt := statement.(type) {
 	case *ast.LetStatement:
-		g.genLetStatement(stmt, g.frame)
+		g.genLetStatement(stmt, f)
 	case *ast.ReturnStatement:
 		ident := stmt.Expr.(*ast.IdentifierExpression).Identifier
-		g.buf.WriteString(fmt.Sprintf(returnInt, g.frame[ident], g.size))
+		g.buf.WriteString(fmt.Sprintf(returnInt, f[ident], size))
 	case *ast.AssertStatement:
-		loc := g.frame[stmt.Expr.String()] // get location of condition we are testing
-		msg := g.mapper[stmt]              // message for assert
-		lbl := g.newLabel()               // generate new label
+		loc := f[stmt.Expr.String()] // get location of condition we are testing
+		msg := g.mapper[stmt]        // message for assert
+		lbl := g.newLabel()          // generate new label
 		g.buf.WriteString(fmt.Sprintf(assertAsm, loc, lbl, msg))
 	}
 }
@@ -114,7 +116,6 @@ const moveBool = `mov ebx, [rbp - %d]
 mov [rbp - %d], ebx
 
 `
-
 
 const addInts = `mov rbx, [rbp - %d]
 add rbx, [rbp - %d]
@@ -152,12 +153,11 @@ mov [rbp - %d], rdx
 
 `
 
-
 func (g *generator) intArithmetic(op string, f frame, dest int, l, r ast.Expression) {
 	left := l.(*ast.IdentifierExpression).Identifier
 	right := r.(*ast.IdentifierExpression).Identifier
 
-	ops := map[string]string {
+	ops := map[string]string{
 		"+": addInts,
 		"-": subInts,
 		"*": multInts,
@@ -200,7 +200,7 @@ func (g *generator) floatArithmetic(op string, f frame, dest int, l, r ast.Expre
 	left := l.(*ast.IdentifierExpression).Identifier
 	right := r.(*ast.IdentifierExpression).Identifier
 
-	ops := map[string]string {
+	ops := map[string]string{
 		"+": addFloats,
 		"-": subFloats,
 		"*": multFloats,
@@ -212,7 +212,6 @@ func (g *generator) floatArithmetic(op string, f frame, dest int, l, r ast.Expre
 	}
 	g.buf.WriteString(fmt.Sprintf(asm, f[left], f[right], dest))
 }
-
 
 func (g *generator) genLetStatement(
 	let *ast.LetStatement,
@@ -306,7 +305,7 @@ func (g *generator) callExpressionPlanner(
 		case types.Float:
 			if floatReg >= len(floatRegisters) {
 				stackArg.WriteString(fmt.Sprintf(floatArg, "xmm8", loc))
-				stackArg.WriteString(fmt.Sprintf(moveFloatToStack, loc + stackSize))
+				stackArg.WriteString(fmt.Sprintf(moveFloatToStack, loc+stackSize))
 				continue
 			}
 			g.buf.WriteString(fmt.Sprintf(floatArg, floatRegisters[floatReg], loc))

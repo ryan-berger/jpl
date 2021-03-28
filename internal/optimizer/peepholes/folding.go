@@ -3,6 +3,7 @@ package peepholes
 import (
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/ast/dsl"
+	"github.com/ryan-berger/jpl/internal/types"
 )
 
 func isConstant(exp ast.Expression) bool {
@@ -14,17 +15,30 @@ func isConstant(exp ast.Expression) bool {
 }
 
 func foldBoolExpr(l, r ast.Expression, op string) ast.Expression {
-	lBool := l.(*ast.BooleanExpression).Val
-	rBool := r.(*ast.BooleanExpression).Val
+	lConst := isConstant(l)
+	rConst := isConstant(r)
 
-	switch op {
-	case "&&":
-		return dsl.Bool(lBool && rBool)
-	case "||":
-		return dsl.Bool(lBool || rBool)
-	default:
-		panic("error, not implemented")
+	if lConst {
+		lVal := l.(*ast.BooleanExpression).Val
+		if (lVal && op == "||") || (!lVal && op == "&&") { // true || otherExpression
+			return l
+		}
 	}
+
+	if lConst && rConst {
+		lBool := l.(*ast.BooleanExpression).Val
+		rBool := r.(*ast.BooleanExpression).Val
+		switch op {
+		case "&&":
+			return dsl.Bool(lBool && rBool)
+		case "||":
+			return dsl.Bool(lBool || rBool)
+		default:
+			panic("error, not implemented")
+		}
+	}
+
+	return dsl.Infix(op, l, r)
 }
 
 func foldInteger(l, r ast.Expression, op string) ast.Expression {
@@ -88,7 +102,6 @@ func foldFloat(l, r ast.Expression, op string) ast.Expression {
 	}
 }
 
-
 func constantFold(exp ast.Expression) ast.Expression {
 	switch expr := exp.(type) {
 	case *ast.IntExpression, *ast.FloatExpression, *ast.BooleanExpression:
@@ -107,14 +120,19 @@ func constantFold(exp ast.Expression) ast.Expression {
 		lExp := constantFold(expr.Left)
 		rExp := constantFold(expr.Right)
 
-		if isConstant(lExp) && isConstant(rExp) {
+		lConst := isConstant(lExp)
+		rConst := isConstant(rExp)
+
+		if (lConst || rConst) && lExp.Typ().Equal(types.Boolean) {
+			return foldBoolExpr(lExp, rExp, expr.Op)
+		}
+
+		if lConst && rConst {
 			switch lExp.(type) {
 			case *ast.FloatExpression:
 				return foldFloat(lExp, rExp, expr.Op)
 			case *ast.IntExpression:
 				return foldInteger(lExp, rExp, expr.Op)
-			case *ast.BooleanExpression:
-				return foldBoolExpr(lExp, rExp, expr.Op)
 			}
 		}
 		return dsl.Infix(expr.Op, lExp, rExp)
@@ -135,4 +153,3 @@ func constantFold(exp ast.Expression) ast.Expression {
 		return exp
 	}
 }
-

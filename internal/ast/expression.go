@@ -111,7 +111,7 @@ func (f *FloatExpression) SExpr() string {
 }
 
 func (f *FloatExpression) String() string {
-	return fmt.Sprintf("%f", f.Val)
+	return fmt.Sprintf("%.20g", f.Val)
 }
 
 func (f *FloatExpression) Typ() types.Type {

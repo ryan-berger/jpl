@@ -10,7 +10,7 @@ func (p *parser) parseList(end lexer.TokenType, parseFn func() bool) bool {
 
 	p.advance()
 
-	for i := 0; i < 512; i++ {
+	for i := 0; i < 64; i++ {
 		if !parseFn() {
 			return false
 		}

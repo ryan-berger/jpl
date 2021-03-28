@@ -336,6 +336,7 @@ func checkTuple(expr *ast.TupleExpression, table *symbol.Table) (types.Type, err
 		tuple.Types[i] = typ
 	}
 
+	expr.Type = tuple
 	return tuple, nil
 }
 

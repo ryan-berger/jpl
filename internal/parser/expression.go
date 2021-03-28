@@ -316,6 +316,5 @@ func (p *parser) parseIf() ast.Expression {
 	if expr.Otherwise = p.parseExpression(lowest); expr.Otherwise == nil {
 		return nil
 	}
-
 	return expr
 }
