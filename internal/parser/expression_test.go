@@ -140,6 +140,10 @@ var tests = []struct {
 		"{{1, 2}, 3, 4, 5}{0}{1} + 3 / 2",
 		"({{1, 2}, 3, 4, 5}{0}{1} + (3 / 2))",
 	},
+	{
+		"array[i : 5] i + array[i : 4] i",
+		"array[i : 5] (i + array[i : 4] i)",
+	},
 }
 
 func TestPrecedenceParsing(t *testing.T) {

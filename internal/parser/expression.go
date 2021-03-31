@@ -16,6 +16,7 @@ type precedence int
 
 const (
 	_ precedence = iota
+	array
 	lowest
 	or
 	and
@@ -95,6 +96,7 @@ func (p *parser) parseInfixExpr(left ast.Expression) ast.Expression {
 }
 
 func (p *parser) parseArrayRefExpr(arr ast.Expression) ast.Expression {
+
 	arrRefExpr := &ast.ArrayRefExpression{
 		Array: arr,
 	}
@@ -120,15 +122,31 @@ func (p *parser) parseArrayRefExpr(arr ast.Expression) ast.Expression {
 }
 
 func (p *parser) parseTupleRefExpr(tuple ast.Expression) ast.Expression {
-	arrRefExpr := &ast.TupleRefExpression{
+	tupleRefExpr := &ast.TupleRefExpression{
 		Tuple: tuple,
 	}
-	p.advance()
-	if arrRefExpr.Index = p.parseExpression(lowest); arrRefExpr.Index == nil {
+
+	if !p.expectPeek(lexer.IntLiteral) {
+		p.errorf(p.peek,
+			"illegal token, integer literal expected, found: %s", p.peek.Val)
 		return nil
 	}
-	p.advance()
-	return arrRefExpr
+
+	val, err := strconv.ParseInt(p.cur.Val, 10, 64)
+	if err != nil {
+		p.errorf(p.cur, "integer literal %s too large for a 64 bit integer", p.cur.Val)
+		return nil
+	}
+
+	tupleRefExpr.Index = val
+
+	if !p.expectPeek(lexer.RCurly) {
+		p.errorf(p.peek,
+			"illegal token, expected '}' received %s", p.peek.Val)
+		return nil
+	}
+
+	return tupleRefExpr
 }
 
 func (p *parser) parseGroupedExpression() ast.Expression {

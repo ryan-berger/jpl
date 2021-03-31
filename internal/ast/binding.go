@@ -19,7 +19,7 @@ type TypeBind struct {
 }
 
 func (b *TypeBind) SExpr() string {
-	panic("implement me")
+	return fmt.Sprintf("()")
 }
 
 func (b *TypeBind) String() string {

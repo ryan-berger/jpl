@@ -48,9 +48,11 @@ let x = if 1 == 1 then 0 else 2
 fn test() : {} {
   let y = 10
   let z = 22
+  return {}
 }
 
-let g = test()`)
+let g = test()
+`)
 
 
 	Generate(program, table, os.Stdout)

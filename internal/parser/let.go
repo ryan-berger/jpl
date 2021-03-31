@@ -95,5 +95,9 @@ func (p *parser) parseArgument() ast.Argument {
 		return nil
 	}
 
+	if len(arg.Variables) == 0 {
+		p.errorf(arg, "expected identifiers, received ]")
+		return nil
+	}
 	return arg
 }

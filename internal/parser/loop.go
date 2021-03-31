@@ -11,7 +11,8 @@ func (p *parser) parseArrayTransform() ast.Expression {
 		return nil
 	}
 
-	if expr.OpBindings = p.parseOpBindings(); len(expr.OpBindings) == 0 {
+	expr.OpBindings = p.parseOpBindings()
+	if p.error !=  nil {
 		return nil
 	}
 
@@ -35,7 +36,7 @@ func (p *parser) parseSumTransform() ast.Expression {
 
 	p.advance() // move onto start of expression
 
-	if expr.Expr = p.parseExpression(lowest); expr.Expr == nil {
+	if expr.Expr = p.parseExpression(array); expr.Expr == nil {
 		return nil
 	}
 

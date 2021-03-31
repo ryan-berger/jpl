@@ -134,6 +134,9 @@ func (p *parser) parseProgram() ([]ast.Command, error) {
 			return nil, p.error
 		}
 
+		if !p.curTokenIs(lexer.NewLine) {
+			return nil, NewError(p.cur, "expected newline, received: %s", p.cur.Val)
+		}
 		p.advance()
 	}
 

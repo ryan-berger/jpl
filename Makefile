@@ -15,6 +15,12 @@ run-a4t:
 run-a4f:
 	./jpl -f $(TEST)
 
+run-a5p:
+	./jpl -p $(TEST)
+
+run-a5t:
+	./jpl -t $(TEST)
+
 generate-asm:
 	./jpl -o code.s $(TEST)
 

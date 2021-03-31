@@ -177,7 +177,11 @@ type ArrayExpression struct {
 }
 
 func (a *ArrayExpression) SExpr() string {
-	return ""
+	strs := make([]string, len(a.Expressions))
+	for i, e := range a.Expressions {
+		strs[i] = e.SExpr()
+	}
+	return fmt.Sprintf("(ArrayConExpr %s)", strings.Join(strs, " "))
 }
 
 func (a *ArrayExpression) String() string {
@@ -220,7 +224,7 @@ func (a *ArrayRefExpression) expression() {}
 
 type TupleRefExpression struct {
 	Tuple Expression
-	Index Expression
+	Index int64
 	Type  types.Type
 	Location
 }
@@ -230,7 +234,7 @@ func (t *TupleRefExpression) SExpr() string {
 }
 
 func (t *TupleRefExpression) String() string {
-	return fmt.Sprintf("%s{%s}", t.Tuple, t.Index)
+	return fmt.Sprintf("%s{%d}", t.Tuple, t.Index)
 }
 
 func (t *TupleRefExpression) Typ() types.Type {
@@ -248,7 +252,10 @@ type IfExpression struct {
 }
 
 func (i *IfExpression) SExpr() string {
-	panic("implement me")
+	return fmt.Sprintf("(IteExpr %s %s %s)",
+		i.Condition.SExpr(),
+		i.Consequence.SExpr(),
+		i.Otherwise.SExpr())
 }
 
 func (i *IfExpression) String() string {
@@ -269,6 +276,10 @@ type OpBinding struct {
 	Location
 }
 
+func (o *OpBinding) SExpr() string {
+	return fmt.Sprintf("(%s (VarExpr ))", o.Variable)
+}
+
 func (o *OpBinding) String() string {
 	return fmt.Sprintf("%s : %s", o.Variable, o.Expr)
 }
@@ -281,7 +292,7 @@ type ArrayTransform struct {
 }
 
 func (a *ArrayTransform) SExpr() string {
-	panic("implement me")
+	return fmt.Sprintf("")
 }
 
 func (a *ArrayTransform) Typ() types.Type {
@@ -307,7 +318,11 @@ type SumTransform struct {
 }
 
 func (s *SumTransform) SExpr() string {
-	panic("implement me")
+	bindings := make([]string, len(s.OpBindings))
+	for i, b := range s.OpBindings {
+		bindings[i] = b.Variable
+	}
+	return fmt.Sprintf("(SumExpr ())")
 }
 
 func (s *SumTransform) String() string {
@@ -332,7 +347,10 @@ type InfixExpression struct {
 }
 
 func (i *InfixExpression) SExpr() string {
-	panic("shouldn't run")
+	return fmt.Sprintf("(BinOpExpr %s %s %s)",
+		i.Left.SExpr(),
+		i.Op,
+		i.Right.SExpr())
 }
 
 func (i *InfixExpression) String() string {
@@ -357,7 +375,8 @@ func (p *PrefixExpression) Typ() types.Type {
 }
 
 func (p *PrefixExpression) SExpr() string {
-	return p.Expr.SExpr()
+	return fmt.Sprintf("(UnopExpr %s %s)",
+		p.Op, p.Expr.SExpr())
 }
 
 func (p *PrefixExpression) String() string {

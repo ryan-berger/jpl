@@ -37,10 +37,12 @@ func (p *parser) parseFunction() ast.Command {
 	}
 
 	if !p.expectPeek(lexer.LCurly) {
+		p.errorf(p.peek, "expected '{', received %s", p.peek.Val)
 		return nil
 	}
 
 	if !p.expectPeek(lexer.NewLine) {
+		p.errorf(p.peek, "expected newline, received %s", p.peek.Val)
 		return nil
 	}
 	p.advance()
