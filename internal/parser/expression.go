@@ -8,8 +8,8 @@ import (
 )
 
 type (
-	prefixParseFn func() ast.Expression
-	infixParseFn  func(ast.Expression) ast.Expression
+	prefixParseFn func() (ast.Expression, error)
+	infixParseFn  func(ast.Expression) (ast.Expression, error)
 )
 
 type precedence int
@@ -46,27 +46,32 @@ var opPrecedence = map[lexer.TokenType]precedence{
 	lexer.LBrace:             call,
 }
 
-func (p *parser) parseExpression(pr precedence) ast.Expression {
+func (p *parser) parseExpression(pr precedence) (ast.Expression, error) {
 	prefix := p.prefixParseFns[p.cur.Type]
 	if prefix == nil {
-		p.errorf(p.cur, "unable to parse prefix operator %s", p.cur.Val)
-		return nil
+		return nil, p.errorf(p.cur, "unable to parse prefix operator %s", p.cur.Val)
 	}
 
-	leftExp := prefix()
+	leftExp, err := prefix()
+	if err != nil {
+		return nil, err
+	}
 	for (!p.peekTokenIs(lexer.NewLine) || !p.peekTokenIs(lexer.EOF)) && pr < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peek.Type]
 		if infix == nil {
-			return leftExp
+			return leftExp, nil
 		}
 		p.advance()
-		leftExp = infix(leftExp)
+		leftExp, err = infix(leftExp)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return leftExp
+	return leftExp, nil
 }
 
-func (p *parser) parsePrefixExpr() ast.Expression {
+func (p *parser) parsePrefixExpr() (ast.Expression, error) {
 	expr := &ast.PrefixExpression{
 		Op: p.cur.Val,
 		Location: ast.Location{
@@ -75,15 +80,17 @@ func (p *parser) parsePrefixExpr() ast.Expression {
 		},
 	}
 	p.advance()
-	expr.Expr = p.parseExpression(prefix)
-	if expr.Expr == nil {
-		return nil
+
+	var err error
+	expr.Expr, err = p.parseExpression(prefix)
+	if err != nil {
+		return nil, err
 	}
 
-	return expr
+	return expr, nil
 }
 
-func (p *parser) parseInfixExpr(left ast.Expression) ast.Expression {
+func (p *parser) parseInfixExpr(left ast.Expression) (ast.Expression, error) {
 	expr := &ast.InfixExpression{
 		Op:   p.cur.Val,
 		Left: left,
@@ -91,101 +98,102 @@ func (p *parser) parseInfixExpr(left ast.Expression) ast.Expression {
 	pr := p.curPrecedence()
 	p.advance()
 
-	expr.Right = p.parseExpression(pr)
-	return expr
+	var err error
+	expr.Right, err = p.parseExpression(pr)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return expr, nil
 }
 
-func (p *parser) parseArrayRefExpr(arr ast.Expression) ast.Expression {
+func (p *parser) parseArrayRefExpr(arr ast.Expression) (ast.Expression, error) {
 
 	arrRefExpr := &ast.ArrayRefExpression{
 		Array: arr,
 	}
-	ok := p.parseList(lexer.RBrace, func() bool {
-		expr := p.parseExpression(lowest)
-		if expr == nil {
-			return false
+	listErr := p.parseList(lexer.RBrace, func() error {
+		expr, err := p.parseExpression(lowest)
+		if err != nil {
+			return err
 		}
 		arrRefExpr.Indexes = append(arrRefExpr.Indexes, expr)
-		return true
+		return nil
 	})
 
-	if !ok {
-		return nil
+	if listErr != nil {
+		return nil, listErr
 	}
 
 	if len(arrRefExpr.Indexes) == 0 {
-		p.errorf(p.cur, "expected expression, found ']'")
-		return nil
+		return nil, p.errorf(p.cur, "expected expression, found ']'")
 	}
 
-	return arrRefExpr
+	return arrRefExpr, nil
 }
 
-func (p *parser) parseTupleRefExpr(tuple ast.Expression) ast.Expression {
+func (p *parser) parseTupleRefExpr(tuple ast.Expression) (ast.Expression, error) {
 	tupleRefExpr := &ast.TupleRefExpression{
 		Tuple: tuple,
 	}
 
 	if !p.expectPeek(lexer.IntLiteral) {
-		p.errorf(p.peek,
+		return nil, p.errorf(p.peek,
 			"illegal token, integer literal expected, found: %s", p.peek.Val)
-		return nil
 	}
 
 	val, err := strconv.ParseInt(p.cur.Val, 10, 64)
 	if err != nil {
-		p.errorf(p.cur, "integer literal %s too large for a 64 bit integer", p.cur.Val)
-		return nil
+		return nil, p.errorf(p.cur, "integer literal %s too large for a 64 bit integer", p.cur.Val)
 	}
 
 	tupleRefExpr.Index = val
 
 	if !p.expectPeek(lexer.RCurly) {
-		p.errorf(p.peek,
+		return nil, p.errorf(p.peek,
 			"illegal token, expected '}' received %s", p.peek.Val)
-		return nil
 	}
 
-	return tupleRefExpr
+	return tupleRefExpr, nil
 }
 
-func (p *parser) parseGroupedExpression() ast.Expression {
+func (p *parser) parseGroupedExpression() (ast.Expression, error) {
 	p.advance()
 
-	exp := p.parseExpression(lowest) // TODO: handle error
+	exp, err := p.parseExpression(lowest) // TODO: handle error
 
-	if exp == nil {
-		return nil
+	if err != nil {
+		return nil, err
 	}
 
 	if !p.expectPeek(lexer.RParen) {
-		p.errorf(p.peek, "illegal token. Expected ')', found %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "illegal token. Expected ')', found %s", p.peek.Val)
 	}
 
-	return exp
+	return exp, nil
 }
 
-func (p *parser) parseTupleExpression() ast.Expression {
+func (p *parser) parseTupleExpression() (ast.Expression, error) {
 	tupleExpr := &ast.TupleExpression{}
 
-	ok := p.parseList(lexer.RCurly, func() bool {
-		expr := p.parseExpression(lowest)
-		if expr == nil {
-			return false
+	listErr := p.parseList(lexer.RCurly, func() error {
+		expr, err := p.parseExpression(lowest)
+		if err != nil {
+			return err
 		}
 
 		tupleExpr.Expressions = append(tupleExpr.Expressions, expr)
-		return true
+		return nil
 	})
 
-	if !ok {
-		return nil
+	if listErr != nil {
+		return nil, listErr
 	}
-	return tupleExpr
+	return tupleExpr, nil
 }
 
-func (p *parser) parseArrayExpression() ast.Expression {
+func (p *parser) parseArrayExpression() (ast.Expression, error) {
 	arrayExpr := &ast.ArrayExpression{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -193,24 +201,24 @@ func (p *parser) parseArrayExpression() ast.Expression {
 		},
 	}
 
-	ok := p.parseList(lexer.RBrace, func() bool {
-		expr := p.parseExpression(lowest)
-		if expr == nil {
-			return false
+	listErr := p.parseList(lexer.RBrace, func() error {
+		expr, err := p.parseExpression(lowest)
+		if err != nil {
+			return err
 		}
 
 		arrayExpr.Expressions = append(arrayExpr.Expressions, expr)
-		return true
+		return nil
 	})
 
-	if !ok {
-		return nil
+	if listErr != nil {
+		return nil, listErr
 	}
 
-	return arrayExpr
+	return arrayExpr, nil
 }
 
-func (p *parser) parseInteger() ast.Expression {
+func (p *parser) parseInteger() (ast.Expression, error) {
 	expr := &ast.IntExpression{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -219,15 +227,14 @@ func (p *parser) parseInteger() ast.Expression {
 	}
 	val, err := strconv.ParseInt(p.cur.Val, 10, 64)
 	if err != nil {
-		p.errorf(p.cur, "integer literal %s too large for a 64 bit integer", p.cur.Val)
-		return nil
+		return nil, p.errorf(p.cur, "integer literal %s too large for a 64 bit integer", p.cur.Val)
 	}
 
 	expr.Val = val
-	return expr
+	return expr, nil
 }
 
-func (p *parser) parseFloat() ast.Expression {
+func (p *parser) parseFloat() (ast.Expression, error) {
 	expr := &ast.FloatExpression{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -236,24 +243,23 @@ func (p *parser) parseFloat() ast.Expression {
 	}
 	val, err := strconv.ParseFloat(p.cur.Val, 64)
 	if err != nil {
-		p.errorf(p.cur, "float %s too large for a 64 bit float", p.cur.Val)
-		return nil
+		return nil, p.errorf(p.cur, "float %s too large for a 64 bit float", p.cur.Val)
 	}
 	expr.Val = val
-	return expr
+	return expr, nil
 }
 
-func (p *parser) parseBoolean() ast.Expression {
+func (p *parser) parseBoolean() (ast.Expression, error) {
 	return &ast.BooleanExpression{
 		Val: p.cur.Val == "true",
 		Location: ast.Location{
 			Line: p.cur.Line,
 			Pos:  p.cur.Character,
 		},
-	}
+	}, nil
 }
 
-func (p *parser) parseIdentifier() ast.Expression {
+func (p *parser) parseIdentifier() (ast.Expression, error) {
 	val := p.cur.Val
 	if p.peekTokenIs(lexer.LParen) {
 		return p.parseCallExpression()
@@ -264,10 +270,10 @@ func (p *parser) parseIdentifier() ast.Expression {
 			Line: p.cur.Line,
 			Pos:  p.cur.Character,
 		},
-	}
+	}, nil
 }
 
-func (p *parser) parseCallExpression() ast.Expression {
+func (p *parser) parseCallExpression() (ast.Expression, error) {
 	callExpr := &ast.CallExpression{
 		Identifier: p.cur.Val,
 		Location: ast.Location{
@@ -276,25 +282,25 @@ func (p *parser) parseCallExpression() ast.Expression {
 		},
 	}
 	if !p.expectPeek(lexer.LParen) {
-		return nil
+		return nil, p.errorf(p.peek, "expected '(' received %s", p.peek.Val)
 	}
 
-	ok := p.parseList(lexer.RParen, func() bool {
-		expr := p.parseExpression(lowest)
-		if expr == nil {
-			return false
+	listErr := p.parseList(lexer.RParen, func() error {
+		expr, err := p.parseExpression(lowest)
+		if err != nil {
+			return err
 		}
 		callExpr.Arguments = append(callExpr.Arguments, expr)
-		return true
+		return nil
 	})
 
-	if !ok {
-		return nil
+	if listErr != nil {
+		return nil, listErr
 	}
-	return callExpr
+	return callExpr, nil
 }
 
-func (p *parser) parseIf() ast.Expression {
+func (p *parser) parseIf() (ast.Expression, error) {
 	expr := &ast.IfExpression{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -303,37 +309,29 @@ func (p *parser) parseIf() ast.Expression {
 	}
 	p.advance()
 
-	if expr.Condition = p.parseExpression(lowest); expr.Condition == nil {
-		return nil
+	var err error
+	if expr.Condition, err = p.parseExpression(lowest); err != nil {
+		return nil, err
 	}
 
-	if p.error != nil {
-		return nil
-	}
 
 	if !p.expectPeek(lexer.Then) {
-		p.errorf(p.peek, "expected 'then' received '%s'", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "expected 'then' received '%s'", p.peek.Val)
 	}
 	p.advance()
 
-	if expr.Consequence = p.parseExpression(lowest); expr.Consequence == nil {
-		return nil
-	}
-
-	if p.error != nil {
-		return nil
+	if expr.Consequence, err = p.parseExpression(lowest); err != nil {
+		return nil, err
 	}
 
 	if !p.expectPeek(lexer.Else) {
-		p.errorf(p.peek, "expected 'else' received '%s'", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "expected 'else' received '%s'", p.peek.Val)
 	}
 	p.advance()
 
-	if expr.Otherwise = p.parseExpression(lowest); expr.Otherwise == nil {
-		return nil
+	if expr.Otherwise, err = p.parseExpression(lowest); err != nil {
+		return nil, err
 	}
 
-	return expr
+	return expr, nil
 }

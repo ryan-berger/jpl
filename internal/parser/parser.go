@@ -15,8 +15,6 @@ type parser struct {
 	cur      lexer.Token
 	peek     lexer.Token
 
-	error error
-
 	prefixParseFns map[lexer.TokenType]prefixParseFn
 	infixParseFns  map[lexer.TokenType]infixParseFn
 }
@@ -116,8 +114,8 @@ func (p *parser) peekPrecedence() precedence {
 	return lowest
 }
 
-func (p *parser) errorf(loc meta.Locationer, format string, args ...interface{}) {
-	p.error = errors.ParseError(fmt.Sprintf(format, args...), loc)
+func (p *parser) errorf(loc meta.Locationer, format string, args ...interface{}) error {
+	return errors.ParseError(fmt.Sprintf(format, args...), loc)
 }
 
 func (p *parser) parseProgram() ([]ast.Command, error) {
@@ -127,15 +125,14 @@ func (p *parser) parseProgram() ([]ast.Command, error) {
 	}
 
 	for !p.curTokenIs(lexer.EOF) {
-		cmd := p.parseCommand()
-		if cmd != nil {
-			commands = append(commands, cmd)
-		} else {
-			return nil, p.error
+		cmd, err := p.parseCommand()
+		if err != nil {
+			return nil, err
 		}
+		commands = append(commands, cmd)
 
 		if !p.curTokenIs(lexer.NewLine) {
-			return nil, NewError(p.cur, "expected newline, received: %s", p.cur.Val)
+			return nil, p.errorf(p.cur, "expected newline, received: %s", p.cur.Val)
 		}
 		p.advance()
 	}

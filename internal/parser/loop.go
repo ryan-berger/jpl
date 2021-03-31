@@ -5,73 +5,74 @@ import (
 	"github.com/ryan-berger/jpl/internal/lexer"
 )
 
-func (p *parser) parseArrayTransform() ast.Expression {
+func (p *parser) parseArrayTransform() (ast.Expression, error) {
 	expr := &ast.ArrayTransform{}
 	if !p.expectPeek(lexer.LBrace) {
-		return nil
+		return nil, p.errorf(p.peek, "expected '[' received %s", p.peek.Val)
 	}
 
-	expr.OpBindings = p.parseOpBindings()
-	if p.error !=  nil {
-		return nil
+	var err error
+	expr.OpBindings, err = p.parseOpBindings()
+	if err !=  nil {
+		return nil, err
 	}
 
 	p.advance() // move onto start of expression
-	if expr.Expr = p.parseExpression(lowest); expr.Expr == nil {
-		return nil
+	if expr.Expr, err = p.parseExpression(lowest); err != nil {
+		return nil, err
 	}
 
-	return expr
+	return expr, nil
 }
 
-func (p *parser) parseSumTransform() ast.Expression {
+func (p *parser) parseSumTransform() (ast.Expression, error) {
 	expr := &ast.SumTransform{}
 	if !p.expectPeek(lexer.LBrace) {
-		return nil
+		return nil, p.errorf(p.peek, "expected '[' received %s", p.peek.Val)
 	}
 
-	if expr.OpBindings = p.parseOpBindings(); len(expr.OpBindings) == 0 {
-		return nil
+	var err error
+	if expr.OpBindings, err = p.parseOpBindings(); len(expr.OpBindings) == 0 {
+		return nil, err
 	}
 
 	p.advance() // move onto start of expression
 
-	if expr.Expr = p.parseExpression(array); expr.Expr == nil {
-		return nil
+	if expr.Expr, err = p.parseExpression(array); expr.Expr == nil {
+		return nil, err
 	}
 
-	return expr
+	return expr, nil
 }
 
-func (p *parser) parseOpBindings() []ast.OpBinding {
+func (p *parser) parseOpBindings() ([]ast.OpBinding, error) {
 	var opBindings []ast.OpBinding
 
-	ok := p.parseList(lexer.RBrace, func() bool {
+	listErr := p.parseList(lexer.RBrace, func() error {
 		var opBinding ast.OpBinding
 		if !p.curTokenIs(lexer.Variable) {
-			p.errorf(p.peek,"expecting variable, received %s", p.peek.Val)
-			return false
+			return p.errorf(p.peek,"expecting variable, received %s", p.peek.Val)
 		}
 
 		opBinding.Variable = p.cur.Val
 
 		if !p.expectPeek(lexer.Colon) {
-			p.errorf(p.peek, "expecting ':', received %s", p.peek.Val)
-			return false
+			return p.errorf(p.peek, "expecting ':', received %s", p.peek.Val)
 		}
 		p.advance()
 
-		opBinding.Expr = p.parseExpression(lowest)
-		if opBinding.Expr == nil {
-			return false
+		var err error
+		opBinding.Expr, err = p.parseExpression(lowest)
+		if err != nil {
+			return err
 		}
 
 		opBindings = append(opBindings, opBinding)
-		return true
+		return nil
 	})
 
-	if !ok {
-		return nil
+	if listErr != nil {
+		return nil, listErr
 	}
-	return opBindings
+	return opBindings, nil
 }

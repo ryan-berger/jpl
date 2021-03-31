@@ -6,7 +6,7 @@ import (
 	"github.com/ryan-berger/jpl/internal/types"
 )
 
-func (p *parser) parseFunction() ast.Command {
+func (p *parser) parseFunction() (ast.Command, error) {
 	function := &ast.Function{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -15,59 +15,59 @@ func (p *parser) parseFunction() ast.Command {
 	}
 
 	if !p.expectPeek(lexer.Variable) {
-		return nil
+		return nil, p.errorf(p.peek, "expected identifier, received %s", p.peek.Val)
 	}
 
 	function.Var = p.cur.Val
 
 	if !p.expectPeek(lexer.LParen) {
-		return nil
+		return nil, p.errorf(p.peek, "expected '(' received %s", p.peek.Val)
 	}
 
-	function.Bindings = p.parseBindings()
+	var err error
+	function.Bindings, err = p.parseBindings()
+
+	if err != nil {
+		return nil, err
+	}
 
 	if !p.expectPeek(lexer.Colon) {
-		p.error = NewError(p.peek, "expected ':' received %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "expected ':' received %s", p.peek.Val)
 	}
 	p.advance()
 
-	if function.ReturnType = p.parseTypeExpression(); function.ReturnType == nil {
-		return nil
+
+	if function.ReturnType, err = p.parseTypeExpression(); function.ReturnType == nil {
+		return nil, err
 	}
 
 	if !p.expectPeek(lexer.LCurly) {
-		p.errorf(p.peek, "expected '{', received %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "expected '{', received %s", p.peek.Val)
 	}
 
 	if !p.expectPeek(lexer.NewLine) {
-		p.errorf(p.peek, "expected newline, received %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "expected newline, received %s", p.peek.Val)
 	}
 	p.advance()
 
 	stmts, err := p.parseStatements()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	function.Statements = stmts
 	p.advance()
-	return function
+	return function, nil
 }
 
 func (p *parser) parseStatements() ([]ast.Statement, error) {
 	var statements []ast.Statement
 
 	for !p.curTokenIs(lexer.RCurly) && !p.curTokenIs(lexer.EOF) {
-		stmt := p.parseStatement()
+		stmt, err := p.parseStatement()
 
-		if stmt == nil {
-			if p.error == nil {
-				panic("error not handled somewhere")
-			}
-			return nil, nil
+		if err != nil {
+			return nil, err
 		}
 
 		statements = append(statements, stmt)
@@ -77,66 +77,65 @@ func (p *parser) parseStatements() ([]ast.Statement, error) {
 	return statements, nil
 }
 
-func (p *parser) parseBindings() []ast.Binding {
+func (p *parser) parseBindings() ([]ast.Binding, error) {
 	var bindings []ast.Binding
 
-	ok := p.parseList(lexer.RParen, func() bool {
-		bind := p.parseBinding()
-		if bind == nil {
-			return false
+	listErr := p.parseList(lexer.RParen, func() error {
+		bind, err := p.parseBinding()
+		if err != nil {
+			return err
 		}
 		bindings = append(bindings, bind)
-		return true
+		return nil
 	})
 
-	if !ok {
-		return nil
+	if listErr != nil {
+		return nil, listErr
 	}
 
-	return bindings
+	return bindings, nil
 }
 
-func (p *parser) parseTupleBinding() ast.Binding {
+func (p *parser) parseTupleBinding() (ast.Binding, error) {
 	binding := &ast.TupleBinding{}
 
-	ok := p.parseList(lexer.RCurly, func() bool {
-		bind := p.parseBinding()
-		if bind == nil {
-			return false
+	listErr := p.parseList(lexer.RCurly, func() error {
+		bind, err := p.parseBinding()
+		if err != nil {
+			return err
 		}
 		binding.Bindings = append(binding.Bindings, bind)
-		return true
+		return nil
 	})
 
-	if !ok {
-		return nil
+	if listErr != nil {
+		return nil, listErr
 	}
 
-	return binding
+	return binding, nil
 }
 
-func (p *parser) parseBinding() ast.Binding {
+func (p *parser) parseBinding() (ast.Binding, error) {
 	if p.curTokenIs(lexer.LCurly) {
 		return p.parseTupleBinding()
 	}
 
+	var err error
 	binding := &ast.TypeBind{}
-	binding.Argument = p.parseArgument()
-	if binding.Argument == nil {
-		return nil
+	if binding.Argument, err = p.parseArgument(); err != nil {
+		return nil, err
 	}
 
 	if !p.expectPeek(lexer.Colon) {
-		return nil
+		return nil, p.errorf(p.peek, "expected ':' received %s", p.peek.Val)
 	}
 	p.advance() // move past colon
 
-	binding.Type = p.parseTypeExpression()
-	if binding.Type == nil {
-		return nil
+	if binding.Type, err = p.parseTypeExpression(); err != nil {
+		return nil, err
 	}
 
-	return binding
+	return binding, nil
 }
 
 var tokenToType = map[lexer.TokenType]types.Type{

@@ -1,13 +1,12 @@
 package parser
 
 import (
-	"fmt"
 
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/lexer"
 )
 
-func (p *parser) parseCommand() ast.Command {
+func (p *parser) parseCommand() (ast.Command, error) {
 	switch p.cur.Type {
 	case lexer.Read:
 		return p.parseReadCommand()
@@ -22,16 +21,11 @@ func (p *parser) parseCommand() ast.Command {
 	case lexer.Function:
 		return p.parseFunction()
 	default:
-		stmt := p.parseStatement()
-		if stmt != nil {
-			return stmt
-		}
-		p.error = fmt.Errorf("error while parsing command statement %w", p.error)
-		return nil
+		return p.parseStatement()
 	}
 }
 
-func (p *parser) parseStatement() ast.Statement {
+func (p *parser) parseStatement() (ast.Statement, error) {
 	switch p.cur.Type {
 	case lexer.Let:
 		return p.parseLetStatement()
@@ -40,11 +34,11 @@ func (p *parser) parseStatement() ast.Statement {
 	case lexer.Assert:
 		return p.parseAssertStatement()
 	default:
-		return nil
+		panic("unimplemented for statement type")
 	}
 }
 
-func (p *parser) parseAssertStatement() ast.Statement {
+func (p *parser) parseAssertStatement() (ast.Statement, error) {
 	stmt := &ast.AssertStatement{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -53,26 +47,26 @@ func (p *parser) parseAssertStatement() ast.Statement {
 	}
 	p.advance()
 
-	if stmt.Expr = p.parseExpression(lowest); stmt.Expr == nil {
-		return nil
+	var err error
+	if stmt.Expr, err = p.parseExpression(lowest); err != nil {
+		return nil, err
 	}
 
 	if !p.expectPeek(lexer.Comma) {
-		p.errorf(p.peek, "expected comma received: %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "expected comma received: %s", p.peek.Val)
 	}
 
 	if !p.expectPeek(lexer.String) {
-		p.errorf(p.peek, "expected string received: %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "expected string received: %s", p.peek.Val)
 	}
 
 	stmt.Message = p.cur.Val
 	p.advance()
-	return stmt
+
+	return stmt, nil
 }
 
-func (p *parser) parseReadCommand() ast.Command {
+func (p *parser) parseReadCommand() (ast.Command, error) {
 	read := &ast.Read{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -80,40 +74,37 @@ func (p *parser) parseReadCommand() ast.Command {
 		},
 	}
 	if !p.expectPeek(lexer.Variable) {
-		p.errorf(p.peek, "illegal token expected read type found %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "illegal token expected read type found %s", p.peek.Val)
 	}
 
 	if p.cur.Val != "image" && p.cur.Val != "video" {
-		p.errorf(p.peek, "err: unsupported read type %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "err: unsupported read type %s", p.peek.Val)
 	}
 
 	read.Type = p.cur.Val
 
 	if !p.expectPeek(lexer.String) {
-		p.errorf(p.peek, "illegal token. Expected string, found %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "illegal token. Expected string, found %s", p.peek.Val)
 	}
 
 	read.Src = p.cur.Val
 
 	if !p.expectPeek(lexer.To) {
-		p.errorf(p.peek,"err: illegal token. Expected 'to', found %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "err: illegal token. Expected 'to', found %s", p.peek.Val)
 	}
 	p.advance()
 
-	read.Argument = p.parseArgument()
+	var err error
+	read.Argument, err = p.parseArgument()
 	if read.Argument == nil {
-		return nil
+		return nil, err
 	}
 
 	p.advance()
-	return read
+	return read, nil
 }
 
-func (p *parser) parseWriteCommand() ast.Command {
+func (p *parser) parseWriteCommand() (ast.Command, error) {
 	write := &ast.Write{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -121,39 +112,36 @@ func (p *parser) parseWriteCommand() ast.Command {
 		},
 	}
 	if !p.expectPeek(lexer.Variable) {
-		p.errorf(p.peek,"illegal token. Expected write type, found %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "illegal token. Expected write type, found %s", p.peek.Val)
 	}
 
 	if p.cur.Val != "image" && p.cur.Val != "video" {
-		p.errorf(p.peek,"err: unsupported write type %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "err: unsupported write type %s", p.peek.Val)
 	}
 
 	write.Type = p.cur.Val
 	p.advance()
 
-	write.Expr = p.parseExpression(lowest)
-	if write.Expr == nil {
-		return nil
+	var err error
+	write.Expr, err = p.parseExpression(lowest)
+	if err != nil {
+		return nil, err
 	}
 
 	if !p.expectPeek(lexer.To) {
-		p.errorf(p.peek, "illegal token. Expected 'to', found %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "illegal token. Expected 'to', found %s", p.peek.Val)
 	}
 
 	if !p.expectPeek(lexer.String) {
-		p.errorf(p.peek, "illegal token. Expected string, found %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "illegal token. Expected string, found %s", p.peek.Val)
 	}
 	write.Dest = p.cur.Val
 
 	p.advance()
-	return write
+	return write, nil
 }
 
-func (p *parser) parsePrintCommand() ast.Command {
+func (p *parser) parsePrintCommand() (ast.Command, error) {
 	pr := &ast.Print{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -162,16 +150,15 @@ func (p *parser) parsePrintCommand() ast.Command {
 	}
 
 	if !p.expectPeek(lexer.String) {
-		p.errorf(p.peek, "illegal token. Expected string, found %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "illegal token. Expected string, found %s", p.peek.Val)
 	}
 
 	pr.Str = p.cur.Val
 	p.advance()
-	return pr
+	return pr, nil
 }
 
-func (p *parser) parseShowCommand() ast.Command {
+func (p *parser) parseShowCommand() (ast.Command, error) {
 	show := &ast.Show{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -180,16 +167,17 @@ func (p *parser) parseShowCommand() ast.Command {
 	}
 	p.advance()
 
-	show.Expr = p.parseExpression(lowest)
-	if show.Expr == nil {
-		return nil
+	var err error
+	show.Expr, err = p.parseExpression(lowest)
+	if err != nil {
+		return nil, err
 	}
 
 	p.advance()
-	return show
+	return show, nil
 }
 
-func (p *parser) parseTimeCommand() ast.Command {
+func (p *parser) parseTimeCommand() (ast.Command, error) {
 	time := &ast.Time{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -198,14 +186,15 @@ func (p *parser) parseTimeCommand() ast.Command {
 	}
 	p.advance()
 
-	time.Command = p.parseCommand()
-	if time.Command == nil {
-		return nil
+	var err error
+	time.Command, err = p.parseCommand()
+	if err != nil {
+		return nil, err
 	}
 
 	if !p.curTokenIs(lexer.NewLine) {
 		p.advance()
 	}
 
-	return time
+	return time, nil
 }

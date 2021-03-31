@@ -5,7 +5,7 @@ import (
 	"github.com/ryan-berger/jpl/internal/lexer"
 )
 
-func (p *parser) parseLetStatement() ast.Statement {
+func (p *parser) parseLetStatement() (ast.Statement, error) {
 	let := &ast.LetStatement{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -14,37 +14,36 @@ func (p *parser) parseLetStatement() ast.Statement {
 	}
 	p.advance()
 
-	if let.LValue = p.parseLValue(); let.LValue == nil {
-		return nil
+	var err error
+	if let.LValue, err = p.parseLValue(); let.LValue == nil {
+		return nil, err
 	}
 
 	if !p.expectPeek(lexer.Assign) {
-		p.errorf(p.peek, "illegal token. Expected '=', found %s", p.peek.Val)
-		return nil
+		return nil, p.errorf(p.peek, "illegal token. Expected '=', found %s", p.peek.Val)
 	}
 
 	p.advance() // advance onto expression
 
-	if let.Expr = p.parseExpression(lowest); let.Expr == nil { // get out of here if expression parsing fails
-		return nil
+	if let.Expr, err = p.parseExpression(lowest); err != nil { // get out of here if expression parsing fails
+		return nil, err
 	}
 
 	p.advance()
-	return let
+	return let, nil
 }
 
-func (p *parser) parseLValue() ast.LValue {
+func (p *parser) parseLValue() (ast.LValue, error) {
 	switch {
 	case p.curTokenIs(lexer.LCurly):
 		return p.parseTupleLValue()
 	case p.curTokenIs(lexer.Variable):
 		return p.parseArgument()
 	}
-	p.errorf(p.cur, "illegal token. Expected argument or '{', found '%s'", p.cur.Val)
-	return nil
+	return nil, p.errorf(p.cur, "illegal token. Expected argument or '{', found '%s'", p.cur.Val)
 }
 
-func (p *parser) parseTupleLValue() ast.LValue {
+func (p *parser) parseTupleLValue() (ast.LValue, error) {
 	lTuple := &ast.LTuple{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -52,23 +51,23 @@ func (p *parser) parseTupleLValue() ast.LValue {
 		},
 	}
 
-	ok := p.parseList(lexer.RCurly, func() bool {
-		expr := p.parseLValue()
-		if expr == nil {
-			return false
+	listErr := p.parseList(lexer.RCurly, func() error {
+		expr, err := p.parseLValue()
+		if err != nil {
+			return err
 		}
 		lTuple.Args = append(lTuple.Args, expr)
-		return true
+		return nil
 	})
 
-	if !ok {
-		return nil
+	if listErr != nil {
+		return nil, listErr
 	}
 
-	return lTuple
+	return lTuple, nil
 }
 
-func (p *parser) parseArgument() ast.Argument {
+func (p *parser) parseArgument() (ast.Argument, error) {
 	arg := &ast.VariableArr{
 		Variable: p.cur.Val, // TODO: check to make sure no keyword
 		Location: ast.Location{
@@ -80,24 +79,25 @@ func (p *parser) parseArgument() ast.Argument {
 	if !p.expectPeek(lexer.LBrace) {
 		return &ast.VariableArgument{
 			Variable: p.cur.Val,
-		}
+		}, nil
 	}
 
-	ok := p.parseList(lexer.RBrace, func() bool {
+	err := p.parseList(lexer.RBrace, func() error {
 		if !p.curTokenIs(lexer.Variable) {
-			return false
+			return p.errorf(p.cur,
+				"err, expected variable received %s", p.cur.Val)
 		}
+
 		arg.Variables = append(arg.Variables, p.cur.Val)
-		return true
+		return nil
 	})
 
-	if !ok {
-		return nil
+	if err != nil {
+		return nil, err
 	}
 
 	if len(arg.Variables) == 0 {
-		p.errorf(arg, "expected identifiers, received ]")
-		return nil
+		return nil, p.errorf(arg, "expected identifiers, received ]")
 	}
-	return arg
+	return arg, nil
 }

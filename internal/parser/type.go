@@ -13,8 +13,11 @@ import (
 // | float4
 // | <type> [ , ... ]
 // | { <type> , ... }
-func (p *parser) parseTypeExpression() types.Type {
-	t := p.parseType()
+func (p *parser) parseTypeExpression() (types.Type, error) {
+	t, err := p.parseType()
+	if err != nil {
+		return nil, err
+	}
 
 	// handle an array type
 	for p.expectPeek(lexer.LBrace) {
@@ -26,7 +29,7 @@ func (p *parser) parseTypeExpression() types.Type {
 
 		// there should be an ']' as we are in a array type
 		if !p.expectPeek(lexer.RBrace) {
-			return nil
+			return nil, p.errorf(p.peek, "expected ']' received %s", p.peek.Val)
 		}
 		t = &types.Array{
 			Inner: t,
@@ -34,10 +37,10 @@ func (p *parser) parseTypeExpression() types.Type {
 		}
 	}
 
-	return t
+	return t, nil
 }
 
-func (p *parser) parseType() types.Type {
+func (p *parser) parseType() (types.Type, error) {
 	// if we have an '{' we could be at the start of a normal type
 	if p.curTokenIs(lexer.LCurly) {
 		return p.parseTupleType()
@@ -47,39 +50,38 @@ func (p *parser) parseType() types.Type {
 	switch p.cur.Type {
 	// if it is a base type, use a map to types.Type
 	case lexer.Float, lexer.Int, lexer.Bool:
-		return tokenToType[p.cur.Type]
+		return tokenToType[p.cur.Type], nil
 	case lexer.Float3: // expand syntactic sugar for {float, float float}
-		return  &types.Tuple{
+		return &types.Tuple{
 			Types: []types.Type{types.Float, types.Float, types.Float},
-		}
+		}, nil
 	case lexer.Float4: // expand syntactic sugar for {float, float float, float}
 		return &types.Tuple{
 			Types: []types.Type{types.Float, types.Float, types.Float, types.Float},
-		}
+		}, nil
 	default:
-		p.errorf(p.cur,"expected type received %s", p.cur.Val)
-		return nil
+		return nil, p.errorf(p.cur, "expected type received %s", p.cur.Val)
 	}
 
 }
 
 // parseTupleType is called whenever a tuple type definition needs parsing
-func (p *parser) parseTupleType() types.Type {
+func (p *parser) parseTupleType() (types.Type, error) {
 	tupleType := &types.Tuple{}
 
 	// use parseList to parse types until the next RCurly
-	ok := p.parseList(lexer.RCurly, func() bool {
-		typ := p.parseTypeExpression()
-		if typ == nil {
-			return false
+	listErr := p.parseList(lexer.RCurly, func() error {
+		typ, err := p.parseTypeExpression()
+		if err != nil {
+			return err
 		}
 		tupleType.Types = append(tupleType.Types, typ)
-		return true
+		return nil
 	})
 
-	if !ok {
-		return nil
+	if listErr != nil {
+		return nil, listErr
 	}
 
-	return tupleType
+	return tupleType, nil
 }

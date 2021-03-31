@@ -151,8 +151,8 @@ func TestPrecedenceParsing(t *testing.T) {
 		tokens, ok := lexer.Lex(test.expr)
 		assert.True(t, ok)
 		parser := newParser(tokens)
-		expr := parser.parseExpression(lowest) // parse expression
-		assert.Nil(t, parser.error)
+		expr, err := parser.parseExpression(lowest) // parse expression
+		assert.Nil(t, err)
 		assert.NotNil(t, expr)
 		assert.Equal(t, test.expected, expr.String())
 	}
@@ -176,9 +176,9 @@ func TestParseErrors(t *testing.T) {
 		tokens, ok := lexer.Lex(test.expr)
 		assert.True(t, ok)
 		parser := newParser(tokens)
-		parser.parseExpression(lowest) // parse expression
-		assert.NotNil(t, parser.error)
-		assert.Contains(t, parser.error.Error(), test.expected)
+		_, err := parser.parseExpression(lowest) // parse expression
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), test.expected)
 	}
 
 }
