@@ -6,6 +6,7 @@ import (
 )
 
 func (p *parser) parseLetStatement() (ast.Statement, error) {
+	// defer untrace(trace("LET"))
 	let := &ast.LetStatement{
 		Location: ast.Location{
 			Line: p.cur.Line,

@@ -72,6 +72,7 @@ func (p *parser) parseExpression(pr precedence) (ast.Expression, error) {
 }
 
 func (p *parser) parsePrefixExpr() (ast.Expression, error) {
+	// defer untrace(trace("PREFIX"))
 	expr := &ast.PrefixExpression{
 		Op: p.cur.Val,
 		Location: ast.Location{
@@ -91,20 +92,39 @@ func (p *parser) parsePrefixExpr() (ast.Expression, error) {
 }
 
 func (p *parser) parseInfixExpr(left ast.Expression) (ast.Expression, error) {
-	expr := &ast.InfixExpression{
-		Op:   p.cur.Val,
-		Left: left,
-	}
+	// defer untrace(trace(fmt.Sprintf("INFIX %s", p.cur.Val)))
+
+	op := p.cur.Val
+
 	pr := p.curPrecedence()
 	p.advance()
 
-	var err error
-	expr.Right, err = p.parseExpression(pr)
-
+	right, err := p.parseExpression(pr)
 	if err != nil {
 		return nil, err
 	}
 
+	var expr ast.Expression
+	switch op {
+	case "&&":
+		expr = &ast.IfExpression{
+			Condition:   left,
+			Consequence: right,
+			Otherwise:   &ast.BooleanExpression{Val: false},
+		}
+	case "||":
+		expr = &ast.IfExpression{
+			Condition:   left,
+			Consequence: &ast.BooleanExpression{Val: true},
+			Otherwise:   right,
+		}
+	default:
+		expr = &ast.InfixExpression{
+			Op:    op,
+			Left:  left,
+			Right: right,
+		}
+	}
 	return expr, nil
 }
 
@@ -301,6 +321,8 @@ func (p *parser) parseCallExpression() (ast.Expression, error) {
 }
 
 func (p *parser) parseIf() (ast.Expression, error) {
+	// defer untrace(trace(fmt.Sprintf("IFTE %s", p.cur.Val)))
+
 	expr := &ast.IfExpression{
 		Location: ast.Location{
 			Line: p.cur.Line,
@@ -310,10 +332,11 @@ func (p *parser) parseIf() (ast.Expression, error) {
 	p.advance()
 
 	var err error
+	// trace("ELSE")
 	if expr.Condition, err = p.parseExpression(lowest); err != nil {
 		return nil, err
 	}
-
+	// untrace("ELSE")
 
 	if !p.expectPeek(lexer.Then) {
 		return nil, p.errorf(p.peek, "expected 'then' received '%s'", p.peek.Val)
