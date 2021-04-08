@@ -22,7 +22,7 @@ type IntExpression struct {
 
 func (i *IntExpression) SExpr() string {
 	if i.Type != nil {
-		return fmt.Sprintf("(IntExpr %s %d)", i.Type, i.Val)
+		return fmt.Sprintf("(IntExpr %s %d)", i.Type.SExpr(), i.Val)
 	}
 	return fmt.Sprintf("(IntExpr %d)", i.Val)
 }
@@ -46,7 +46,7 @@ type IdentifierExpression struct {
 
 func (i *IdentifierExpression) SExpr() string {
 	if i.Type != nil {
-		return fmt.Sprintf("(VarExpr %s %s)", i.Type, i.Identifier)
+		return fmt.Sprintf("(VarExpr %s %s)", i.Type.SExpr(), i.Identifier)
 	}
 	return fmt.Sprintf("(VarExpr %s)", i.Identifier)
 }
@@ -75,7 +75,7 @@ func (c *CallExpression) SExpr() string {
 	}
 
 	if c.Type != nil {
-		return fmt.Sprintf("(CallExpr %s %s %s)", c.Type, c.Identifier, strings.Join(strs, " "))
+		return fmt.Sprintf("(CallExpr %s %s %s)", c.Type.SExpr(), c.Identifier, strings.Join(strs, " "))
 	}
 
 	return fmt.Sprintf("(CallExpr %s %s)", c.Identifier, strings.Join(strs, " "))
@@ -105,7 +105,7 @@ type FloatExpression struct {
 
 func (f *FloatExpression) SExpr() string {
 	if f.Type != nil {
-		return fmt.Sprintf("(FloatExpr %s %d)", f.Type, int64(f.Val))
+		return fmt.Sprintf("(FloatExpr %s %d)", f.Type.SExpr(), int64(f.Val))
 	}
 	return fmt.Sprintf("(FloatExpr %d)", int64(f.Val))
 }
@@ -128,7 +128,7 @@ type BooleanExpression struct {
 
 func (b *BooleanExpression) SExpr() string {
 	if b.Type != nil {
-		return fmt.Sprintf("(VarExpr %s %t)", b.Type, b.Val)
+		return fmt.Sprintf("(VarExpr %s %t)", b.Type.SExpr(), b.Val)
 	}
 	return fmt.Sprintf("(VarExpr %t)", b.Val)
 }
@@ -181,7 +181,11 @@ func (a *ArrayExpression) SExpr() string {
 	for i, e := range a.Expressions {
 		strs[i] = e.SExpr()
 	}
-	return fmt.Sprintf("(ArrayConExpr %s)", strings.Join(strs, " "))
+	if a.Type != nil {
+		return fmt.Sprintf("(ArrConExpr %s %s)",
+			a.Type.SExpr(), strings.Join(strs, " "))
+	}
+	return fmt.Sprintf("(ArrConExpr %s)", strings.Join(strs, " "))
 }
 
 func (a *ArrayExpression) String() string {
@@ -206,7 +210,17 @@ type ArrayRefExpression struct {
 }
 
 func (a *ArrayRefExpression) SExpr() string {
-	return ""
+	indexStrs := make([]string, len(a.Indexes))
+	for i, a := range a.Indexes {
+		indexStrs[i] = a.SExpr()
+	}
+
+	if a.Type != nil {
+		return fmt.Sprintf("(ArrIndexExpr %s %s %s)",
+			a.Type.SExpr(), a.Array.SExpr(),
+			strings.Join(indexStrs, " "))
+	}
+	return fmt.Sprintf("")
 }
 func (a *ArrayRefExpression) String() string {
 	strs := make([]string, len(a.Indexes))
@@ -252,6 +266,13 @@ type IfExpression struct {
 }
 
 func (i *IfExpression) SExpr() string {
+	if i.Type != nil {
+		return fmt.Sprintf("(IteExpr %s %s %s %s)",
+			i.Type.SExpr(),
+			i.Condition.SExpr(),
+			i.Consequence.SExpr(),
+			i.Otherwise.SExpr())
+	}
 	return fmt.Sprintf("(IteExpr %s %s %s)",
 		i.Condition.SExpr(),
 		i.Consequence.SExpr(),
@@ -277,7 +298,7 @@ type OpBinding struct {
 }
 
 func (o *OpBinding) SExpr() string {
-	return fmt.Sprintf("(%s (VarExpr ))", o.Variable)
+	return fmt.Sprintf("(%s %s)", o.Variable, o.Expr.SExpr())
 }
 
 func (o *OpBinding) String() string {
@@ -292,7 +313,19 @@ type ArrayTransform struct {
 }
 
 func (a *ArrayTransform) SExpr() string {
-	return fmt.Sprintf("")
+	bindingStrs := make([]string, len(a.OpBindings))
+	for i, b := range a.OpBindings {
+		bindingStrs[i] = b.SExpr()
+	}
+
+	if a.Type != nil {
+		return fmt.Sprintf("(ArrayExpr %s %s %s)",
+			a.Type.SExpr(),
+			strings.Join(bindingStrs, " "),
+			a.Expr.SExpr())
+	}
+
+	return fmt.Sprintf("(ArrayExpr %s)", a.Expr.SExpr())
 }
 
 func (a *ArrayTransform) Typ() types.Type {
@@ -318,11 +351,19 @@ type SumTransform struct {
 }
 
 func (s *SumTransform) SExpr() string {
-	bindings := make([]string, len(s.OpBindings))
+	bindingStrs := make([]string, len(s.OpBindings))
 	for i, b := range s.OpBindings {
-		bindings[i] = b.Variable
+		bindingStrs[i] = b.SExpr()
 	}
-	return fmt.Sprintf("(SumExpr ())")
+
+	if s.Type != nil {
+		return fmt.Sprintf("(SumExpr %s %s %s)",
+			s.Type.SExpr(),
+			strings.Join(bindingStrs, " "),
+			s.Expr.SExpr())
+	}
+
+	return fmt.Sprintf("(SumExpr %s)", s.Expr.SExpr())
 }
 
 func (s *SumTransform) String() string {
@@ -347,7 +388,14 @@ type InfixExpression struct {
 }
 
 func (i *InfixExpression) SExpr() string {
-	return fmt.Sprintf("(BinOpExpr %s %s %s)",
+	if i.Type != nil {
+		return fmt.Sprintf("(BinopExpr %s %s %s %s)",
+			i.Type.SExpr(),
+			i.Left.SExpr(),
+			i.Op,
+			i.Right.SExpr())
+	}
+	return fmt.Sprintf("(BinopExpr %s %s %s)",
 		i.Left.SExpr(),
 		i.Op,
 		i.Right.SExpr())
@@ -375,6 +423,10 @@ func (p *PrefixExpression) Typ() types.Type {
 }
 
 func (p *PrefixExpression) SExpr() string {
+	if p.Type != nil {
+		return fmt.Sprintf("(UnopExpr %s %s %s)",
+			p.Type.SExpr(), p.Op, p.Expr.SExpr())
+	}
 	return fmt.Sprintf("(UnopExpr %s %s)",
 		p.Op, p.Expr.SExpr())
 }

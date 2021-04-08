@@ -1,6 +1,6 @@
 TEST=flatten.jpl
 
-.SILENT: run run-a4t run-a4f
+.SILENT: run run-a4t run-a4f run-a5p run-a5t
 all: run
 
 compile: cmd/compiler.go

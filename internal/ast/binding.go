@@ -19,7 +19,9 @@ type TypeBind struct {
 }
 
 func (b *TypeBind) SExpr() string {
-	return fmt.Sprintf("()")
+	return fmt.Sprintf("(Binding %s %s)",
+		b.Argument.SExpr(),
+		b.Type.SExpr(),)
 }
 
 func (b *TypeBind) String() string {

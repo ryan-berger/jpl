@@ -9,6 +9,7 @@ type Type interface {
 	Equal(other Type) bool
 	Size() int
 	String() string
+	SExpr() string
 }
 
 type boolean struct{}
@@ -26,6 +27,10 @@ func (b *boolean) Equal(other Type) bool {
 	return ok
 }
 
+func (b *boolean) SExpr() string {
+	return "BoolType"
+}
+
 type integer struct{}
 
 func (i *integer) Size() int {
@@ -39,6 +44,10 @@ func (i *integer) Equal(other Type) bool {
 
 func (i *integer) String() string {
 	return "int"
+}
+
+func (i *integer) SExpr() string {
+	return "IntType"
 }
 
 type float struct{}
@@ -55,6 +64,11 @@ func (f *float) Equal(other Type) bool {
 func (f *float) String() string {
 	return "float"
 }
+
+func (f *float) SExpr() string {
+	return "FloatType"
+}
+
 
 type Array struct {
 	Inner Type
@@ -81,6 +95,12 @@ func (a *Array) String() string {
 	}
 	return fmt.Sprintf("%s[%s]", a.Inner, string(b))
 }
+
+func (a *Array) SExpr() string {
+	return fmt.Sprintf("(ArrayType %s rank=%d)",
+		a.Inner.SExpr(), a.Rank)
+}
+
 
 type Tuple struct {
 	Types []Type
@@ -117,3 +137,5 @@ func (t *Tuple) String() string {
 
 	return fmt.Sprintf("{%s}", strings.Join(strs, ", "))
 }
+
+func (t *Tuple) SExpr() string { return "" }

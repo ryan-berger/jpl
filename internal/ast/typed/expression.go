@@ -241,6 +241,7 @@ func checkArrayRef(expr *ast.ArrayRefExpression, table *symbol.Table) (types.Typ
 		}
 	}
 
+	expr.Type = arrTyp.Inner
 	return arrTyp.Inner, nil
 }
 
@@ -271,6 +272,7 @@ func checkSumTransform(expr *ast.SumTransform, table *symbol.Table) (types.Type,
 		return nil, NewError(expr.Expr, "sum returns non-numeric expression")
 	}
 
+	expr.Type = exprType
 	return exprType, nil
 }
 
@@ -297,7 +299,6 @@ func checkArrayTransform(expr *ast.ArrayTransform, table *symbol.Table) (types.T
 			return nil, NewError(binding, "bindArg expr initializer for %s returns non-integer",
 				binding.Variable)
 		}
-
 		// set the variable up in the local symbol table as an integer
 		cpy.Set(binding.Variable, &symbol.Identifier{Type: types.Integer})
 	}
@@ -360,7 +361,8 @@ func checkArray(expr *ast.ArrayExpression, table *symbol.Table) (types.Type, err
 		}
 	}
 
-	return &types.Array{Inner: typ, Rank: 1}, nil
+	expr.Type = &types.Array{Inner: typ, Rank: 1}
+	return expr.Type, nil
 }
 
 func expressionType(expression ast.Expression, table *symbol.Table) (types.Type, error) {
