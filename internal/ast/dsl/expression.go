@@ -39,6 +39,13 @@ func Infix(op string, l, r ast.Expression) *ast.InfixExpression {
 	}
 }
 
+func Prefix(op string, r ast.Expression) *ast.PrefixExpression {
+	return &ast.PrefixExpression{
+		Op:   op,
+		Expr: r,
+	}
+}
+
 func If(cond, otherwise, consequence ast.Expression) *ast.IfExpression {
 	return &ast.IfExpression{
 		Condition:   cond,
