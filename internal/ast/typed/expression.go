@@ -203,21 +203,16 @@ func checkTupleRef(expr *ast.TupleRefExpression, table *symbol.Table) (types.Typ
 		return nil, err
 	}
 
-	idx, ok := expr.Index.(*ast.IntExpression)
-	if !ok {
-		return nil, NewError(expr.Index, "tuple indexing requires integer literal")
-	}
-
 	tupType, ok := tup.(*types.Tuple)
 	if !ok {
 		return nil, NewError(expr.Tuple, "tuple index of non-tuple type %s", tup)
 	}
 
-	if idx.Val < 0 || int(idx.Val) > len(tupType.Types)-1 {
-		return nil, NewError(expr.Index, "tuple index out of bounds")
+	if expr.Index < 0 || int(expr.Index) > len(tupType.Types)-1 {
+		return nil, NewError(expr, "tuple index out of bounds")
 	}
 
-	return tupType.Types[idx.Val], nil
+	return tupType.Types[expr.Index], nil
 }
 
 func checkArrayRef(expr *ast.ArrayRefExpression, table *symbol.Table) (types.Type, error) {
@@ -246,6 +241,7 @@ func checkArrayRef(expr *ast.ArrayRefExpression, table *symbol.Table) (types.Typ
 		}
 	}
 
+	expr.Type = arrTyp.Inner
 	return arrTyp.Inner, nil
 }
 
@@ -276,6 +272,7 @@ func checkSumTransform(expr *ast.SumTransform, table *symbol.Table) (types.Type,
 		return nil, NewError(expr.Expr, "sum returns non-numeric expression")
 	}
 
+	expr.Type = exprType
 	return exprType, nil
 }
 
@@ -302,7 +299,6 @@ func checkArrayTransform(expr *ast.ArrayTransform, table *symbol.Table) (types.T
 			return nil, NewError(binding, "bindArg expr initializer for %s returns non-integer",
 				binding.Variable)
 		}
-
 		// set the variable up in the local symbol table as an integer
 		cpy.Set(binding.Variable, &symbol.Identifier{Type: types.Integer})
 	}
@@ -313,16 +309,19 @@ func checkArrayTransform(expr *ast.ArrayTransform, table *symbol.Table) (types.T
 		return nil, err
 	}
 
-	// make sure that it is some sort of array expression. If it isn't, then maybe we should be
-	// using a sum[]?
-	if arr, ok := exprType.(*types.Array); ok {
-		if arr.Rank != len(expr.OpBindings) {
-			return nil, NewError(expr.Expr, "return type of array expression must be of equal rank of number of bindings")
-		}
-		return exprType, nil
+
+	rank := len(expr.OpBindings)
+	var typ types.Type = &types.Array{
+		Inner: exprType,
+		Rank: rank,
 	}
-	expr.Type = exprType
-	return nil, NewError(expr.Expr, "return type of array expression must be array")
+
+	if rank == 0 {
+		typ = exprType
+	}
+
+	expr.Type = typ
+	return typ, nil
 }
 
 func checkTuple(expr *ast.TupleExpression, table *symbol.Table) (types.Type, error) {
@@ -337,6 +336,7 @@ func checkTuple(expr *ast.TupleExpression, table *symbol.Table) (types.Type, err
 		tuple.Types[i] = typ
 	}
 
+	expr.Type = tuple
 	return tuple, nil
 }
 
@@ -361,7 +361,8 @@ func checkArray(expr *ast.ArrayExpression, table *symbol.Table) (types.Type, err
 		}
 	}
 
-	return &types.Array{Inner: typ, Rank: 1}, nil
+	expr.Type = &types.Array{Inner: typ, Rank: 1}
+	return expr.Type, nil
 }
 
 func expressionType(expression ast.Expression, table *symbol.Table) (types.Type, error) {
@@ -398,7 +399,7 @@ func expressionType(expression ast.Expression, table *symbol.Table) (types.Type,
 	case *ast.ArrayExpression:
 		return checkArray(expr, table)
 	default:
-		panic("typechecking not implemented")
+		panic(fmt.Sprintf("typechecking not implemented for type %T", expr))
 
 	}
 	return nil, nil

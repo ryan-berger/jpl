@@ -57,6 +57,8 @@ func expandExpression(expression ast.Expression, next nexter) (ast.Expression, [
 		return expr, nil
 	case *ast.InfixExpression:
 		return expandInfixExpression(expr, next)
+	case *ast.TupleExpression:
+		return expr, nil
 	case *ast.CallExpression:
 		var stmts []ast.Statement
 		for i, arg := range expr.Arguments {

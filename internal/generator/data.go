@@ -113,9 +113,19 @@ func dataWalk(n ast.Node, namer namer, names constantMapper, reverse map[string]
 			}
 			return datum
 		case *ast.TupleRefExpression:
+			val := fmt.Sprintf("%d", exp.Index)
+
+			if k, ok := reverse[val]; ok {
+				names[node] = k
+				return nil
+			}
+
+			name := namer()
+			names[node] = name
+			reverse[val] = name
 			return append(
 				dataWalk(exp.Tuple, namer, names, reverse),
-				dataWalk(exp.Index, namer, names, reverse)...)
+				data{Name: name, Value: val})
 		case *ast.ArrayTransform:
 			var datum []data
 			for _, b := range exp.OpBindings {

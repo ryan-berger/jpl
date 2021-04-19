@@ -15,11 +15,7 @@ func checkCommand(command ast.Command, table *symbol.Table) error {
 	case ast.Statement:
 		return statementType(cmd, types.Integer, table)
 	case *ast.Function:
-		fn, err := functionBinding(cmd, table)
-		if err != nil {
-			return err
-		}
-		table.Set(cmd.Var, fn)
+		return functionBinding(cmd, table)
 	case *ast.Read:
 		if cmd.Type != "image" {
 			return NewError(cmd, "oops, read type not supported yet")

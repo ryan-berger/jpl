@@ -14,7 +14,7 @@ import (
 
 func parseExpression(t *testing.T, expr string) ast.Expression {
 	tokens, ok := lexer.
-		Lex(fmt.Sprintf("return %s", expr))
+		Lex(fmt.Sprintf("return %s\n", expr))
 
 	assert.True(t, ok, "lexer error")
 

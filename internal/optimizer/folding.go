@@ -1,4 +1,4 @@
-package peepholes
+package optimizer
 
 import (
 	"github.com/ryan-berger/jpl/internal/ast"

@@ -3,6 +3,7 @@ package ast
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/ryan-berger/jpl/internal/types"
 )
@@ -21,7 +22,23 @@ type Function struct {
 }
 
 func (f *Function) SExpr() string {
-	panic("implement me")
+	bindings := make([]string, len(f.Bindings))
+	stmts := make([]string, len(f.Statements))
+
+	for i, stmt := range f.Statements {
+		stmts[i] = stmt.SExpr()
+	}
+
+	for i, b := range f.Bindings {
+		bindings[i] = b.SExpr()
+	}
+
+	return fmt.Sprintf(
+		"(Func %s %s %s %s)",
+		f.Var,
+		f.ReturnType.SExpr(),
+		fmt.Sprintf("(%s)", strings.Join(bindings, " ")),
+		fmt.Sprintf("(%s)", strings.Join(stmts, " ")))
 }
 
 func (f *Function) command() {}

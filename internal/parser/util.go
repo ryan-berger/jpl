@@ -3,16 +3,16 @@ package parser
 import "github.com/ryan-berger/jpl/internal/lexer"
 
 // parseList takes an end character and calls parseFn to parse items between commas
-func (p *parser) parseList(end lexer.TokenType, parseFn func() bool) bool {
+func (p *parser) parseList(end lexer.TokenType, parseFn func() error) error {
 	if p.expectPeek(end) {
-		return true
+		return nil
 	}
 
 	p.advance()
 
 	for i := 0; i < 512; i++ {
-		if !parseFn() {
-			return false
+		if err := parseFn(); err != nil {
+			return err
 		}
 
 		if p.peekTokenIs(end) {
@@ -20,15 +20,13 @@ func (p *parser) parseList(end lexer.TokenType, parseFn func() bool) bool {
 		}
 
 		if !p.expectPeek(lexer.Comma) {
-			p.errorf(p.peek, "expected ',' received %s", p.peek.Val)
-			return false
+			return p.errorf(p.peek, "expected ',' received %s", p.peek.Val)
 		}
 		p.advance()
 	}
 	if !p.expectPeek(end) {
-		p.errorf(p.peek, "found unexpected token or >64 elements at expression")
-		return false
+		return p.errorf(p.peek, "found unexpected token or >64 elements at expression")
 	}
 
-	return true
+	return nil
 }
