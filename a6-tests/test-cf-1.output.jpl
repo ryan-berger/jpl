@@ -1,0 +1,1 @@
+(Func test_fn IntType () ((ReturnStmt (IntExpr IntType 10))))(Func test_fn2 BoolType () ((LetStmt (ArgLValue (VarArgument FloatType u)) (FloatExpr FloatType 22505)) (LetStmt (ArgLValue (VarArgument IntType x)) (IntExpr IntType 1)) (ReturnStmt (BinopExpr BoolType (VarExpr IntType x) < (IntExpr IntType 1)))))

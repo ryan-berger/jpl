@@ -1,0 +1,1 @@
+(StmtCmd (LetStmt (ArgLValue (VarArgument IntType a)) (IntExpr IntType 0)))(StmtCmd (LetStmt (ArgLValue (VarArgument IntType b)) (IntExpr IntType 0)))(StmtCmd (LetStmt (ArgLValue (VarArgument IntType c)) (VarExpr IntType b)))(StmtCmd (LetStmt (ArgLValue (VarArgument IntType d)) (VarExpr IntType c)))(ShowCmd (VarExpr IntType d))
