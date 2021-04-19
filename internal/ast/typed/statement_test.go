@@ -14,7 +14,7 @@ import (
 )
 
 func parseLet(t *testing.T, expr string) (*ast.LetStatement, error) {
-	tokens, ok := lexer.Lex(fmt.Sprintf("let %s", expr))
+	tokens, ok := lexer.Lex(fmt.Sprintf("let %s\n", expr))
 
 	assert.True(t, ok, "lexer error")
 
@@ -46,8 +46,7 @@ func TestLet(t *testing.T) {
 	}
 }
 
-var invalidTests []struct{
-
+var invalidTests []struct {
 }
 
 func parseFunction(t *testing.T, expr string) *ast.Function {
@@ -71,28 +70,33 @@ var validFunctionTests = []struct {
 }{
 	{
 		expr: `fn test() : {} {
-}`,
+  return {}
+}
+`,
 		bindings:   []types.Type{},
 		returnType: &types.Tuple{},
 	},
 	{
 		expr: `fn test() : int {
 return 0
-}`,
+}
+`,
 		bindings:   []types.Type{},
 		returnType: types.Integer,
 	},
 	{
 		expr: `fn test() : {int, int} {
 return {1, 2}
-}`,
+}
+`,
 		bindings:   []types.Type{},
 		returnType: &types.Tuple{Types: []types.Type{types.Integer, types.Integer}},
 	},
 	{
 		expr: `fn test({x : int, y[H, W] : int[,]}, z : int) : {int, int} {
 return {1, 2}
-}`,
+}
+`,
 		bindings: []types.Type{
 			&types.Tuple{
 				Types: []types.Type{
@@ -107,7 +111,8 @@ return {1, 2}
 	{
 		expr: `fn test({x : int, y[H, W] : int[,]}) : {int, int[]} {
 return {1, [1, 2]}
-}`,
+}
+`,
 		bindings: []types.Type{
 			&types.Tuple{
 				Types: []types.Type{
@@ -121,7 +126,8 @@ return {1, [1, 2]}
 	{
 		expr: `fn test(x : {float, bool}) : {int, int} {
 return {1, 1}
-}`,
+}
+`,
 		bindings: []types.Type{
 			&types.Tuple{
 				Types: []types.Type{
@@ -138,9 +144,13 @@ func TestFunction(t *testing.T) {
 	for _, test := range validFunctionTests {
 		table := symbol.NewSymbolTable()
 		fn := parseFunction(t, test.expr)
-		symb, err := functionBinding(fn, table)
+		err := functionBinding(fn, table)
 
 		assert.Nil(t, err)
+		f, ok := table.Get(fn.Var)
+		assert.True(t, ok)
+		symb := f.(*symbol.Function)
+
 		assert.True(t, test.returnType.Equal(symb.Return))
 		assert.Len(t, symb.Args, len(test.bindings))
 		for i, typ := range test.bindings {

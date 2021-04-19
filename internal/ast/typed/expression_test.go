@@ -19,7 +19,7 @@ import (
 
 func parse(t *testing.T, expr string) ast.Expression {
 	tokens, ok := lexer.
-		Lex(fmt.Sprintf("return %s", expr))
+		Lex(fmt.Sprintf("return %s\n", expr))
 
 	assert.True(t, ok, "lexer error")
 
@@ -46,7 +46,7 @@ var okTests = []struct {
 	{"(1 + 2) / 3", types.Integer},
 	{"(1 + 2) / 3", types.Integer},
 	{"sum[i : 10] i + 3", types.Integer},
-	{"array[i : 10] [i]", &types.Array{Inner: types.Integer, Rank: 1}},
+	{"(array[i : 10] [i])", &types.Array{Inner: &types.Array{Inner: types.Integer, Rank: 1}, Rank: 1}},
 	{"if true then 10 else 22", types.Integer},
 	{"if true then 10.11 else 22.23", types.Float},
 	{"sub_ints(10, 11)", types.Integer},
@@ -65,7 +65,7 @@ func TestExpressionCheck(t *testing.T) {
 		expr := parse(t, test.expr)
 		typ, err := expressionType(expr, symbol.NewSymbolTable())
 		assert.Nil(t, err)
-		assert.True(t, test.typ.Equal(typ))
+		assert.True(t, test.typ.Equal(typ), test.expr)
 	}
 }
 
@@ -82,28 +82,28 @@ var equalityTest = []struct {
 	{&types.Array{Inner: types.Float, Rank: 1}, &types.Array{Inner: types.Float, Rank: 1}, true},
 	{&types.Array{Inner: types.Float, Rank: 1}, &types.Array{Inner: types.Integer, Rank: 1}, false},
 	{
-		is:    &types.Array{&types.Array{types.Integer, 2}, 1},
-		other: &types.Array{&types.Array{types.Integer, 2}, 1},
+		is:    &types.Array{Inner: &types.Array{Inner: types.Integer, Rank: 2}, Rank: 1},
+		other: &types.Array{Inner: &types.Array{Inner: types.Integer, Rank: 2}, Rank: 1},
 		ok:    true,
 	},
 	{
-		is:    &types.Tuple{[]types.Type{types.Integer, types.Float, types.Integer}},
-		other: &types.Tuple{[]types.Type{types.Integer, types.Float, types.Integer}},
+		is:    &types.Tuple{Types: []types.Type{types.Integer, types.Float, types.Integer}},
+		other: &types.Tuple{Types: []types.Type{types.Integer, types.Float, types.Integer}},
 		ok:    true,
 	},
 	{
-		is:    &types.Tuple{[]types.Type{types.Integer, types.Float, types.Integer}},
-		other: &types.Tuple{[]types.Type{types.Integer, types.Integer}},
+		is:    &types.Tuple{Types: []types.Type{types.Integer, types.Float, types.Integer}},
+		other: &types.Tuple{Types: []types.Type{types.Integer, types.Integer}},
 		ok:    false,
 	},
 	{
-		is:    &types.Tuple{[]types.Type{types.Float, types.Integer}},
-		other: &types.Tuple{[]types.Type{types.Integer, types.Integer}},
+		is:    &types.Tuple{Types: []types.Type{types.Float, types.Integer}},
+		other: &types.Tuple{Types: []types.Type{types.Integer, types.Integer}},
 		ok:    false,
 	},
 	{
-		is:    &types.Tuple{[]types.Type{types.Integer, types.Integer, &types.Tuple{[]types.Type{types.Integer}}}},
-		other: &types.Tuple{[]types.Type{types.Integer, types.Integer, &types.Tuple{[]types.Type{types.Integer}}}},
+		is:    &types.Tuple{Types: []types.Type{types.Integer, types.Integer, &types.Tuple{[]types.Type{types.Integer}}}},
+		other: &types.Tuple{Types: []types.Type{types.Integer, types.Integer, &types.Tuple{[]types.Type{types.Integer}}}},
 		ok:    true,
 	},
 }
@@ -114,9 +114,9 @@ func TestTypeEqual(t *testing.T) {
 	}
 }
 
-var failureTests = []struct{
+var failureTests = []struct {
 	expr string
-	err string
+	err  string
 }{
 	{"if true then 0 else 2.0", "branches return different types: int, float"},
 	{"if x && y then 0 else 2.0", "unknown symbol x"},
@@ -139,7 +139,6 @@ var failureTests = []struct{
 	{"!x", "unknown symbol x"},
 	{"-[1, 2, 3]", "type error, expected numeric type on right hand side of '-'"},
 	{"[1, 2, 3]{1}", "tuple index of non-tuple type"},
-	{"{1, 2, 3}{1+2}", "tuple indexing requires integer literal"},
 	{"{1, 2, 3}{4}", "tuple index out of bounds"},
 	{"{1, x, 3}{2}", "unknown symbol x"},
 	{"[1, x, 3][0]", "unknown symbol x"},
@@ -156,8 +155,6 @@ var failureTests = []struct{
 	{"sum[i : true] 1", "bindArg expr initializer for i returns non-integer"},
 	{"array[i : 10] j + 10", "unknown symbol j"},
 	{"array[i : 10, i : 10] j + 10", "illegal shadowing in sum expr, var: i"},
-	{"array[i : 10, j: 10] [i + j]", "return type of array expression must be of equal rank of number of bindings"},
-	{"array[i : 10] i", "return type of array expression must be array"},
 	{"array[i : x + 10] 1", "unknown symbol x"},
 	{"array[i : true] 1", "bindArg expr initializer for i returns non-integer"},
 	{"dim(1, 1)", "expected array type, received int"},
@@ -175,19 +172,25 @@ func TestCheckFailures(t *testing.T) {
 	}
 }
 
-func parseAll(t *testing.T, program string) ast.Program {
+func parseAll(t *testing.T, name, program string) ast.Program {
 	tokens, ok := lexer.Lex(program)
 	assert.True(t, ok, "lexer error")
 
 	commands, err := parser.Parse(tokens)
-	assert.NoError(t, err, program)
+	assert.NoError(t, err,
+		"file %s, expr %s", name, program)
 	return commands
 }
 
 //go:embed testdata/error-tests/*.jpl
 var tests embed.FS
+
 func TestFailures(t *testing.T) {
-	var cases []string
+	var cases []struct {
+		name string
+		data string
+	}
+
 	err := fs.WalkDir(tests, "testdata/error-tests", func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			return nil
@@ -197,16 +200,18 @@ func TestFailures(t *testing.T) {
 		if e != nil {
 			return e
 		}
-		cases = append(cases, string(b))
+		cases = append(cases, struct {
+			name string
+			data string
+		}{name: d.Name(), data: string(b)})
 		return nil
 	})
 	assert.NoError(t, err)
 
 	for _, c := range cases {
-		program := parseAll(t, c)
+		program := parseAll(t, c.name, c.data)
 		_, _, err := Check(program)
-		assert.Error(t, err)
+		assert.Error(t, err, c.name)
 	}
 
 }
-

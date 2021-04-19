@@ -15,6 +15,7 @@ func isConstant(exp ast.Expression) bool {
 	return false
 }
 
+
 var DivideByZero = errors.New("divide by zero")
 
 func foldInteger(l, r ast.Expression, op string) (ast.Expression, error) {

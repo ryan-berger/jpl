@@ -53,6 +53,13 @@ func (t *Table) Set(ident string, sym Symbol) {
 func NewSymbolTable() *Table {
 	return &Table{
 		symbols: map[string]Symbol{
+			"argnum": &Identifier{Type: types.Integer},
+			"args": &Identifier{
+				Type: &types.Array{
+					Inner: types.Integer,
+					Rank: 1,
+				},
+			},
 			"sub_ints": &Function{
 				Args:   []types.Type{types.Integer, types.Integer},
 				Return: types.Integer,

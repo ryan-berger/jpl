@@ -1,6 +1,6 @@
 TEST=flatten.jpl
 
-.SILENT: run run-a4t run-a4f
+.SILENT: run run-a4t run-a4f run-a5p run-a5t
 all: run
 
 compile: cmd/compiler.go
@@ -14,6 +14,12 @@ run-a4t:
 
 run-a4f:
 	./jpl -f $(TEST)
+
+run-a5p:
+	./jpl -p $(TEST)
+
+run-a5t:
+	./jpl -t $(TEST)
 
 generate-asm:
 	./jpl -o code.s $(TEST)

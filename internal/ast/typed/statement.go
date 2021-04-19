@@ -8,12 +8,15 @@ import (
 	"github.com/ryan-berger/jpl/internal/types"
 )
 
-
 func bindArg(argument ast.Argument, typ types.Type, table *symbol.Table) error {
 	switch arg := argument.(type) {
 	case *ast.VariableArgument:
-		if _, ok := table.Get(arg.Variable); ok {
-			return NewError(arg, "cannot bindArg variable %s, variable is already bound",
+		if sym, ok := table.Get(arg.Variable); ok {
+			if _, isFn := sym.(*symbol.Function); isFn {
+				return NewError(arg, "cannot bind variable %s, identifier bound to function",
+					arg.Variable)
+			}
+			return NewError(arg, "cannot bind variable %s, variable is already bound",
 				arg.Variable)
 		}
 		table.Set(arg.Variable, &symbol.Identifier{Type: typ})
@@ -61,40 +64,43 @@ func bind(binding ast.Binding, table *symbol.Table) (types.Type, error) {
 	return nil, nil
 }
 
-func functionBinding(fun *ast.Function, table *symbol.Table) (*symbol.Function, error) {
+func functionBinding(fun *ast.Function, table *symbol.Table) error {
 	function := &symbol.Function{
 		Args:   make([]types.Type, len(fun.Bindings)),
 		Return: fun.ReturnType,
 	}
-	cpy := table.Copy()
-	if _, ok := cpy.Get(fun.Var); ok {
-		return nil, fmt.Errorf("error, function name %s already declared", fun.Var)
+
+	if _, ok := table.Get(fun.Var); ok {
+		return fmt.Errorf("error, function name %s already declared", fun.Var)
 	}
+
+	table.Set(fun.Var, function)
+	cpy := table.Copy()
 
 	for i, b := range fun.Bindings {
 		typ, err := bind(b, cpy)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		function.Args[i] = typ
 	}
 
 	hasSeenReturn := false
 	for _, stmt := range fun.Statements {
-		err := statementType(stmt, function.Return, table)
+		err := statementType(stmt, function.Return, cpy)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		_, isRet := stmt.(*ast.ReturnStatement)
 		hasSeenReturn = hasSeenReturn || isRet
 	}
 	// return has not been found
-	if !hasSeenReturn && !function.Return.Equal(&types.Tuple{}) {
-		return nil, NewError(fun, "return of type expected %s, received none", function.Return)
+	if !hasSeenReturn {
+		return NewError(fun, "return of type expected %s, received none", function.Return)
 	}
 
-	return function, nil
+	return nil
 }
 
 func bindLVal(value ast.LValue, typ types.Type, table *symbol.Table) error {

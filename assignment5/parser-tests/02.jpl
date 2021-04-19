@@ -1,0 +1,4 @@
+// OK
+
+read image "photo.png" to photo_image
+

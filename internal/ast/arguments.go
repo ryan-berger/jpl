@@ -20,7 +20,8 @@ type VariableArgument struct {
 
 func (v *VariableArgument) SExpr() string {
 	if v.Type != nil {
-		return fmt.Sprintf("(VarArgument %s %s)", v.Type, v.Variable)
+		return fmt.Sprintf("(VarArgument %s %s)",
+			v.Type.SExpr(), v.Variable)
 	}
 	return fmt.Sprintf("(VarArgument %s)", v.Variable)
 }
