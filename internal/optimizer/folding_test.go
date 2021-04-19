@@ -61,7 +61,7 @@ func TestConstantFolding(t *testing.T) {
 		assert.NoError(t, err)
 		p = ConstantFold(p)
 		p, _, err = typed.Check(p)
-		assert.NoError(t, err)
+		assert.NoError(t, err, v)
 		fmt.Println(p.SExpr())
 	}
 }

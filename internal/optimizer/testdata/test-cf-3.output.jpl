@@ -1,0 +1,1 @@
+(StmtCmd (LetStmt (ArgLValue (VarArgument IntType f)) (IntExpr IntType -9223372036854775808)))(Func test_fn IntType () ((LetStmt (ArgLValue (VarArgument IntType x)) (IntExpr IntType 0)) (ReturnStmt (IntExpr IntType 0))))(StmtCmd (AssertStmt (VarExpr BoolType false) Division by zero error))

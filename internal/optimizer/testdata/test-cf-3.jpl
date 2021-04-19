@@ -2,10 +2,11 @@ let f = -9223372036854775808 * 33
 
 
 fn test_fn() : int {
-  let c = (33 / (-1 + 1))
+  let x = 10 / 20
   return 0
 }
 
 let x = -(10/0)
+let c = (33 / (-1 + 1))
 
 return 10

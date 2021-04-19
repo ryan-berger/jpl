@@ -1,9 +1,1 @@
-
-let y = sum[i : 23, j : 2] 5
-let z = -32
-let x = 5
-let r = sub_ints(5, 9)
-let s = [1, 2, 13, 6]
-let t = true
-let u = 0
-return 1
+(StmtCmd (LetStmt (ArgLValue (VarArgument IntType y)) (SumExpr IntType (i (IntExpr IntType 23)) (j (IntExpr IntType 2)) (IntExpr IntType 5))))(StmtCmd (LetStmt (ArgLValue (VarArgument IntType z)) (IntExpr IntType -32)))(StmtCmd (LetStmt (ArgLValue (VarArgument IntType x)) (IntExpr IntType 5)))(StmtCmd (LetStmt (ArgLValue (VarArgument IntType r)) (CallExpr IntType sub_ints (IntExpr IntType 5) (IntExpr IntType 9))))(StmtCmd (LetStmt (ArgLValue (VarArgument (ArrayType IntType rank=1) s)) (ArrConExpr (ArrayType IntType rank=1) (IntExpr IntType 1) (IntExpr IntType 2) (IntExpr IntType 13) (IntExpr IntType 6))))(StmtCmd (LetStmt (ArgLValue (VarArgument BoolType t)) (VarExpr BoolType true)))(StmtCmd (LetStmt (ArgLValue (VarArgument IntType u)) (IntExpr IntType 0)))(StmtCmd (ReturnStmt (IntExpr IntType 1)))
