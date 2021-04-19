@@ -14,6 +14,7 @@ func isConstant(exp ast.Expression) bool {
 	}
 	return false
 }
+
 var DivideByZero = errors.New("divide by zero")
 
 func foldInteger(l, r ast.Expression, op string) (ast.Expression, error) {
@@ -82,7 +83,6 @@ func foldFloat(l, r ast.Expression, op string) ast.Expression {
 		panic("error, not implemented")
 	}
 }
-
 
 func constantFold(exp ast.Expression) (ast.Expression, error) {
 	switch expr := exp.(type) {
@@ -190,13 +190,24 @@ func constantFold(exp ast.Expression) (ast.Expression, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		if expr.Op == "-" {
+			switch exp := expr.Expr.(type) {
+			case *ast.IntExpression:
+				return dsl.Int(-exp.Val), nil
+			case *ast.FloatExpression:
+				return dsl.Float(-exp.Val), nil
+			default:
+				panic("oops")
+			}
+		}
 		return dsl.Prefix(expr.Op, r), nil
 	default:
 		return exp, nil
 	}
 }
 
-func foldCommand(cmd ast.Command) (ast.Command, error) {
+func foldStmt(cmd ast.Statement) (ast.Statement, error) {
 	switch c := cmd.(type) {
 	case *ast.LetStatement:
 		exp, err := constantFold(c.Expr)
@@ -205,7 +216,7 @@ func foldCommand(cmd ast.Command) (ast.Command, error) {
 		}
 		c.Expr = exp
 		return c, nil
-	case *ast.Show:
+	case *ast.AssertStatement:
 		exp, err := constantFold(c.Expr)
 		if err == DivideByZero {
 			return dsl.Assert(dsl.Bool(false), divideByZero), err
@@ -219,12 +230,39 @@ func foldCommand(cmd ast.Command) (ast.Command, error) {
 		}
 		c.Expr = exp
 		return c, nil
+	default:
+		panic("oops")
+	}
+}
+
+func foldCommand(cmd ast.Command) (ast.Command, error) {
+	switch c := cmd.(type) {
+	case ast.Statement:
+		return foldStmt(c)
+	case *ast.Show:
+		exp, err := constantFold(c.Expr)
+		if err == DivideByZero {
+			return dsl.Assert(dsl.Bool(false), divideByZero), err
+		}
+		c.Expr = exp
+		return c, nil
 	case *ast.Time:
 		newCmd, err := foldCommand(c.Command)
 		if err != nil {
 			return newCmd, err
 		}
 		c.Command = newCmd
+		return c, nil
+	case *ast.Function:
+		var stmts []ast.Statement
+		for _, stmt := range c.Statements {
+			newStmt, err := foldStmt(stmt)
+			stmts = append(stmts, newStmt)
+			if err != nil {
+				break
+			}
+		}
+		c.Statements = stmts
 		return c, nil
 	}
 	panic("yeet")
@@ -235,9 +273,11 @@ const divideByZero = "Division by zero error"
 func ConstantFold(p ast.Program) ast.Program {
 	var next ast.Program
 	for _, cmd := range p {
-		newCmd, _ := foldCommand(cmd)
+		newCmd, err := foldCommand(cmd)
 		next = append(next, newCmd)
+		if err != nil {
+			break
+		}
 	}
 	return next
 }
-

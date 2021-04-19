@@ -1,2 +1,9 @@
 
-let x = 2 + 3 + x + y + z
+let y = sum[i : 23, j : 2] 5
+let z = -32
+let x = 5
+let r = sub_ints(5, 9)
+let s = [1, 2, 13, 6]
+let t = true
+let u = 0
+return 1

@@ -1,0 +1,11 @@
+
+
+fn test_fn() : int {
+  return (0 / 10 + 10)
+}
+
+fn test_fn2() : bool {
+  let u = (1. / 2.) + (2. + 3.) + 3. / 2. / 2. * 30000.
+  let x = 1
+  return x < 1
+}

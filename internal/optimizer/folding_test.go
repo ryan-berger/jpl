@@ -53,8 +53,8 @@ func readTests() (map[string]string, map[string]string, error){
 }
 
 func TestConstantFolding(t *testing.T) {
-	tests, output, _ := readTests()
-	for k, v := range tests {
+	tests, _, _ := readTests()
+	for _, v := range tests {
 		lex, ok := lexer.Lex(v)
 		assert.True(t, ok)
 		p, err := parser.Parse(lex)
@@ -62,7 +62,6 @@ func TestConstantFolding(t *testing.T) {
 		p = ConstantFold(p)
 		p, _, err = typed.Check(p)
 		assert.NoError(t, err)
-		fmt.Println(p.String())
-		fmt.Println(p.String() == output[k])
+		fmt.Println(p.SExpr())
 	}
 }

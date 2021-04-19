@@ -1,0 +1,5 @@
+let x = 10
+let y = 10 + 10
+let z = y + x + 10
+let a = if (x < 30) 10 + y + z * 3 else 10
+let b = a

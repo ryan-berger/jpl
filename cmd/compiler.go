@@ -26,6 +26,14 @@ func init() {
 	flag.StringVar(&outFile, "o", "", "out file")
 }
 
+var optimization = map[string]bool{
+	"cf": true,
+	"cp": true,
+	"dce": true,
+	"lf": true,
+	"peep": true,
+}
+
 func main() {
 	flag.Parse()
 
