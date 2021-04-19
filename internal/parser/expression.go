@@ -92,8 +92,8 @@ func (p *parser) parsePrefixExpr() (ast.Expression, error) {
 			Location: ast.Location{
 				Line: p.cur.Line,
 				Pos:  p.cur.Character,
-			}, nil
-		}
+			},
+		}, nil
 	}
 
 	var err error
