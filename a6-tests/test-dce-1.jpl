@@ -8,5 +8,5 @@ fn my_test_two() : int {
   return if false then 2 else 1
 }
 
-assert false "test stop"
+assert false, "test stop"
 let t = 1

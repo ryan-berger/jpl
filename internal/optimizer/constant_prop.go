@@ -1,3 +1,4 @@
 package optimizer
 
 
+func ConstantProp() {}
