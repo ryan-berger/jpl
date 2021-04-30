@@ -13,31 +13,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//go:embed testdata/test-cf-*
-var foldTests embed.FS
+//go:embed testdata/test-cp-*
+var constantProp embed.FS
 
-func readTests() (map[string]string, map[string]string, error){
+func readConstantPropTests() (map[string]string, map[string]string, error) {
 	testMap := make(map[string]string)
 	outputMap := make(map[string]string)
 
-
-	e := fs.WalkDir(foldTests, ".", func(path string, d fs.DirEntry, err error) error {
+	e := fs.WalkDir(constantProp, ".", func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			return nil
 		}
-
-		if err != nil  {
-			return err
-		}
-
-		f, err := foldTests.ReadFile(path)
-		key := path[:len("testdata/test-cf-x")]
 
 		if err != nil {
 			return err
 		}
 
-		if strings.Contains(path,"output") {
+		f, err := constantProp.ReadFile(path)
+		key := path[:len("testdata/test-dce-x")]
+
+		if err != nil {
+			return err
+		}
+
+		if strings.Contains(path, "output") {
 			outputMap[key] = string(f)
 		} else {
 			testMap[key] = string(f)
@@ -52,14 +51,14 @@ func readTests() (map[string]string, map[string]string, error){
 	return testMap, outputMap, nil
 }
 
-func TestConstantFolding(t *testing.T) {
-	tests, _, _ := readTests()
+func TestConstantProp(t *testing.T) {
+	tests, _, _ := readConstantPropTests()
 	for _, v := range tests {
 		lex, ok := lexer.Lex(v)
 		assert.True(t, ok)
 		p, err := parser.Parse(lex)
-		assert.NoError(t, err)
-		p = ConstantFold(p)
+		assert.NoError(t, err, v)
+		p = ConstantProp(p)
 		p, _, err = typed.Check(p)
 		assert.NoError(t, err, v)
 		fmt.Println(p.String())

@@ -2,6 +2,7 @@ package optimizer
 
 import (
 	"errors"
+	"math"
 
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/ast/dsl"
@@ -21,7 +22,7 @@ var DivideByZero = errors.New("divide by zero")
 func foldInteger(l, r ast.Expression, op string) (ast.Expression, error) {
 	lInt := l.(*ast.IntExpression).Val
 	rInt := r.(*ast.IntExpression).Val
-	if rInt == 0 {
+	if rInt == 0 && op == "/" || op == "%" {
 		return nil, DivideByZero
 	}
 
@@ -35,6 +36,8 @@ func foldInteger(l, r ast.Expression, op string) (ast.Expression, error) {
 		exp = dsl.Int(lInt / rInt)
 	case "*":
 		exp = dsl.Int(lInt * rInt)
+	case "%":
+		exp = dsl.Int(lInt % rInt)
 	case "<":
 		exp = dsl.Bool(lInt < rInt)
 	case ">":
@@ -62,10 +65,9 @@ func foldFloat(l, r ast.Expression, op string) ast.Expression {
 	case "-":
 		return dsl.Float(lFloat - rFloat)
 	case "/":
-		if rFloat == 0 { // divide by 0 case
-			return dsl.Infix("/", l, r)
-		}
 		return dsl.Float(lFloat / rFloat)
+	case "%":
+		return dsl.Float(math.Mod(lFloat, rFloat))
 	case "*":
 		return dsl.Float(lFloat * rFloat)
 	case "<":

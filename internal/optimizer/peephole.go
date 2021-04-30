@@ -5,75 +5,119 @@ import (
 	"github.com/ryan-berger/jpl/internal/ast/dsl"
 )
 
-func sumExpr(expression ast.Expression) ast.Expression {
+func sumExpr(expression ast.Expression) (ast.Expression, error) {
+	var err error
 	switch exp := expression.(type) {
 	case *ast.InfixExpression:
-		exp.Left = sumExpr(exp.Left)
-		exp.Right = sumExpr(exp.Right)
+		exp.Left, err = sumExpr(exp.Left)
+		if err != nil {
+			return nil, err
+		}
+		exp.Right, err = sumExpr(exp.Right)
+		if err != nil {
+			return nil, err
+		}
 	case *ast.PrefixExpression:
-		exp.Expr = sumExpr(exp.Expr)
+		exp.Expr, err = sumExpr(exp.Expr)
+		if err != nil {
+			return nil, err
+		}
 	case *ast.CallExpression:
 		for i := 0; i < len(exp.Arguments); i++ {
-			exp.Arguments[i] = sumExpr(exp.Arguments[i])
+			exp.Arguments[i], err = sumExpr(exp.Arguments[i])
+			if err != nil {
+				return nil, err
+			}
 		}
 	case *ast.IfExpression:
-		exp.Condition = sumExpr(exp.Condition)
-		exp.Consequence = sumExpr(exp.Consequence)
-		exp.Otherwise = sumExpr(exp.Otherwise)
+		exp.Condition, err = sumExpr(exp.Condition)
+		if err != nil {
+			return nil, err
+		}
+		exp.Consequence, err = sumExpr(exp.Consequence)
+		if err != nil {
+			return nil, err
+		}
+		exp.Otherwise, err = sumExpr(exp.Otherwise)
+		if err != nil {
+			return nil, err
+		}
 	case *ast.ArrayTransform:
 		for _, s := range exp.OpBindings {
-			s.Expr = sumExpr(s.Expr)
+			s.Expr, err = sumExpr(s.Expr)
+			if err != nil {
+				return nil, err
+			}
 		}
-		exp.Expr = sumExpr(exp.Expr)
+		exp.Expr, err = sumExpr(exp.Expr)
+		if err != nil {
+			return nil, err
+		}
 	case *ast.SumTransform:
 		var product int64 = 1
 		for _, s := range exp.OpBindings {
-			s.Expr = sumExpr(s.Expr)
+			s.Expr, err = sumExpr(s.Expr)
 			v, ok := s.Expr.(*ast.IntExpression)
 			if !ok {
-				return exp
+				return exp, nil
 			}
 			product *= v.Val
 		}
+		exp.Expr, err = constantFold(exp.Expr)
 		rh, ok := exp.Expr.(*ast.IntExpression)
 		if !ok {
-			return exp
+			return exp, nil
 		}
-		return dsl.Int(product * rh.Val)
+		return dsl.Int(product * rh.Val), nil
 	}
-	return expression
+	return expression, nil
 }
 
-func sumStmt(statement ast.Statement) {
+func sumStmt(statement ast.Statement) ast.Statement {
+	var err error
 	switch stmt := statement.(type) {
 	case *ast.LetStatement:
-		stmt.Expr = sumExpr(stmt.Expr)
+		stmt.Expr, err = sumExpr(stmt.Expr)
 	case *ast.AssertStatement:
-		stmt.Expr = sumExpr(stmt.Expr)
+		stmt.Expr, err = sumExpr(stmt.Expr)
 	case *ast.ReturnStatement:
-		stmt.Expr = sumExpr(stmt.Expr)
+		stmt.Expr, err = sumExpr(stmt.Expr)
 	}
+
+	if err != nil {
+		return dsl.Assert(dsl.Bool(false), divideByZero)
+	}
+	return statement
 }
 
-func sumCmd(command ast.Command) {
+func sumCmd(command ast.Command) ast.Command {
+	var err error
 	switch cmd := command.(type) {
 	case ast.Statement:
-		sumStmt(cmd)
+		return sumStmt(cmd)
 	case *ast.Time:
-		sumCmd(cmd.Command)
+		return sumCmd(cmd.Command)
 	case *ast.Function:
-		for _, c := range cmd.Statements {
-			sumCmd(c)
+		for i, c := range cmd.Statements {
+			cmd.Statements[i] = sumStmt(c)
 		}
 	case *ast.Show:
-		cmd.Expr = sumExpr(cmd.Expr)
+		cmd.Expr, err = sumExpr(cmd.Expr)
+		if err != nil {
+			return dsl.Assert(dsl.Bool(false), divideByZero)
+		}
 	case *ast.Write:
-		cmd.Expr = sumExpr(cmd.Expr)
+		cmd.Expr, err = sumExpr(cmd.Expr)
+		if err != nil {
+			return dsl.Assert(dsl.Bool(false), divideByZero)
+		}
 	}
+	return command
 }
 
-func Peephole(p ast.Program) {
-	for _, c := range p {
-		sumCmd(c)
+func Peephole(p ast.Program) ast.Program {
+	for i, c := range p {
+		p[i] = sumCmd(c)
 	}
+	return p
 }

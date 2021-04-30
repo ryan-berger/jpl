@@ -13,15 +13,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//go:embed testdata/test-cf-*
-var foldTests embed.FS
+//go:embed testdata/test-peep-*
+var peepTests embed.FS
 
-func readTests() (map[string]string, map[string]string, error){
+func readPeepTests() (map[string]string, map[string]string, error){
 	testMap := make(map[string]string)
 	outputMap := make(map[string]string)
 
 
-	e := fs.WalkDir(foldTests, ".", func(path string, d fs.DirEntry, err error) error {
+	e := fs.WalkDir(peepTests, ".", func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			return nil
 		}
@@ -30,8 +30,8 @@ func readTests() (map[string]string, map[string]string, error){
 			return err
 		}
 
-		f, err := foldTests.ReadFile(path)
-		key := path[:len("testdata/test-cf-x")]
+		f, err := peepTests.ReadFile(path)
+		key := path[:len("testdata/test-peep-x")]
 
 		if err != nil {
 			return err
@@ -52,14 +52,14 @@ func readTests() (map[string]string, map[string]string, error){
 	return testMap, outputMap, nil
 }
 
-func TestConstantFolding(t *testing.T) {
-	tests, _, _ := readTests()
+func TestPeephole(t *testing.T) {
+	tests, _, _ := readPeepTests()
 	for _, v := range tests {
 		lex, ok := lexer.Lex(v)
 		assert.True(t, ok)
 		p, err := parser.Parse(lex)
 		assert.NoError(t, err)
-		p = ConstantFold(p)
+		p = Peephole(p)
 		p, _, err = typed.Check(p)
 		assert.NoError(t, err, v)
 		fmt.Println(p.String())
