@@ -154,7 +154,7 @@ func (c *Compiler) compile() error {
 		for _, o := range c.optimizations {
 			program = o(program)
 		}
-		fmt.Println(program.String())
+		fmt.Println(program.SExpr())
 		return nil
 	}
 
