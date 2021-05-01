@@ -32,7 +32,7 @@ func (p *parser) parseSumTransform() (ast.Expression, error) {
 	}
 
 	var err error
-	if expr.OpBindings, err = p.parseOpBindings(); len(expr.OpBindings) == 0 {
+	if expr.OpBindings, err = p.parseOpBindings(); err != nil {
 		return nil, err
 	}
 

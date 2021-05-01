@@ -119,6 +119,10 @@ func constantFold(exp ast.Expression) (ast.Expression, error) {
 		}
 		return expr, nil
 	case *ast.ArrayTransform:
+		if len(expr.OpBindings) == 0 {
+			return constantFold(expr.Expr)
+		}
+
 		for i, bind := range expr.OpBindings {
 			exp, err := constantFold(bind.Expr)
 			if err != nil {
@@ -135,6 +139,10 @@ func constantFold(exp ast.Expression) (ast.Expression, error) {
 		expr.Expr = exp
 		return expr, nil
 	case *ast.SumTransform:
+		if len(expr.OpBindings) == 0 {
+			return constantFold(expr.Expr)
+		}
+
 		for i, bind := range expr.OpBindings {
 			exp, err := constantFold(bind.Expr)
 			if err != nil {
