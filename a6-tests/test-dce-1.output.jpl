@@ -1,0 +1,1 @@
+(Func my_test IntType () ((LetStmt (ArgLValue (VarArgument IntType x)) (IntExpr IntType 1)) (LetStmt (ArgLValue (VarArgument IntType y)) (BinopExpr IntType (VarExpr IntType x) + (IntExpr IntType 2))) (ReturnStmt (IntExpr IntType 3))))(Func my_test_two IntType () ((ReturnStmt (IntExpr IntType 1))))(StmtCmd (AssertStmt (VarExpr BoolType false) "test stop"))

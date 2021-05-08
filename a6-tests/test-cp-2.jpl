@@ -1,0 +1,6 @@
+let a = 0
+let b = a
+let c = b
+let d = c
+
+show d

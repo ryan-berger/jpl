@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"math"
 	"strconv"
 
 	"github.com/ryan-berger/jpl/internal/ast"
@@ -71,6 +72,8 @@ func (p *parser) parseExpression(pr precedence) (ast.Expression, error) {
 	return leftExp, nil
 }
 
+const minInt = "9223372036854775808"
+
 func (p *parser) parsePrefixExpr() (ast.Expression, error) {
 	// defer untrace(trace("PREFIX"))
 	expr := &ast.PrefixExpression{
@@ -81,6 +84,17 @@ func (p *parser) parsePrefixExpr() (ast.Expression, error) {
 		},
 	}
 	p.advance()
+
+	// MIN_INT
+	if expr.Op == "-" && p.cur.Type == lexer.IntLiteral && p.cur.Val == minInt{
+		return &ast.IntExpression{
+			Val: math.MinInt64,
+			Location: ast.Location{
+				Line: p.cur.Line,
+				Pos:  p.cur.Character,
+			},
+		}, nil
+	}
 
 	var err error
 	expr.Expr, err = p.parseExpression(prefix)

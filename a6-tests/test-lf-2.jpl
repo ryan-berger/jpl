@@ -1,0 +1,3 @@
+let a = array [i : 10] i * i * i
+let b = array[2]
+show b

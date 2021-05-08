@@ -144,6 +144,10 @@ var tests = []struct {
 		"array[i : 5] i + array[i : 4] i",
 		"array[i : 5] (i + array[i : 4] i)",
 	},
+	{
+		"array[] sum[] array[] sum[] 1",
+		"array[] sum[] array[] sum[] 1",
+	},
 }
 
 func TestPrecedenceParsing(t *testing.T) {

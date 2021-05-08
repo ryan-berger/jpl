@@ -1,0 +1,12 @@
+fn my_test() : int {
+  let x = 1
+  let y = x + 2
+  return if true then 3 else 1
+}
+
+fn my_test_two() : int {
+  return if false then 2 else 1
+}
+
+assert false, "test stop"
+let t = 1

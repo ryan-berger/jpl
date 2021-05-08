@@ -1,0 +1,1 @@
+(StmtCmd (LetStmt (ArgLValue (VarArgument (ArrayType IntType rank=1) a)) (ArrayExpr (ArrayType IntType rank=1) (i (IntExpr IntType 10)) (VarExpr IntType i))))(StmtCmd (LetStmt (ArgLValue (VarArgument IntType b)) (IntExpr IntType 9)))

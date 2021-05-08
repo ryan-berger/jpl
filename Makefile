@@ -21,6 +21,18 @@ run-a5p:
 run-a5t:
 	./jpl -t $(TEST)
 
+a6-cf:
+	./jpl -cf -p $(TEST)
+
+a6-cp:
+	./jpl -cp -p $(TEST)
+
+a6-dce:
+	./jpl -dce -p $(TEST)
+
+a6-peep:
+	./jpl -peep -p $(TEST)
+
 generate-asm:
 	./jpl -o code.s $(TEST)
 

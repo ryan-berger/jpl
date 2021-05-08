@@ -11,6 +11,7 @@ import (
 	"github.com/ryan-berger/jpl/internal/expander"
 	"github.com/ryan-berger/jpl/internal/generator"
 	"github.com/ryan-berger/jpl/internal/lexer"
+	"github.com/ryan-berger/jpl/internal/optimizer"
 	"github.com/ryan-berger/jpl/internal/parser"
 	"github.com/ryan-berger/jpl/internal/symbol"
 )
@@ -27,9 +28,10 @@ const (
 )
 
 type Compiler struct {
-	input  io.Reader
-	output io.Writer
-	mode   PrintMode
+	input         io.Reader
+	output        io.Writer
+	mode          PrintMode
+	optimizations []optimizer.Optimization
 }
 
 type CompilerOpts func(c *Compiler)
@@ -49,6 +51,12 @@ func WithWriter(w io.Writer) CompilerOpts {
 func WithReader(r io.Reader) CompilerOpts {
 	return func(c *Compiler) {
 		c.input = r
+	}
+}
+
+func WithOptimizations(optimizations []optimizer.Optimization) CompilerOpts {
+	return func(c *Compiler) {
+		c.optimizations = optimizations
 	}
 }
 
@@ -128,7 +136,7 @@ func (c *Compiler) generate(program ast.Program, table *symbol.Table) {
 
 func (c *Compiler) compile() error {
 	tokens, err := c.lex()
-	if err != nil || c.mode == Lex{
+	if err != nil || c.mode == Lex {
 		return err
 	}
 
@@ -140,6 +148,14 @@ func (c *Compiler) compile() error {
 	program, err = c.typeCheck(program)
 	if err != nil || c.mode == TypeCheck {
 		return err
+	}
+
+	if len(c.optimizations) != 0 {
+		for _, o := range c.optimizations {
+			program = o(program)
+		}
+		fmt.Println(program.SExpr())
+		return nil
 	}
 
 	program, table := c.expand(program)

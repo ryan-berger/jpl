@@ -1,0 +1,5 @@
+assert true, "Test 1"
+let a = if true then 0 else 1
+assert false, "Test 2"
+
+return 0

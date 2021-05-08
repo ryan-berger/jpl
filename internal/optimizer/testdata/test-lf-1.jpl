@@ -1,0 +1,3 @@
+let a = array[i : 10, j : 10] i + j
+let b = a[11, 11]
+show b

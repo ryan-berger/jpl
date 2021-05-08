@@ -1,0 +1,9 @@
+let a = 0
+let b = a
+let c = b
+let d = c
+
+show d
+
+let x = true
+show if x then 1 else 0

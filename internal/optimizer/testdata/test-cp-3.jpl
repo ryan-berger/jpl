@@ -1,0 +1,7 @@
+let y = 10
+let x = 3
+let z = 2
+
+let t = y * x * z * z
+let v = x + 2 + x / z + y
+let a = if t > 10 then (x * y) / z else 2
