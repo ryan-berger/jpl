@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ryan-berger/jpl/internal/types"
+	types "github.com/ryan-berger/jpl/internal/ast/types"
 )
 
 type Argument interface {
@@ -12,13 +12,13 @@ type Argument interface {
 	argument()
 }
 
-type VariableArgument struct {
+type Variable struct {
 	Variable string
 	Type     types.Type
 	Location
 }
 
-func (v *VariableArgument) SExpr() string {
+func (v *Variable) SExpr() string {
 	if v.Type != nil {
 		return fmt.Sprintf("(VarArgument %s %s)",
 			v.Type.SExpr(), v.Variable)
@@ -26,9 +26,9 @@ func (v *VariableArgument) SExpr() string {
 	return fmt.Sprintf("(VarArgument %s)", v.Variable)
 }
 
-func (v *VariableArgument) String() string { return v.Variable }
-func (v *VariableArgument) argument()      {}
-func (v *VariableArgument) lValue()        {}
+func (v *Variable) String() string { return v.Variable }
+func (v *Variable) argument()      {}
+func (v *Variable) lValue()        {}
 
 type VariableArr struct {
 	Variable  string
@@ -37,7 +37,6 @@ type VariableArr struct {
 	Location
 }
 
-// TODO: make this work when needed
 func (v *VariableArr) SExpr() string {
 	sExps := make([]string, len(v.Variables))
 	for i, v := range v.Variables {

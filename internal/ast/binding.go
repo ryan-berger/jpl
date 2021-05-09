@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ryan-berger/jpl/internal/types"
+	types "github.com/ryan-berger/jpl/internal/ast/types"
 )
 
 type Binding interface {

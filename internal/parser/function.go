@@ -2,8 +2,8 @@ package parser
 
 import (
 	"github.com/ryan-berger/jpl/internal/ast"
+	types "github.com/ryan-berger/jpl/internal/ast/types"
 	"github.com/ryan-berger/jpl/internal/lexer"
-	"github.com/ryan-berger/jpl/internal/types"
 )
 
 func (p *parser) parseFunction() (ast.Command, error) {

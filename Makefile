@@ -36,11 +36,7 @@ a6-peep:
 generate-asm:
 	./jpl -o code.s $(TEST)
 
-assemble: generate-asm
-	nasm -felf64 code.s
 
-link: assemble
-	clang code.o ./assignment4/runtime.a -lpng -L/usr/local/lib -lm
 
 clean:
 	rm -rf jpl

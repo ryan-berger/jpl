@@ -1,9 +1,0 @@
-read image "photo.png" to photo
-assert has_size(photo, 800, 600), "Photo must be 800x600 pixels"
-let middle = photo
-write image sepia(middle) to "profile.png"
-return 10
-time write image sepia(middle) to "profile.png"
-print "hello world"
-let x = 10
-let y = 3.223

@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/ryan-berger/jpl/internal"
-	"github.com/ryan-berger/jpl/internal/optimizer"
+	optimizer2 "github.com/ryan-berger/jpl/internal/ast/optimizer"
 )
 
 var debugLex bool
@@ -31,11 +31,11 @@ func init() {
 	flag.Bool("peep", false, "peep")
 }
 
-var optimization = map[string]optimizer.Optimization{
-	"-cf": optimizer.ConstantFold,
-	"-cp": optimizer.ConstantProp,
-	"-dce": optimizer.DeadCode,
-	"-peep": optimizer.Peephole,
+var optimization = map[string]optimizer2.Optimization{
+	"-cf":   optimizer2.ConstantFold,
+	"-cp":   optimizer2.ConstantProp,
+	"-dce":  optimizer2.DeadCode,
+	"-peep": optimizer2.Peephole,
 }
 
 func main() {
@@ -46,7 +46,7 @@ func main() {
 		panic(err)
 	}
 
-	var optimizations []optimizer.Optimization
+	var optimizations []optimizer2.Optimization
 	for _, f := range os.Args {
 		if o, ok := optimization[f]; ok {
 			optimizations = append(optimizations, o)

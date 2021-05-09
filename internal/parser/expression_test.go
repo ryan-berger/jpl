@@ -98,11 +98,11 @@ var tests = []struct {
 	},
 	{
 		"true || false && false",
-		"(true || (false && false))",
+		"if true then true else if false then false else false",
 	},
 	{
 		"0 <= x && x <= 1",
-		"((0 <= x) && (x <= 1))",
+		"if (0 <= x) then (x <= 1) else false",
 	},
 	{
 		"if x == 0 then 20 + 10 else 30",

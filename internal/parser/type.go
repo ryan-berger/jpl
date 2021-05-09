@@ -1,8 +1,8 @@
 package parser
 
 import (
+	types "github.com/ryan-berger/jpl/internal/ast/types"
 	"github.com/ryan-berger/jpl/internal/lexer"
-	"github.com/ryan-berger/jpl/internal/types"
 )
 
 // parseTypeExpression parses a type expression of the form:
@@ -51,11 +51,11 @@ func (p *parser) parseType() (types.Type, error) {
 	// if it is a base type, use a map to types.Type
 	case lexer.Float, lexer.Int, lexer.Bool:
 		return tokenToType[p.cur.Type], nil
-	case lexer.Float3: // expand syntactic sugar for {float, float float}
+	case lexer.Float3: // flatten syntactic sugar for {float, float float}
 		return &types.Tuple{
 			Types: []types.Type{types.Float, types.Float, types.Float},
 		}, nil
-	case lexer.Float4: // expand syntactic sugar for {float, float float, float}
+	case lexer.Float4: // flatten syntactic sugar for {float, float float, float}
 		return &types.Tuple{
 			Types: []types.Type{types.Float, types.Float, types.Float, types.Float},
 		}, nil

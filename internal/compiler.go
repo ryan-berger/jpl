@@ -7,11 +7,11 @@ import (
 	"os"
 
 	"github.com/ryan-berger/jpl/internal/ast"
-	"github.com/ryan-berger/jpl/internal/ast/typed"
-	"github.com/ryan-berger/jpl/internal/expander"
-	"github.com/ryan-berger/jpl/internal/generator"
+	"github.com/ryan-berger/jpl/internal/ast/flatten"
+	"github.com/ryan-berger/jpl/internal/ast/optimizer"
+	"github.com/ryan-berger/jpl/internal/ast/types/checker"
+	"github.com/ryan-berger/jpl/internal/backend/nasm"
 	"github.com/ryan-berger/jpl/internal/lexer"
-	"github.com/ryan-berger/jpl/internal/optimizer"
 	"github.com/ryan-berger/jpl/internal/parser"
 	"github.com/ryan-berger/jpl/internal/symbol"
 )
@@ -104,7 +104,7 @@ func (c *Compiler) parse(tokens []lexer.Token) (ast.Program, error) {
 }
 
 func (c *Compiler) typeCheck(program ast.Program) (ast.Program, error) {
-	newProgram, _, err := typed.Check(program)
+	newProgram, _, err := checker.Check(program)
 	if err != nil {
 		return nil, err
 	}
@@ -116,22 +116,22 @@ func (c *Compiler) typeCheck(program ast.Program) (ast.Program, error) {
 	return newProgram, nil
 }
 
-func (c *Compiler) expand(program ast.Program) (ast.Program, *symbol.Table) {
-	expanded := expander.Expand(program)
+func (c *Compiler) flatten(program ast.Program) (ast.Program, *symbol.Table) {
+	flattened := flatten.Flatten(program)
 
-	_, table, err := typed.Check(expanded)
+	_, table, err := checker.Check(flattened)
 	if err != nil {
 		panic(fmt.Sprintf("nice, you really messed up, %s", err))
 	}
 
-	return expanded, table
+	return flattened, table
 }
 
 func (c *Compiler) generate(program ast.Program, table *symbol.Table) {
 	if c.mode == ASM {
 		c.output = os.Stdout
 	}
-	generator.Generate(program, table, c.output)
+	nasm.Generate(program, table, c.output)
 }
 
 func (c *Compiler) compile() error {
@@ -158,7 +158,7 @@ func (c *Compiler) compile() error {
 		return nil
 	}
 
-	program, table := c.expand(program)
+	program, table := c.flatten(program)
 	if c.mode == Flatten {
 		fmt.Println(program.SExpr())
 		return nil

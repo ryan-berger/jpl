@@ -1,6 +1,8 @@
 package symbol
 
-import "github.com/ryan-berger/jpl/internal/types"
+import (
+	 "github.com/ryan-berger/jpl/internal/ast/types"
+)
 
 type Table struct {
 	symbols map[string]Symbol
@@ -57,7 +59,7 @@ func NewSymbolTable() *Table {
 			"args": &Identifier{
 				Type: &types.Array{
 					Inner: types.Integer,
-					Rank: 1,
+					Rank:  1,
 				},
 			},
 			"sub_ints": &Function{

@@ -78,7 +78,7 @@ func (p *parser) parseArgument() (ast.Argument, error) {
 	}
 
 	if !p.expectPeek(lexer.LBrace) {
-		return &ast.VariableArgument{
+		return &ast.Variable{
 			Variable: p.cur.Val,
 		}, nil
 	}

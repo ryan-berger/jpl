@@ -13,8 +13,8 @@ func LArray(ident string, dims ...string) *ast.VariableArr {
 	}
 }
 
-func LIdent(ident string) *ast.VariableArgument {
-	return &ast.VariableArgument{
+func LIdent(ident string) *ast.Variable {
+	return &ast.Variable{
 		Variable: ident,
 	}
 }
