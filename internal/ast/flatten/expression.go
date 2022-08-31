@@ -46,7 +46,6 @@ func flattenInfixExpression(expr ast.Expression, next nexter) (ast.Expression, [
 	}
 }
 
-
 func flattenExpression(expression ast.Expression, next nexter) (ast.Expression, []ast.Statement) {
 	switch expr := expression.(type) {
 	case *ast.IdentifierExpression:
@@ -54,6 +53,8 @@ func flattenExpression(expression ast.Expression, next nexter) (ast.Expression, 
 	case *ast.IntExpression, *ast.FloatExpression, *ast.BooleanExpression:
 		return expr, nil
 	case *ast.IfExpression:
+		return expr, nil
+	case *ast.PrefixExpression:
 		return expr, nil
 	case *ast.InfixExpression:
 		return flattenInfixExpression(expr, next)

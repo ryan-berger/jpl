@@ -1,0 +1,12 @@
+
+fn g(i : int) : int {
+    return 1
+}
+
+fn f(i : int) : int {
+    let x = 1 + i
+    let y = i + i
+    let z = -1
+    return x * y * z
+}
+

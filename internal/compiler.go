@@ -10,7 +10,7 @@ import (
 	"github.com/ryan-berger/jpl/internal/ast/flatten"
 	"github.com/ryan-berger/jpl/internal/ast/optimizer"
 	"github.com/ryan-berger/jpl/internal/ast/types/checker"
-	"github.com/ryan-berger/jpl/internal/backend/nasm"
+	"github.com/ryan-berger/jpl/internal/backend"
 	"github.com/ryan-berger/jpl/internal/lexer"
 	"github.com/ryan-berger/jpl/internal/parser"
 	"github.com/ryan-berger/jpl/internal/symbol"
@@ -30,6 +30,7 @@ const (
 type Compiler struct {
 	input         io.Reader
 	output        io.Writer
+	backend       backend.Generator
 	mode          PrintMode
 	optimizations []optimizer.Optimization
 }
@@ -51,6 +52,12 @@ func WithWriter(w io.Writer) CompilerOpts {
 func WithReader(r io.Reader) CompilerOpts {
 	return func(c *Compiler) {
 		c.input = r
+	}
+}
+
+func WithBackend(g backend.Generator) CompilerOpts {
+	return func(c *Compiler) {
+		c.backend = g
 	}
 }
 
@@ -131,7 +138,7 @@ func (c *Compiler) generate(program ast.Program, table *symbol.Table) {
 	if c.mode == ASM {
 		c.output = os.Stdout
 	}
-	nasm.Generate(program, table, c.output)
+	c.backend(program, table, c.output)
 }
 
 func (c *Compiler) compile() error {
