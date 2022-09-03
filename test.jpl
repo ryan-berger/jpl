@@ -9,7 +9,7 @@ fn f(i : int) : int {
     let z = g(1)
     let a = true
     let b = false
-    let c = if ((x + y) < (y + z)) || a then 0 else 3
+    let c = if (a || b) && a then 0 else 3
     return x * y * z
 }
 

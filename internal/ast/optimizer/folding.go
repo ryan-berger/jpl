@@ -16,7 +16,6 @@ func isConstant(exp ast.Expression) bool {
 	return false
 }
 
-
 var DivideByZero = errors.New("divide by zero")
 
 func foldInteger(l, r ast.Expression, op string) (ast.Expression, error) {
@@ -175,6 +174,12 @@ func constantFold(exp ast.Expression) (ast.Expression, error) {
 			return nil, err
 		}
 
+		if exp, ok := expr.Condition.(*ast.BooleanExpression); ok {
+			if exp.Val {
+				return expr.Consequence, nil
+			}
+			return expr.Otherwise, nil
+		}
 		return expr, nil
 	case *ast.InfixExpression:
 		lExp, err := constantFold(expr.Left)

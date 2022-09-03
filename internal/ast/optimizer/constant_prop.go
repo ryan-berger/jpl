@@ -1,6 +1,10 @@
 package optimizer
 
-import "github.com/ryan-berger/jpl/internal/ast"
+import (
+	"fmt"
+
+	"github.com/ryan-berger/jpl/internal/ast"
+)
 
 func isPropable(expr ast.Expression) bool {
 	switch expr.(type) {
@@ -13,6 +17,7 @@ func isPropable(expr ast.Expression) bool {
 func replace(expression ast.Expression, ident string, with ast.Expression) ast.Expression {
 	switch expr := expression.(type) {
 	case *ast.IdentifierExpression:
+		fmt.Printf("replacing: %v with %v\n", ident, with)
 		if expr.Identifier == ident {
 			return with
 		}
@@ -69,14 +74,21 @@ func propStmt(statement ast.Statement, ident string, with ast.Expression) {
 	}
 }
 
-func checkAndProp(n ast.Node, use *defUse)  {
-	if let, ok := n.(*ast.LetStatement); ok && isPropable(let.Expr) {
-		variable := let.LValue.(*ast.Variable).Variable
-		for _, u := range use.getUses(variable) {
-			propCmd(u, variable, let.Expr)
-			use.clearUse(n)
+func checkAndProp(n ast.Node, use *defUse) {
+	switch stmt := n.(type) {
+	case *ast.LetStatement:
+		if isPropable(stmt.Expr) {
+			variable := stmt.LValue.(*ast.Variable).Variable
+			for _, u := range use.getUses(variable) {
+				propCmd(u, variable, stmt.Expr)
+				use.clearUse(n)
+			}
+			delete(use.graph, variable)
 		}
-		delete(use.graph, variable)
+	case *ast.Function:
+		for _, s := range stmt.Statements {
+			checkAndProp(s, use)
+		}
 	}
 }
 

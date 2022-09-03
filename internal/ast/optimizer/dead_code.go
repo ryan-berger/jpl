@@ -180,6 +180,13 @@ func searchCmd(d *defUse, command ast.Command) {
 	case *ast.Function:
 		def := makeDefUse(d)
 		d.children[cmd] = def
+
+		for _, a := range cmd.Bindings {
+			if binding, ok := a.(*ast.TypeBind); ok {
+				variable := binding.Argument.(*ast.Variable)
+				def.recordDef(variable.Variable)
+			}
+		}
 		for _, stmt := range cmd.Statements {
 			searchStmt(def, stmt)
 		}

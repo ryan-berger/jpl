@@ -161,8 +161,6 @@ func (c *Compiler) compile() error {
 		for _, o := range c.optimizations {
 			program = o(program)
 		}
-		fmt.Println(program.SExpr())
-		return nil
 	}
 
 	program, table := c.flatten(program)
