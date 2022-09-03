@@ -10,6 +10,8 @@ fn f(i : int) : int {
     let a = true
     let b = false
     let c = if (a || b) && a then 0 else 3
+    assert a, "yeet"
+    assert b, "otheryeet"
     return x * y * z
 }
 

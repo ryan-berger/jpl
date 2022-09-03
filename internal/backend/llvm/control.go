@@ -22,7 +22,7 @@ func (g *generator) genIf(vals map[string]llvm.Value, expr *ast.IfExpression) ll
 	g.builder.CreateBr(contBB)
 
 	g.builder.SetInsertPointAtEnd(contBB)
-	phi := g.builder.CreatePHI(toLLVMType(expr.Type), "phi")
+	phi := g.builder.CreatePHI(toLLVMType(g.ctx, expr.Type), "phi")
 
 	phi.AddIncoming([]llvm.Value{cons, other}, []llvm.BasicBlock{thenBB, elseBB})
 	return phi

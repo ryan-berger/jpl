@@ -38,6 +38,7 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 		module:  module,
 		fns:     make(map[string]fn),
 	}
+	g.genRuntime()
 	g.generate(p)
 	fmt.Println(module.String())
 
@@ -57,21 +58,27 @@ func (g *generator) generate(p ast.Program) {
 	}
 }
 
-func toLLVMType(p types.Type) llvm.Type {
+func curryType(ctx llvm.Context) func(p types.Type) llvm.Type {
+	return func(p types.Type) llvm.Type {
+		return toLLVMType(ctx, p)
+	}
+}
+
+func toLLVMType(ctx llvm.Context, p types.Type) llvm.Type {
 	switch {
 	case p == types.Float:
-		return llvm.FloatType()
+		return ctx.FloatType()
 	case p == types.Integer:
-		return llvm.Int64Type()
+		return ctx.Int64Type()
 	case p == types.Boolean:
-		return llvm.Int1Type()
+		return ctx.Int1Type()
 	}
 
 	switch t := p.(type) {
 	case *types.Array:
-		return llvm.ArrayType(toLLVMType(p), t.Rank)
+		return llvm.ArrayType(toLLVMType(ctx, p), t.Rank)
 	case *types.Tuple:
-		return llvm.StructType(collections.Map(t.Types, toLLVMType), false)
+		return llvm.StructType(collections.Map(t.Types, curryType(ctx)), false)
 	}
 
 	panic("unreachable")
@@ -79,9 +86,15 @@ func toLLVMType(p types.Type) llvm.Type {
 
 type infixOp func(builder llvm.Builder, a, b llvm.Value, name string) llvm.Value
 
-func cmpToInfix(predicate llvm.IntPredicate) infixOp {
+func icmpToInfix(predicate llvm.IntPredicate) infixOp {
 	return func(builder llvm.Builder, a, b llvm.Value, name string) llvm.Value {
 		return builder.CreateICmp(predicate, a, b, name)
+	}
+}
+
+func fcmpToInfix(predicate llvm.FloatPredicate) infixOp {
+	return func(builder llvm.Builder, a, b llvm.Value, name string) llvm.Value {
+		return builder.CreateFCmp(predicate, a, b, name)
 	}
 }
 
@@ -91,12 +104,24 @@ var fns = map[types.Type]map[string]infixOp{
 		"-":  llvm.Builder.CreateSub,
 		"*":  llvm.Builder.CreateMul,
 		"/":  llvm.Builder.CreateSDiv,
-		"<":  cmpToInfix(llvm.IntSLT),
-		"<=": cmpToInfix(llvm.IntSLE),
-		">":  cmpToInfix(llvm.IntSGT),
-		">=": cmpToInfix(llvm.IntSGE),
-		"==": cmpToInfix(llvm.IntEQ),
-		"!=": cmpToInfix(llvm.IntNE),
+		"<":  icmpToInfix(llvm.IntSLT),
+		"<=": icmpToInfix(llvm.IntSLE),
+		">":  icmpToInfix(llvm.IntSGT),
+		">=": icmpToInfix(llvm.IntSGE),
+		"==": icmpToInfix(llvm.IntEQ),
+		"!=": icmpToInfix(llvm.IntNE),
+	},
+	types.Float: {
+		"+":  llvm.Builder.CreateFAdd,
+		"-":  llvm.Builder.CreateFSub,
+		"*":  llvm.Builder.CreateFMul,
+		"/":  llvm.Builder.CreateFDiv,
+		"<":  fcmpToInfix(llvm.FloatOLT),
+		"<=": fcmpToInfix(llvm.FloatOLE),
+		">":  fcmpToInfix(llvm.FloatOGT),
+		">=": fcmpToInfix(llvm.FloatOGE),
+		"==": fcmpToInfix(llvm.FloatOEQ),
+		"!=": fcmpToInfix(llvm.FloatONE),
 	},
 	types.Boolean: {
 		"||": llvm.Builder.CreateOr,
@@ -107,14 +132,14 @@ var fns = map[types.Type]map[string]infixOp{
 func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression) llvm.Value {
 	switch expr := expression.(type) {
 	case *ast.IntExpression:
-		return llvm.ConstInt(llvm.Int64Type(), uint64(expr.Val), false)
+		return llvm.ConstInt(g.ctx.Int64Type(), uint64(expr.Val), false)
 	case *ast.FloatExpression:
-		return llvm.ConstFloat(llvm.FloatType(), expr.Val)
+		return llvm.ConstFloat(g.ctx.FloatType(), expr.Val)
 	case *ast.BooleanExpression:
 		if expr.Val {
-			return llvm.ConstInt(llvm.Int1Type(), 1, false)
+			return llvm.ConstInt(g.ctx.Int1Type(), 1, false)
 		}
-		return llvm.ConstInt(llvm.Int1Type(), 0, false)
+		return llvm.ConstInt(g.ctx.Int1Type(), 0, false)
 	case *ast.PrefixExpression:
 		r := g.getExpr(val, expr.Expr)
 		switch expr.Op {
@@ -150,6 +175,24 @@ func (g *generator) generateStatement(m map[string]llvm.Value, s ast.Statement) 
 		m[l.Variable] = exp
 	case *ast.ReturnStatement:
 		g.builder.CreateRet(g.getExpr(m, stmt.Expr))
+	case *ast.AssertStatement:
+		assertFn := g.fns["fail_assertion"]
+		exp := g.getExpr(m, stmt.Expr)
+
+		failBB := g.ctx.AddBasicBlock(g.curFn.fn, "assertfail")
+		contBB := g.ctx.AddBasicBlock(g.curFn.fn, "assertcont")
+
+		g.builder.CreateCondBr(exp, failBB, contBB)
+
+		str := g.builder.CreateGlobalStringPtr(stmt.Message, "assert")
+
+		g.builder.SetInsertPointAtEnd(failBB)
+		g.builder.CreateCall(assertFn.fn,
+			[]llvm.Value{str},
+			"",
+		)
+		g.builder.CreateUnreachable()
+		g.builder.SetInsertPointAtEnd(contBB)
 	default:
 		panic(fmt.Sprintf("unsupported stmt: %T", s))
 	}

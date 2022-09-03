@@ -2,6 +2,7 @@ package llvm
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/collections"
@@ -13,12 +14,17 @@ type fn struct {
 	params map[string]llvm.Value
 }
 
-func bindingToLLVMType(b ast.Binding) llvm.Type {
+func curryBinding(ctx llvm.Context) func(b ast.Binding) llvm.Type {
+	return func(b ast.Binding) llvm.Type {
+		return bindingToLLVMType(ctx, b)
+	}
+}
+func bindingToLLVMType(ctx llvm.Context, b ast.Binding) llvm.Type {
 	switch bind := b.(type) {
 	case *ast.TypeBind:
-		return toLLVMType(bind.Type)
+		return toLLVMType(ctx, bind.Type)
 	case *ast.TupleBinding:
-		return llvm.StructType(collections.Map(bind.Bindings, bindingToLLVMType), false)
+		return llvm.StructType(collections.Map(bind.Bindings, curryBinding(ctx)), false)
 	default:
 		panic("unreachable")
 	}
@@ -26,8 +32,8 @@ func bindingToLLVMType(b ast.Binding) llvm.Type {
 
 func (g *generator) declareFunction(f *ast.Function) {
 	fnType := llvm.FunctionType(
-		toLLVMType(f.ReturnType),
-		collections.Map(f.Bindings, bindingToLLVMType), false)
+		toLLVMType(g.ctx, f.ReturnType),
+		collections.Map(f.Bindings, curryBinding(g.ctx)), false)
 
 	llvmFn := llvm.AddFunction(g.module, f.Var, fnType)
 
@@ -65,5 +71,10 @@ func (g *generator) genFunction(f *ast.Function) {
 
 	for _, s := range f.Statements {
 		g.generateStatement(cpy, s)
+	}
+
+	if err := llvm.VerifyFunction(fun.fn, llvm.AbortProcessAction); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
