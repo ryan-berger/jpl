@@ -15,6 +15,8 @@ type generator struct {
 	ctx     llvm.Context
 	builder llvm.Builder
 	module  llvm.Module
+	curFn   fn
+	fns     map[string]fn
 }
 
 func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
@@ -34,15 +36,20 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 		ctx:     ctx,
 		builder: builder,
 		module:  module,
+		fns:     make(map[string]fn),
 	}
-	fmt.Println("hi")
 	g.generate(p)
-
-	fmt.Printf("module: %s\n", module.String())
+	fmt.Println(module.String())
 
 }
 
 func (g *generator) generate(p ast.Program) {
+	for _, cmd := range p {
+		if fn, ok := cmd.(*ast.Function); ok {
+			g.declareFunction(fn)
+		}
+	}
+
 	for _, cmd := range p {
 		if fn, ok := cmd.(*ast.Function); ok {
 			g.genFunction(fn)
@@ -70,40 +77,31 @@ func toLLVMType(p types.Type) llvm.Type {
 	panic("unreachable")
 }
 
-func bindingToLLVMType(b ast.Binding) llvm.Type {
-	switch bind := b.(type) {
-	case *ast.TypeBind:
-		return toLLVMType(bind.Type)
-	case *ast.TupleBinding:
-		return llvm.StructType(collections.Map(bind.Bindings, bindingToLLVMType), false)
-	default:
-		panic("unreachable")
+type infixOp func(builder llvm.Builder, a, b llvm.Value, name string) llvm.Value
+
+func cmpToInfix(predicate llvm.IntPredicate) infixOp {
+	return func(builder llvm.Builder, a, b llvm.Value, name string) llvm.Value {
+		return builder.CreateICmp(predicate, a, b, name)
 	}
 }
 
-func (g *generator) genFunction(f *ast.Function) {
-	fnType := llvm.FunctionType(
-		toLLVMType(f.ReturnType),
-		collections.Map(f.Bindings, bindingToLLVMType), false)
-
-	fn := llvm.AddFunction(g.module, f.Var, fnType)
-
-	m := make(map[string]llvm.Value)
-
-	for i, f := range f.Bindings {
-		bind := f.(*ast.TypeBind)
-		variable := bind.Argument.(*ast.Variable)
-
-		fn.Param(i).SetName(variable.Variable)
-		m[variable.Variable] = fn.Param(i)
-	}
-
-	bb := g.ctx.AddBasicBlock(fn, fmt.Sprintf("%s_bb", f.Var))
-	g.builder.SetInsertPointAtEnd(bb)
-
-	for _, s := range f.Statements {
-		g.generateStatement(m, s)
-	}
+var fns = map[types.Type]map[string]infixOp{
+	types.Integer: {
+		"+":  llvm.Builder.CreateAdd,
+		"-":  llvm.Builder.CreateSub,
+		"*":  llvm.Builder.CreateMul,
+		"/":  llvm.Builder.CreateSDiv,
+		"<":  cmpToInfix(llvm.IntSLT),
+		"<=": cmpToInfix(llvm.IntSLE),
+		">":  cmpToInfix(llvm.IntSGT),
+		">=": cmpToInfix(llvm.IntSGE),
+		"==": cmpToInfix(llvm.IntEQ),
+		"!=": cmpToInfix(llvm.IntNE),
+	},
+	types.Boolean: {
+		"||": llvm.Builder.CreateOr,
+		"&&": llvm.Builder.CreateAnd,
+	},
 }
 
 func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression) llvm.Value {
@@ -112,6 +110,11 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 		return llvm.ConstInt(llvm.Int64Type(), uint64(expr.Val), false)
 	case *ast.FloatExpression:
 		return llvm.ConstFloat(llvm.FloatType(), expr.Val)
+	case *ast.BooleanExpression:
+		if expr.Val {
+			return llvm.ConstInt(llvm.Int1Type(), 1, false)
+		}
+		return llvm.ConstInt(llvm.Int1Type(), 0, false)
 	case *ast.PrefixExpression:
 		r := g.getExpr(val, expr.Expr)
 		switch expr.Op {
@@ -120,20 +123,22 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 		}
 	case *ast.InfixExpression:
 		l, r := g.getExpr(val, expr.Left), g.getExpr(val, expr.Right)
-		switch expr.Op {
-		case "+":
-			return g.builder.CreateAdd(l, r, "add")
-		case "-":
-			return g.builder.CreateSub(l, r, "sub")
-		case "*":
-			return g.builder.CreateMul(l, r, "mul")
-		case "/":
-			return g.builder.CreateSDiv(l, r, "div")
+		return fns[expr.Left.Typ()][expr.Op](g.builder, l, r, "infx")
+	case *ast.CallExpression:
+		fun, ok := g.fns[expr.Identifier]
+		if !ok {
+			panic(fmt.Sprintf("call expr"))
 		}
+		args := make([]llvm.Value, len(fun.params))
+		for i, e := range expr.Arguments {
+			args[i] = g.getExpr(val, e)
+		}
+		return g.builder.CreateCall(fun.fn, args, "call")
+	case *ast.IfExpression:
+		return g.genIf(val, expr)
 	case *ast.IdentifierExpression:
 		return val[expr.Identifier]
 	}
-
 	panic(fmt.Sprintf("unsupported expr: %T", expression))
 }
 

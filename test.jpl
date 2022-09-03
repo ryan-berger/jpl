@@ -6,7 +6,10 @@ fn g(i : int) : int {
 fn f(i : int) : int {
     let x = 1 + i
     let y = i + i
-    let z = -1
+    let z = g(1)
+    let a = true
+    let b = false
+    let c = if ((x + y) < (y + z)) || a then 0 else 3
     return x * y * z
 }
 

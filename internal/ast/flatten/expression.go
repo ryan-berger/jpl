@@ -6,8 +6,9 @@ import (
 )
 
 // expansionAndLet takes in an expression and if it is an ast.CallExpression it will convert
-// it to a let. This method should only be used when an ast.CallExpression is not allowed in an
-// expansion and allows for flattenExpression to stay generic
+// it to a let.
+// This method should only be used when an ast.CallExpression is not allowed in an expansion
+// and allows for flattenExpression to stay generic.
 func expansionAndLet(
 	expr ast.Expression,
 	next nexter,
