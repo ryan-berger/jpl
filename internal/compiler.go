@@ -160,6 +160,9 @@ func (c *Compiler) compile() error {
 	if len(c.optimizations) != 0 {
 		for _, o := range c.optimizations {
 			program = o(program)
+			fmt.Println("running optimization")
+			fmt.Println(program.String())
+			fmt.Println("-------")
 		}
 	}
 

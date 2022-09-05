@@ -2,7 +2,6 @@ package optimizer
 
 import (
 	"embed"
-	"fmt"
 	"io/fs"
 	"strings"
 	"testing"
@@ -52,8 +51,8 @@ func readDeadCodeTests() (map[string]string, map[string]string, error) {
 }
 
 func TestDeadCode(t *testing.T) {
-	tests, _, _ := readDeadCodeTests()
-	for _, v := range tests {
+	tests, output, _ := readDeadCodeTests()
+	for k, v := range tests {
 		lex, ok := lexer.Lex(v)
 		assert.True(t, ok)
 		p, err := parser.Parse(lex)
@@ -61,6 +60,6 @@ func TestDeadCode(t *testing.T) {
 		p = DeadCode(p)
 		p, _, err = checker2.Check(p)
 		assert.NoError(t, err, v)
-		fmt.Println(p.String())
+		assert.Equal(t, output[k], p.SExpr())
 	}
 }

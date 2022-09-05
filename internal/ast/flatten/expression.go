@@ -61,6 +61,8 @@ func flattenExpression(expression ast.Expression, next nexter) (ast.Expression, 
 		return flattenInfixExpression(expr, next)
 	case *ast.TupleExpression:
 		return expr, nil
+	case *ast.SumTransform, *ast.ArrayTransform:
+		return expr, nil
 	case *ast.CallExpression:
 		var stmts []ast.Statement
 		for i, arg := range expr.Arguments {

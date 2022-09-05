@@ -10,8 +10,16 @@ fn f(i : int) : int {
     let a = true
     let b = false
     let c = if (a || b) && a then 0 else 3
-    assert a, "yeet"
-    assert b, "otheryeet"
     return x * y * z
 }
 
+fn h({x : int, y : int, {z : int}}) : int {
+    let a = 2
+    let b = 3
+    return a + b + z
+}
+
+fn i(x : float4) : int {
+    let z = sum[r : 10, s : 10] g(r + s)
+    return z
+}

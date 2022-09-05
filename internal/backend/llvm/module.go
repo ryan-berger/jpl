@@ -38,13 +38,23 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 		module:  module,
 		fns:     make(map[string]fn),
 	}
+
+	fpm := llvm.NewFunctionPassManagerForModule(module)
+	//fpm.AddCFGSimplificationPass()
+	//fpm.AddReassociatePass()
+	fpm.AddInstructionCombiningPass()
+	fpm.InitializeFunc()
+
+	defer fpm.Dispose()
+
 	g.genRuntime()
-	g.generate(p)
-	fmt.Println(module.String())
+	g.generate(p, fpm)
+
+	module.Dump()
 
 }
 
-func (g *generator) generate(p ast.Program) {
+func (g *generator) generate(p ast.Program, fpm llvm.PassManager) {
 	for _, cmd := range p {
 		if fn, ok := cmd.(*ast.Function); ok {
 			g.declareFunction(fn)
@@ -54,6 +64,7 @@ func (g *generator) generate(p ast.Program) {
 	for _, cmd := range p {
 		if fn, ok := cmd.(*ast.Function); ok {
 			g.genFunction(fn)
+			//fpm.RunFunc(g.fns[fn.Var].fn)
 		}
 	}
 }
@@ -76,7 +87,15 @@ func toLLVMType(ctx llvm.Context, p types.Type) llvm.Type {
 
 	switch t := p.(type) {
 	case *types.Array:
-		return llvm.ArrayType(toLLVMType(ctx, p), t.Rank)
+		ranks := make([]llvm.Type, t.Rank)
+		for i := 0; i < t.Rank; i++ {
+			ranks[i] = ctx.Int64Type()
+		}
+
+		inner := toLLVMType(ctx, t.Inner)
+		inner = llvm.PointerType(inner, 0)
+
+		return llvm.StructType(append(ranks, inner), false)
 	case *types.Tuple:
 		return llvm.StructType(collections.Map(t.Types, curryType(ctx)), false)
 	}
@@ -159,10 +178,19 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 			args[i] = g.getExpr(val, e)
 		}
 		return g.builder.CreateCall(fun.fn, args, "call")
+	case *ast.SumTransform:
+		return g.genSumTransform(val, expr)
 	case *ast.IfExpression:
 		return g.genIf(val, expr)
+	case *ast.TupleRefExpression:
+		return g.builder.CreateExtractValue(g.getExpr(val, expr.Tuple), int(expr.Index), "tuple_lookup")
 	case *ast.IdentifierExpression:
-		return val[expr.Identifier]
+		v, ok := val[expr.Identifier]
+		fmt.Printf("looking for identifier %s in %v\n", expr.Identifier, val)
+		if !ok {
+			panic(fmt.Sprintf("identifier %s not found", expr.Identifier))
+		}
+		return v
 	}
 	panic(fmt.Sprintf("unsupported expr: %T", expression))
 }

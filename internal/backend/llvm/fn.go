@@ -24,7 +24,7 @@ func bindingToLLVMType(ctx llvm.Context, b ast.Binding) llvm.Type {
 	case *ast.TypeBind:
 		return toLLVMType(ctx, bind.Type)
 	case *ast.TupleBinding:
-		return llvm.StructType(collections.Map(bind.Bindings, curryBinding(ctx)), false)
+		return ctx.StructType(collections.Map(bind.Bindings, curryBinding(ctx)), false)
 	default:
 		panic("unreachable")
 	}
@@ -40,16 +40,54 @@ func (g *generator) declareFunction(f *ast.Function) {
 	m := make(map[string]llvm.Value)
 
 	for i, f := range f.Bindings {
-		bind := f.(*ast.TypeBind)
-		variable := bind.Argument.(*ast.Variable)
-
-		llvmFn.Param(i).SetName(variable.Variable)
-		m[variable.Variable] = llvmFn.Param(i)
+		switch bind := f.(type) {
+		case *ast.TypeBind:
+			switch arg := bind.Argument.(type) {
+			case *ast.Variable:
+				llvmFn.Param(i).SetName(arg.Variable)
+				m[arg.Variable] = llvmFn.Param(i)
+			case *ast.VariableArr:
+				llvmFn.Param(i).SetName(arg.Variable)
+			}
+		case *ast.TupleBinding:
+			llvmFn.Param(i).SetName(fmt.Sprintf("struct_%d", i))
+		}
 	}
 
 	g.fns[f.Var] = fn{
 		fn:     llvmFn,
 		params: m,
+	}
+}
+
+func (g *generator) makeTupBinding(base llvm.Value, b ast.Binding, idxs ...int) {
+	switch bind := b.(type) {
+	case *ast.TypeBind:
+		if arg, ok := bind.Argument.(*ast.Variable); ok {
+			val := base
+			for _, arg := range idxs {
+				val = g.builder.CreateExtractValue(val, arg, "get")
+			}
+			g.curFn.params[arg.Variable] = val
+		}
+	case *ast.TupleBinding:
+		for i, innerBind := range bind.Bindings {
+			g.makeTupBinding(base, innerBind, append(idxs, i)...)
+		}
+	}
+}
+
+func (g *generator) genBindingAccesses(base llvm.Value, b ast.Binding) {
+	switch bind := b.(type) {
+	case *ast.TypeBind:
+		// variables should already be bound, no generation necessary
+		if _, ok := bind.Argument.(*ast.Variable); ok {
+			return
+		}
+	case *ast.TupleBinding:
+		for i, tupBind := range bind.Bindings {
+			g.makeTupBinding(base, tupBind, i)
+		}
 	}
 }
 
@@ -59,10 +97,13 @@ func (g *generator) genFunction(f *ast.Function) {
 		panic(fmt.Sprintf("fn %s not found", f.Var))
 	}
 	g.curFn = fun
-	fmt.Println(f.String())
 
 	bb := g.ctx.AddBasicBlock(g.curFn.fn, fmt.Sprintf("%s_bb", f.Var))
 	g.builder.SetInsertPointAtEnd(bb)
+
+	for i, b := range f.Bindings {
+		g.genBindingAccesses(fun.fn.Param(i), b)
+	}
 
 	cpy := make(map[string]llvm.Value)
 	for k, v := range fun.params {
@@ -73,6 +114,7 @@ func (g *generator) genFunction(f *ast.Function) {
 		g.generateStatement(cpy, s)
 	}
 
+	fun.fn.Dump()
 	if err := llvm.VerifyFunction(fun.fn, llvm.AbortProcessAction); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

@@ -86,8 +86,9 @@ func checkAndProp(n ast.Node, use *defUse) {
 			delete(use.graph, variable)
 		}
 	case *ast.Function:
+		children := use.children[stmt]
 		for _, s := range stmt.Statements {
-			checkAndProp(s, use)
+			checkAndProp(s, children)
 		}
 	}
 }

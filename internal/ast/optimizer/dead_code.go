@@ -1,6 +1,7 @@
 package optimizer
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/ryan-berger/jpl/internal/ast"
@@ -169,6 +170,26 @@ func searchStmt(d *defUse, statement ast.Statement) {
 	}
 }
 
+func searchBinding(d *defUse, binding ast.Binding) {
+	switch bind := binding.(type) {
+	case *ast.TypeBind:
+		switch arg := bind.Argument.(type) {
+		case *ast.Variable:
+			fmt.Println(arg.Variable)
+			d.recordDef(arg.Variable)
+		case *ast.VariableArr:
+			d.recordDef(arg.Variable)
+			for _, v := range arg.Variables {
+				d.recordDef(v)
+			}
+		}
+	case *ast.TupleBinding:
+		for _, b := range bind.Bindings {
+			searchBinding(d, b)
+		}
+	}
+}
+
 func searchCmd(d *defUse, command ast.Command) {
 	switch cmd := command.(type) {
 	case ast.Statement:
@@ -181,12 +202,12 @@ func searchCmd(d *defUse, command ast.Command) {
 		def := makeDefUse(d)
 		d.children[cmd] = def
 
-		for _, a := range cmd.Bindings {
-			if binding, ok := a.(*ast.TypeBind); ok {
-				variable := binding.Argument.(*ast.Variable)
-				def.recordDef(variable.Variable)
-			}
+		for _, bind := range cmd.Bindings {
+			searchBinding(def, bind)
 		}
+
+		fmt.Println(d.graph)
+
 		for _, stmt := range cmd.Statements {
 			searchStmt(def, stmt)
 		}
@@ -241,6 +262,9 @@ func removeUnused(p ast.Program, use *defUse) ast.Program {
 				}
 				fnStmts = append(fnStmts, stmt)
 			}
+			sort.Slice(fnStmts, func(i, j int) bool {
+				return j < i
+			})
 			fn.Statements = fnStmts
 		}
 		cmds = append(cmds, p[i])

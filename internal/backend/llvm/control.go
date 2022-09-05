@@ -6,7 +6,6 @@ import (
 )
 
 func (g *generator) genIf(vals map[string]llvm.Value, expr *ast.IfExpression) llvm.Value {
-
 	cond := g.getExpr(vals, expr.Condition)
 	thenBB := g.ctx.AddBasicBlock(g.curFn.fn, "then")
 	elseBB := g.ctx.AddBasicBlock(g.curFn.fn, "else")

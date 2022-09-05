@@ -1,1 +1,1 @@
-(StmtCmd (LetStmt (ArgLValue (VarArgument IntType x)) (BinopExpr IntType (IntExpr IntType 1) + (IntExpr IntType 2))))(StmtCmd (ReturnStmt (IntExpr IntType 1)))
+(StmtCmd (ReturnStmt (IntExpr IntType 1)))
