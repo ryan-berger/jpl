@@ -28,3 +28,9 @@ fn i(x : float4) : int {
 fn j(x[h, w] : int[,]) : int {
     return h + w + x[2, 3]
 }
+
+fn k() : int[] {
+    let test = array[r : 10] 1
+    return test
+}
+

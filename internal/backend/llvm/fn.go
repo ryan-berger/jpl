@@ -2,7 +2,6 @@ package llvm
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/collections"
@@ -120,8 +119,8 @@ func (g *generator) genFunction(f *ast.Function) {
 		g.generateStatement(cpy, s)
 	}
 
-	if err := llvm.VerifyFunction(fun.fn, llvm.AbortProcessAction); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	//if err := llvm.VerifyFunction(fun.fn, llvm.AbortProcessAction); err != nil {
+	//	fmt.Println(err)
+	//	os.Exit(1)
+	//}
 }

@@ -64,7 +64,8 @@ func (g *generator) generate(p ast.Program, fpm llvm.PassManager) {
 	for _, cmd := range p {
 		if fn, ok := cmd.(*ast.Function); ok {
 			g.genFunction(fn)
-			fpm.RunFunc(g.fns[fn.Var].fn)
+			g.fns[fn.Var].fn.Dump()
+			//fpm.RunFunc(g.fns[fn.Var].fn)
 		}
 	}
 }
@@ -95,9 +96,9 @@ func toLLVMType(ctx llvm.Context, p types.Type) llvm.Type {
 		inner := toLLVMType(ctx, t.Inner)
 		inner = llvm.PointerType(inner, 0)
 
-		return llvm.StructType(append(ranks, inner), false)
+		return ctx.StructType(append(ranks, inner), false)
 	case *types.Tuple:
-		return llvm.StructType(collections.Map(t.Types, curryType(ctx)), false)
+		return ctx.StructType(collections.Map(t.Types, curryType(ctx)), false)
 	}
 
 	panic("unreachable")
@@ -180,6 +181,8 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 		return g.builder.CreateCall(fun.fn, args, "call")
 	case *ast.SumTransform:
 		return g.genSumTransform(val, expr)
+	case *ast.ArrayTransform:
+		return g.genArrayTransform(val, expr)
 	case *ast.IfExpression:
 		return g.genIf(val, expr)
 	case *ast.TupleRefExpression:
