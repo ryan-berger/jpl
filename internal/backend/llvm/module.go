@@ -40,8 +40,8 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 	}
 
 	fpm := llvm.NewFunctionPassManagerForModule(module)
-	//fpm.AddCFGSimplificationPass()
-	//fpm.AddReassociatePass()
+	fpm.AddCFGSimplificationPass()
+	fpm.AddReassociatePass()
 	fpm.AddInstructionCombiningPass()
 	fpm.InitializeFunc()
 
@@ -64,7 +64,7 @@ func (g *generator) generate(p ast.Program, fpm llvm.PassManager) {
 	for _, cmd := range p {
 		if fn, ok := cmd.(*ast.Function); ok {
 			g.genFunction(fn)
-			//fpm.RunFunc(g.fns[fn.Var].fn)
+			fpm.RunFunc(g.fns[fn.Var].fn)
 		}
 	}
 }
@@ -184,9 +184,16 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 		return g.genIf(val, expr)
 	case *ast.TupleRefExpression:
 		return g.builder.CreateExtractValue(g.getExpr(val, expr.Tuple), int(expr.Index), "tuple_lookup")
+	case *ast.ArrayRefExpression:
+		arr := g.getExpr(val, expr.Array)
+
+		for _, idx := range expr.Indexes {
+			arr = g.builder.CreateGEP(arr, []llvm.Value{g.getExpr(val, idx)}, "elem_ptr")
+		}
+
+		return g.builder.CreateLoad(arr, "elem")
 	case *ast.IdentifierExpression:
 		v, ok := val[expr.Identifier]
-		fmt.Printf("looking for identifier %s in %v\n", expr.Identifier, val)
 		if !ok {
 			panic(fmt.Sprintf("identifier %s not found", expr.Identifier))
 		}

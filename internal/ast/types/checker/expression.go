@@ -242,6 +242,7 @@ func checkArrayRef(expr *ast.ArrayRefExpression, table *symbol.Table) (types.Typ
 	}
 
 	expr.Type = arrTyp.Inner
+
 	return arrTyp.Inner, nil
 }
 
@@ -309,11 +310,10 @@ func checkArrayTransform(expr *ast.ArrayTransform, table *symbol.Table) (types.T
 		return nil, err
 	}
 
-
 	rank := len(expr.OpBindings)
 	var typ types.Type = &types.Array{
 		Inner: exprType,
-		Rank: rank,
+		Rank:  rank,
 	}
 
 	if rank == 0 {

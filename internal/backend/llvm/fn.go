@@ -80,9 +80,15 @@ func (g *generator) makeTupBinding(base llvm.Value, b ast.Binding, idxs ...int) 
 func (g *generator) genBindingAccesses(base llvm.Value, b ast.Binding) {
 	switch bind := b.(type) {
 	case *ast.TypeBind:
-		// variables should already be bound, no generation necessary
-		if _, ok := bind.Argument.(*ast.Variable); ok {
+		switch arg := bind.Argument.(type) {
+		case *ast.Variable:
 			return
+		case *ast.VariableArr:
+			g.curFn.params[arg.Variable] = g.builder.CreateExtractValue(base, len(arg.Variables), "get_arr")
+
+			for i, v := range arg.Variables {
+				g.curFn.params[v] = g.builder.CreateExtractValue(base, i, "get_rank")
+			}
 		}
 	case *ast.TupleBinding:
 		for i, tupBind := range bind.Bindings {
@@ -114,7 +120,6 @@ func (g *generator) genFunction(f *ast.Function) {
 		g.generateStatement(cpy, s)
 	}
 
-	fun.fn.Dump()
 	if err := llvm.VerifyFunction(fun.fn, llvm.AbortProcessAction); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

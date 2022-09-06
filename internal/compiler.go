@@ -168,7 +168,7 @@ func (c *Compiler) compile() error {
 
 	program, table := c.flatten(program)
 	if c.mode == Flatten {
-		fmt.Println(program.SExpr())
+		fmt.Println(program.String())
 		return nil
 	}
 
