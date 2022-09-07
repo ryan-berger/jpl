@@ -30,7 +30,7 @@ fn j(x[h, w] : int[,]) : int {
 }
 
 fn k() : int[] {
-    let test = array[r : 10] 1
+    let test = array[r : 10] r
     return test
 }
 
