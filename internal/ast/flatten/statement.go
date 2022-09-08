@@ -22,6 +22,10 @@ func flattenLet(ls *ast.LetStatement, next nexter) []ast.Statement {
 		exp, stmts := flattenExpression(ls.Expr, next)
 		ls.Expr = exp
 		return append(stmts, ls)
+	case *ast.VariableArr:
+		exp, stmts := flattenExpression(ls.Expr, next)
+		ls.Expr = exp
+		return append(stmts, ls)
 	}
 	return nil
 }

@@ -3,6 +3,7 @@ package llvm
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/ast/types"
@@ -50,8 +51,34 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 	g.genRuntime()
 	g.generate(p, fpm)
 
-	module.Dump()
+	g.module.Dump()
 
+	if err := llvm.VerifyModule(g.module, llvm.PrintMessageAction); err != nil {
+		panic(err)
+	}
+
+	// output code
+
+	trgt := llvm.DefaultTargetTriple()
+	t, err := llvm.GetTargetFromTriple(trgt)
+	if err != nil {
+		panic(err)
+	}
+
+	tm := t.CreateTargetMachine(trgt, "generic", "",
+		llvm.CodeGenLevelDefault, llvm.RelocDefault, llvm.CodeModelDefault)
+
+	g.module.SetTarget(tm.Triple())
+	g.module.SetDataLayout(tm.CreateTargetData().String())
+
+	buf, err := tm.EmitToMemoryBuffer(g.module, llvm.ObjectFile)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := os.WriteFile("test.o", buf.Bytes(), 0666); err != nil {
+		panic(err)
+	}
 }
 
 func (g *generator) generate(p ast.Program, fpm llvm.PassManager) {
@@ -61,12 +88,69 @@ func (g *generator) generate(p ast.Program, fpm llvm.PassManager) {
 		}
 	}
 
+	var cmds []ast.Command
+
 	for _, cmd := range p {
-		if fn, ok := cmd.(*ast.Function); ok {
-			g.genFunction(fn)
-			g.fns[fn.Var].fn.Dump()
-			//fpm.RunFunc(g.fns[fn.Var].fn)
+		switch command := cmd.(type) {
+		case *ast.Function:
+			g.genFunction(command)
+			//g.fns[command.Var].fn.Dump()
+			//fpm.RunFunc(g.fns[command.Var].fn)
+		default:
+			cmds = append(cmds, cmd)
 		}
+	}
+
+	fnType := llvm.FunctionType(g.ctx.Int64Type(), []llvm.Type{}, false)
+	fn := llvm.AddFunction(g.module, "main", fnType)
+	bb := g.ctx.AddBasicBlock(fn, "main_bb")
+	g.builder.SetInsertPointAtEnd(bb)
+
+	globals := make(map[string]llvm.Value)
+	for _, c := range cmds {
+		g.generateCommand(globals, c)
+	}
+}
+
+func (g *generator) generateCommand(vals map[string]llvm.Value, cmd ast.Command) {
+	switch command := cmd.(type) {
+	case *ast.Function:
+		panic("function should have already been generated")
+	case ast.Statement:
+		g.generateStatement(vals, command)
+	case *ast.Print:
+		printStr := g.builder.CreateGlobalStringPtr(command.Str, "print")
+		g.builder.CreateCall(g.fns["print"].fn, []llvm.Value{printStr}, "")
+	case *ast.Read:
+		readStr := g.builder.CreateGlobalStringPtr(command.Src, "file_name")
+		res := g.builder.CreateCall(g.fns["read_image"].fn, []llvm.Value{readStr}, "pict")
+
+		switch arg := command.Argument.(type) {
+		case *ast.Variable:
+			vals[arg.Variable] = res
+		case *ast.VariableArr:
+			vals[arg.Variable] = res
+			for i, v := range arg.Variables {
+				vals[v] = g.builder.CreateExtractValue(res, i, "rank")
+			}
+		}
+
+	case *ast.Write:
+		fileName := g.builder.CreateGlobalStringPtr(command.Dest, "file_name")
+		input := g.getExpr(vals, command.Expr)
+
+		g.builder.CreateCall(g.fns["write_image"].fn, []llvm.Value{fileName, input}, "")
+	case *ast.Show:
+		typStr := command.Expr.Typ().String()
+		str := g.builder.CreateGlobalStringPtr(typStr, "type")
+		exp := g.getExpr(vals, command.Expr)
+
+		ptr := g.builder.CreateAlloca(exp.Type(), "expr_ptr")
+		g.builder.CreateStore(exp, ptr)
+		ptr = g.builder.CreateBitCast(ptr, llvm.PointerType(g.ctx.Int8Type(), 0), "cast")
+
+		g.builder.CreateCall(g.fns["show"].fn, []llvm.Value{str, ptr}, "")
+
 	}
 }
 
@@ -79,7 +163,7 @@ func curryType(ctx llvm.Context) func(p types.Type) llvm.Type {
 func toLLVMType(ctx llvm.Context, p types.Type) llvm.Type {
 	switch {
 	case p == types.Float:
-		return ctx.FloatType()
+		return ctx.DoubleType()
 	case p == types.Integer:
 		return ctx.Int64Type()
 	case p == types.Boolean:
@@ -154,7 +238,7 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 	case *ast.IntExpression:
 		return llvm.ConstInt(g.ctx.Int64Type(), uint64(expr.Val), false)
 	case *ast.FloatExpression:
-		return llvm.ConstFloat(g.ctx.FloatType(), expr.Val)
+		return llvm.ConstFloat(g.ctx.DoubleType(), expr.Val)
 	case *ast.BooleanExpression:
 		if expr.Val {
 			return llvm.ConstInt(g.ctx.Int1Type(), 1, false)
@@ -163,6 +247,8 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 	case *ast.PrefixExpression:
 		r := g.getExpr(val, expr.Expr)
 		switch expr.Op {
+		case "!":
+			return g.builder.CreateNot(r, "not")
 		case "-":
 			return g.builder.CreateNeg(r, "neg")
 		}
@@ -172,7 +258,7 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 	case *ast.CallExpression:
 		fun, ok := g.fns[expr.Identifier]
 		if !ok {
-			panic(fmt.Sprintf("call expr"))
+			panic(fmt.Sprintf("could not find fn %s", expr.Identifier))
 		}
 		args := make([]llvm.Value, len(fun.params))
 		for i, e := range expr.Arguments {
@@ -189,12 +275,11 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 		return g.builder.CreateExtractValue(g.getExpr(val, expr.Tuple), int(expr.Index), "tuple_lookup")
 	case *ast.ArrayRefExpression:
 		arr := g.getExpr(val, expr.Array)
+		idxs := collections.Map(expr.Indexes, func(e ast.Expression) llvm.Value { return g.getExpr(val, e) })
 
-		for _, idx := range expr.Indexes {
-			arr = g.builder.CreateGEP(arr, []llvm.Value{g.getExpr(val, idx)}, "elem_ptr")
-		}
+		ptr := g.getArrayBase(arr, idxs)
 
-		return g.builder.CreateLoad(arr, "elem")
+		return g.builder.CreateLoad(ptr, "item")
 	case *ast.IdentifierExpression:
 		v, ok := val[expr.Identifier]
 		if !ok {
@@ -208,9 +293,17 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 func (g *generator) generateStatement(m map[string]llvm.Value, s ast.Statement) {
 	switch stmt := s.(type) {
 	case *ast.LetStatement:
-		l := stmt.LValue.(*ast.Variable)
-		exp := g.getExpr(m, stmt.Expr)
-		m[l.Variable] = exp
+		switch l := stmt.LValue.(type) {
+		case *ast.Variable:
+			exp := g.getExpr(m, stmt.Expr)
+			m[l.Variable] = exp
+		case *ast.VariableArr:
+			exp := g.getExpr(m, stmt.Expr)
+			m[l.Variable] = exp
+			for i, v := range l.Variables {
+				m[v] = g.builder.CreateExtractValue(exp, i, "rank")
+			}
+		}
 	case *ast.ReturnStatement:
 		g.builder.CreateRet(g.getExpr(m, stmt.Expr))
 	case *ast.AssertStatement:

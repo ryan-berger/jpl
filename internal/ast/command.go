@@ -116,7 +116,7 @@ func (p *Print) SExpr() string {
 }
 
 func (p *Print) String() string {
-	return fmt.Sprintf("print %s", p.Str)
+	return fmt.Sprintf(`print "%s"`, p.Str)
 }
 
 func (p *Print) command() {}

@@ -15,7 +15,7 @@ func (g *generator) initializer(phi, v llvm.Value, prev, cur llvm.BasicBlock) {
 	switch phi.Type() {
 	case g.ctx.Int64Type():
 		zero = llvm.ConstInt(phi.Type(), 0, false)
-	case g.ctx.FloatType():
+	case g.ctx.DoubleType():
 		zero = llvm.ConstFloat(phi.Type(), 0)
 	}
 
@@ -93,8 +93,8 @@ func (g *generator) recursiveSum(vals map[string]llvm.Value, idx int, bindings [
 	g.initializer(incPhi, increment, prevBB, endBB)
 
 	// check to make sure we can continue looping
-	cond := g.builder.CreateICmp(llvm.IntSLT, increment, bound, "loop_cond")
-	g.builder.CreateCondBr(cond, loopBody, loopEnd)
+	cond := g.builder.CreateICmp(llvm.IntSGT, increment, bound, "loop_cond")
+	g.builder.CreateCondBr(cond, loopEnd, loopBody)
 
 	// start generating loop end
 	g.builder.SetInsertPointAtEnd(loopEnd)
@@ -118,9 +118,11 @@ func (g *generator) genSumTransform(vals map[string]llvm.Value, t *ast.SumTransf
 	return val
 }
 
-func (g *generator) recursiveArray(vals map[string]llvm.Value, storeTo llvm.Value, idx int, params []llvmBinding, expr ast.Expression) llvm.BasicBlock {
+func (g *generator) recursiveArray(vals map[string]llvm.Value, storeTo llvm.Value, idxs []llvm.Value, idx int, params []llvmBinding, expr ast.Expression) llvm.BasicBlock {
 	if idx >= len(params) {
-		g.builder.CreateStore(g.getExpr(vals, expr), storeTo)
+		innerExp := g.getExpr(vals, expr)
+		to := g.getArrayBase(storeTo, idxs)
+		g.builder.CreateStore(innerExp, to)
 		return g.builder.GetInsertBlock()
 	}
 
@@ -147,16 +149,15 @@ func (g *generator) recursiveArray(vals map[string]llvm.Value, storeTo llvm.Valu
 	// bind the incremented variable to incPhi and prepare for recursion
 	vals[bound.variable] = incPhi
 
-	nextStore := g.builder.CreateGEP(storeTo, []llvm.Value{incPhi}, "inner_arr")
-	nextBB := g.recursiveArray(vals, nextStore, idx+1, params, expr)
+	nextBB := g.recursiveArray(vals, storeTo, append(idxs, incPhi), idx+1, params, expr)
 
 	// generate increment expression
 	increment := g.builder.CreateAdd(incPhi, llvm.ConstInt(g.ctx.Int64Type(), 1, false), "inc")
 	g.initializer(incPhi, increment, prevBB, nextBB)
 
 	// check to make sure we can continue looping
-	cond := g.builder.CreateICmp(llvm.IntSLT, increment, bound.val, "loop_cond")
-	g.builder.CreateCondBr(cond, loopBody, loopEnd)
+	cond := g.builder.CreateICmp(llvm.IntEQ, increment, bound.val, "loop_cond")
+	g.builder.CreateCondBr(cond, loopEnd, loopBody)
 
 	// start generating loop end
 	g.builder.SetInsertPointAtEnd(loopEnd)
@@ -208,7 +209,24 @@ func (g *generator) genArrayTransform(vals map[string]llvm.Value, t *ast.ArrayTr
 		}
 	}
 
-	g.recursiveArray(vals, arr, 0, llvmParams, t.Expr)
+	g.recursiveArray(vals, load, []llvm.Value{}, 0, llvmParams, t.Expr)
 
 	return load
+}
+
+func (g *generator) getArrayBase(base llvm.Value, idxs []llvm.Value) llvm.Value {
+	ev := g.builder.CreateExtractValue(base, len(idxs), "arr_base")
+	bounds := make([]llvm.Value, len(idxs))
+	for i := 0; i < len(idxs); i++ {
+		bounds[i] = g.builder.CreateExtractValue(base, i, "rank")
+	}
+
+	idx := llvm.ConstInt(g.ctx.Int64Type(), 0, false)
+
+	for i := 0; i < len(idxs)-1; i++ {
+		tmp := g.builder.CreateMul(bounds[i], idxs[i], "bound_mul")
+		idx = g.builder.CreateAdd(idx, tmp, "bound_add")
+	}
+	idx = g.builder.CreateAdd(idx, idxs[len(idxs)-1], "final_bound_add")
+	return g.builder.CreateGEP(ev, []llvm.Value{idx}, "item_ptr")
 }

@@ -2,7 +2,6 @@ package llvm
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/collections"
@@ -84,7 +83,7 @@ func (g *generator) genBindingAccesses(base llvm.Value, b ast.Binding) {
 		case *ast.Variable:
 			return
 		case *ast.VariableArr:
-			g.curFn.params[arg.Variable] = g.builder.CreateExtractValue(base, len(arg.Variables), "get_arr")
+			g.curFn.params[arg.Variable] = base
 
 			for i, v := range arg.Variables {
 				g.curFn.params[v] = g.builder.CreateExtractValue(base, i, "get_rank")
@@ -120,8 +119,4 @@ func (g *generator) genFunction(f *ast.Function) {
 		g.generateStatement(cpy, s)
 	}
 
-	if err := llvm.VerifyFunction(fun.fn, llvm.AbortProcessAction); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 }
