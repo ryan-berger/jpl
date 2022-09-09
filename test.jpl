@@ -30,7 +30,7 @@ fn j(x[h, w] : int[,]) : int {
 }
 
 fn k(z : int[,]) : int[] {
-    let test = array[r : 10] (z[r, 0])
+    let test = array[r : 33] (z[r, 0])
     return test
 }
 
@@ -38,7 +38,8 @@ fn gen_black_pic(z : int, zz: int) : int[,] {
     return array[r : z, s : zz] 1
 }
 
-let photo[H, W] = gen_black_pic(10, 10)
 
-show 33.23123
+let photo[H, W] = gen_black_pic(33, 33)
+
+show photo
 

@@ -312,7 +312,7 @@ int32_t show(char *type_str, void *data) {
   uint8_t t = parse_type(type_str, &type_str);
   while (*type_str == ' ') type_str++;
   if (*type_str != '\0') {
-    fprintf(stderr, "[builtin show] Cannnot parse type string in %s", orig_type_str);
+    fprintf(stderr, "[builtin show] Cannot parse type string in %s", orig_type_str);
     exit(127);
   }
   show_type(t, data);

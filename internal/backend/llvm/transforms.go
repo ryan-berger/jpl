@@ -122,6 +122,7 @@ func (g *generator) recursiveArray(vals map[string]llvm.Value, storeTo llvm.Valu
 	if idx >= len(params) {
 		innerExp := g.getExpr(vals, expr)
 		to := g.getArrayBase(storeTo, idxs)
+
 		g.builder.CreateStore(innerExp, to)
 		return g.builder.GetInsertBlock()
 	}
@@ -194,7 +195,7 @@ func (g *generator) genArrayTransform(vals map[string]llvm.Value, t *ast.ArrayTr
 		fieldPtr := g.builder.CreateStructGEP(res, i, fmt.Sprintf("rank_%d", i))
 		g.builder.CreateStore(exprs[i], fieldPtr)
 	}
-	arr := g.builder.CreateArrayAlloca(expType, sum, "arr")
+	arr := g.builder.CreateArrayMalloc(expType, sum, "arr")
 
 	fieldPtr := g.builder.CreateStructGEP(res, len(exprs), "arr_field")
 	g.builder.CreateStore(arr, fieldPtr)

@@ -145,7 +145,7 @@ func (g *generator) generateCommand(vals map[string]llvm.Value, cmd ast.Command)
 		str := g.builder.CreateGlobalStringPtr(typStr, "type")
 		exp := g.getExpr(vals, command.Expr)
 
-		ptr := g.builder.CreateAlloca(exp.Type(), "expr_ptr")
+		ptr := g.builder.CreateMalloc(exp.Type(), "expr_ptr")
 		g.builder.CreateStore(exp, ptr)
 		ptr = g.builder.CreateBitCast(ptr, llvm.PointerType(g.ctx.Int8Type(), 0), "cast")
 
