@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/ast/types"
@@ -42,8 +43,13 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 
 	fpm := llvm.NewFunctionPassManagerForModule(module)
 	fpm.AddCFGSimplificationPass()
+	//fpm.AddConstantMergePass()
+	fpm.AddGVNPass()
+	fpm.AddAggressiveDCEPass()
+	fpm.AddLICMPass()
 	fpm.AddReassociatePass()
 	fpm.AddInstructionCombiningPass()
+
 	fpm.InitializeFunc()
 
 	defer fpm.Dispose()
@@ -51,11 +57,11 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 	g.genRuntime()
 	g.generate(p, fpm)
 
-	g.module.Dump()
-
 	if err := llvm.VerifyModule(g.module, llvm.PrintMessageAction); err != nil {
 		panic(err)
 	}
+
+	g.module.Dump()
 
 	// output code
 
@@ -102,9 +108,13 @@ func (g *generator) generate(p ast.Program, fpm llvm.PassManager) {
 	}
 
 	fnType := llvm.FunctionType(g.ctx.Int64Type(), []llvm.Type{}, false)
-	fn := llvm.AddFunction(g.module, "main", fnType)
-	bb := g.ctx.AddBasicBlock(fn, "main_bb")
+	main := llvm.AddFunction(g.module, "main", fnType)
+	bb := g.ctx.AddBasicBlock(main, "main_bb")
 	g.builder.SetInsertPointAtEnd(bb)
+
+	g.curFn = fn{
+		fn: main,
+	}
 
 	globals := make(map[string]llvm.Value)
 	for _, c := range cmds {
@@ -122,8 +132,12 @@ func (g *generator) generateCommand(vals map[string]llvm.Value, cmd ast.Command)
 		printStr := g.builder.CreateGlobalStringPtr(command.Str, "print")
 		g.builder.CreateCall(g.fns["print"].fn, []llvm.Value{printStr}, "")
 	case *ast.Read:
-		readStr := g.builder.CreateGlobalStringPtr(command.Src, "file_name")
-		res := g.builder.CreateCall(g.fns["read_image"].fn, []llvm.Value{readStr}, "pict")
+		readStr := g.builder.CreateGlobalStringPtr(strings.Trim(command.Src, `"`), "file_name")
+		resPtr := g.builder.CreateMalloc(toLLVMType(g.ctx, types.Pict), "res_ptr")
+
+		g.builder.CreateCall(g.fns["read_image"].fn, []llvm.Value{resPtr, readStr}, "")
+
+		res := g.builder.CreateLoad(resPtr, "res")
 
 		switch arg := command.Argument.(type) {
 		case *ast.Variable:
@@ -136,10 +150,13 @@ func (g *generator) generateCommand(vals map[string]llvm.Value, cmd ast.Command)
 		}
 
 	case *ast.Write:
-		fileName := g.builder.CreateGlobalStringPtr(command.Dest, "file_name")
+		fileName := g.builder.CreateGlobalStringPtr(strings.Trim(command.Dest, `"`), "file_name")
 		input := g.getExpr(vals, command.Expr)
 
-		g.builder.CreateCall(g.fns["write_image"].fn, []llvm.Value{fileName, input}, "")
+		m := g.builder.CreateMalloc(input.Type(), "img_arg")
+		g.builder.CreateStore(input, m)
+
+		g.builder.CreateCall(g.fns["write_image"].fn, []llvm.Value{m, fileName}, "")
 	case *ast.Show:
 		typStr := command.Expr.Typ().String()
 		str := g.builder.CreateGlobalStringPtr(typStr, "type")
@@ -188,108 +205,6 @@ func toLLVMType(ctx llvm.Context, p types.Type) llvm.Type {
 	panic("unreachable")
 }
 
-type infixOp func(builder llvm.Builder, a, b llvm.Value, name string) llvm.Value
-
-func icmpToInfix(predicate llvm.IntPredicate) infixOp {
-	return func(builder llvm.Builder, a, b llvm.Value, name string) llvm.Value {
-		return builder.CreateICmp(predicate, a, b, name)
-	}
-}
-
-func fcmpToInfix(predicate llvm.FloatPredicate) infixOp {
-	return func(builder llvm.Builder, a, b llvm.Value, name string) llvm.Value {
-		return builder.CreateFCmp(predicate, a, b, name)
-	}
-}
-
-var fns = map[types.Type]map[string]infixOp{
-	types.Integer: {
-		"+":  llvm.Builder.CreateAdd,
-		"-":  llvm.Builder.CreateSub,
-		"*":  llvm.Builder.CreateMul,
-		"/":  llvm.Builder.CreateSDiv,
-		"<":  icmpToInfix(llvm.IntSLT),
-		"<=": icmpToInfix(llvm.IntSLE),
-		">":  icmpToInfix(llvm.IntSGT),
-		">=": icmpToInfix(llvm.IntSGE),
-		"==": icmpToInfix(llvm.IntEQ),
-		"!=": icmpToInfix(llvm.IntNE),
-	},
-	types.Float: {
-		"+":  llvm.Builder.CreateFAdd,
-		"-":  llvm.Builder.CreateFSub,
-		"*":  llvm.Builder.CreateFMul,
-		"/":  llvm.Builder.CreateFDiv,
-		"<":  fcmpToInfix(llvm.FloatOLT),
-		"<=": fcmpToInfix(llvm.FloatOLE),
-		">":  fcmpToInfix(llvm.FloatOGT),
-		">=": fcmpToInfix(llvm.FloatOGE),
-		"==": fcmpToInfix(llvm.FloatOEQ),
-		"!=": fcmpToInfix(llvm.FloatONE),
-	},
-	types.Boolean: {
-		"||": llvm.Builder.CreateOr,
-		"&&": llvm.Builder.CreateAnd,
-	},
-}
-
-func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression) llvm.Value {
-	switch expr := expression.(type) {
-	case *ast.IntExpression:
-		return llvm.ConstInt(g.ctx.Int64Type(), uint64(expr.Val), false)
-	case *ast.FloatExpression:
-		return llvm.ConstFloat(g.ctx.DoubleType(), expr.Val)
-	case *ast.BooleanExpression:
-		if expr.Val {
-			return llvm.ConstInt(g.ctx.Int1Type(), 1, false)
-		}
-		return llvm.ConstInt(g.ctx.Int1Type(), 0, false)
-	case *ast.PrefixExpression:
-		r := g.getExpr(val, expr.Expr)
-		switch expr.Op {
-		case "!":
-			return g.builder.CreateNot(r, "not")
-		case "-":
-			return g.builder.CreateNeg(r, "neg")
-		}
-	case *ast.InfixExpression:
-		l, r := g.getExpr(val, expr.Left), g.getExpr(val, expr.Right)
-		return fns[expr.Left.Typ()][expr.Op](g.builder, l, r, "infx")
-	case *ast.CallExpression:
-		fun, ok := g.fns[expr.Identifier]
-		if !ok {
-			panic(fmt.Sprintf("could not find fn %s", expr.Identifier))
-		}
-		args := make([]llvm.Value, len(fun.params))
-		for i, e := range expr.Arguments {
-			args[i] = g.getExpr(val, e)
-		}
-		return g.builder.CreateCall(fun.fn, args, "call")
-	case *ast.SumTransform:
-		return g.genSumTransform(val, expr)
-	case *ast.ArrayTransform:
-		return g.genArrayTransform(val, expr)
-	case *ast.IfExpression:
-		return g.genIf(val, expr)
-	case *ast.TupleRefExpression:
-		return g.builder.CreateExtractValue(g.getExpr(val, expr.Tuple), int(expr.Index), "tuple_lookup")
-	case *ast.ArrayRefExpression:
-		arr := g.getExpr(val, expr.Array)
-		idxs := collections.Map(expr.Indexes, func(e ast.Expression) llvm.Value { return g.getExpr(val, e) })
-
-		ptr := g.getArrayBase(arr, idxs)
-
-		return g.builder.CreateLoad(ptr, "item")
-	case *ast.IdentifierExpression:
-		v, ok := val[expr.Identifier]
-		if !ok {
-			panic(fmt.Sprintf("identifier %s not found", expr.Identifier))
-		}
-		return v
-	}
-	panic(fmt.Sprintf("unsupported expr: %T", expression))
-}
-
 func (g *generator) generateStatement(m map[string]llvm.Value, s ast.Statement) {
 	switch stmt := s.(type) {
 	case *ast.LetStatement:
@@ -313,7 +228,7 @@ func (g *generator) generateStatement(m map[string]llvm.Value, s ast.Statement) 
 		failBB := g.ctx.AddBasicBlock(g.curFn.fn, "assertfail")
 		contBB := g.ctx.AddBasicBlock(g.curFn.fn, "assertcont")
 
-		g.builder.CreateCondBr(exp, failBB, contBB)
+		g.builder.CreateCondBr(exp, contBB, failBB)
 
 		str := g.builder.CreateGlobalStringPtr(stmt.Message, "assert")
 

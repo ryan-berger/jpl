@@ -216,6 +216,7 @@ var keywords = map[string]TokenType{
 	"float":  Float,
 	"float3": Float3,
 	"float4": Float4,
+	"pict":   Pict,
 	"bool":   Bool,
 }
 

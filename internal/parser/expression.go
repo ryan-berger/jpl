@@ -86,7 +86,7 @@ func (p *parser) parsePrefixExpr() (ast.Expression, error) {
 	p.advance()
 
 	// MIN_INT
-	if expr.Op == "-" && p.cur.Type == lexer.IntLiteral && p.cur.Val == minInt{
+	if expr.Op == "-" && p.cur.Type == lexer.IntLiteral && p.cur.Val == minInt {
 		return &ast.IntExpression{
 			Val: math.MinInt64,
 			Location: ast.Location{
@@ -195,7 +195,7 @@ func (p *parser) parseTupleRefExpr(tuple ast.Expression) (ast.Expression, error)
 func (p *parser) parseGroupedExpression() (ast.Expression, error) {
 	p.advance()
 
-	exp, err := p.parseExpression(lowest) // TODO: handle error
+	exp, err := p.parseExpression(lowest)
 
 	if err != nil {
 		return nil, err

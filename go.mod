@@ -4,8 +4,10 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.7.0
-	tinygo.org/x/go-llvm v0.0.0-20220626113704-45f1e2dbf887
+	tinygo.org/x/go-llvm v0.0.0-20220807194512-5cda615524af
 )
+
+replace tinygo.org/x/go-llvm v0.0.0-20220807194512-5cda615524af => github.com/ryan-berger/go-llvm v0.0.0-20220914151001-81b7dde397e2
 
 require (
 	github.com/davecgh/go-spew v1.1.0 // indirect

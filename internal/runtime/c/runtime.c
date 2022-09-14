@@ -155,7 +155,7 @@ uint8_t parse_type(char *type_str, char **new_type_str) {
   uint8_t rank;
   while (1) {
     switch (*type_str) {
-    case '[':
+    case '[': {}
       rank = 1;
       type_str++;
       while (*type_str == ' ') type_str++;
@@ -540,6 +540,7 @@ struct pict read_image(char *filename) {
 }
 
 struct pict _read_image(char *filename) {
+  printf("reading image: %s\n", filename);
   return read_image(filename);
 }
 
@@ -547,8 +548,8 @@ void write_image(struct pict input, char *filename) {
   _writePNG(input.rows, input.cols, input.data, filename);
 }
 
-void _write_image(struct pict input, char *filename) {
-  write_image(input, filename);
+void _write_image(struct pict *input, char *filename) {
+  write_image(*input, filename);
 }
 
 

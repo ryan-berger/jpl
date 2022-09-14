@@ -1,6 +1,8 @@
 package llvm
 
 import (
+	"fmt"
+
 	"github.com/ryan-berger/jpl/internal/ast/types"
 	"github.com/ryan-berger/jpl/internal/collections"
 	"github.com/ryan-berger/jpl/internal/runtime"
@@ -31,6 +33,7 @@ func getRuntimeType(ctx llvm.Context, t types.Type) llvm.Type {
 	default:
 		ptr, ok := t.(*runtime.Pointer)
 		if ok {
+			fmt.Printf("pointer type: %s\n", ptr.Inner.String())
 			return llvm.PointerType(getRuntimeType(ctx, ptr.Inner), 0)
 		}
 
@@ -45,6 +48,7 @@ func (g *generator) genRuntimeFn(runtimeFn runtime.Function) fn {
 	})
 
 	fnType := llvm.FunctionType(ret, args, false)
+
 	llvmFn := llvm.AddFunction(g.module, "_"+runtimeFn.Name, fnType)
 	llvmFn.SetLinkage(llvm.ExternalLinkage)
 
@@ -57,6 +61,8 @@ func (g *generator) genRuntimeFn(runtimeFn runtime.Function) fn {
 		llvmFn.Param(i).SetName(p.Name)
 		f.params[p.Name] = llvmFn.Param(i)
 	}
+
+	llvmFn.Dump()
 
 	return f
 }

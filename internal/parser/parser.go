@@ -44,12 +44,14 @@ func newParser(tokens []lexer.Token) *parser {
 	p.registerPrefixFn(lexer.If, p.parseIf)
 	p.registerPrefixFn(lexer.Array, p.parseArrayTransform)
 	p.registerPrefixFn(lexer.Sum, p.parseSumTransform)
+
 	// type casts should be call expressions
 	p.registerPrefixFn(lexer.Int, p.parseCallExpression)
 	p.registerPrefixFn(lexer.Float, p.parseCallExpression)
 	p.registerPrefixFn(lexer.Float3, p.parseCallExpression)
 	p.registerPrefixFn(lexer.Float4, p.parseCallExpression)
 
+	// parse infix expressions
 	p.registerInfixFn(lexer.Plus, p.parseInfixExpr)
 	p.registerInfixFn(lexer.Minus, p.parseInfixExpr)
 	p.registerInfixFn(lexer.Multiply, p.parseInfixExpr)

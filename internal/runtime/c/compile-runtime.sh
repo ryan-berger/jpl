@@ -5,7 +5,7 @@ set -u
 
 rm -f runtime.o pngstuff.o runtime.a
 
-clang -O -c runtime.c
-clang -O -c pngstuff.c
+clang -g -O0 -c runtime.c
+clang -g -O0 -c pngstuff.c
 
 ar rcs runtime.a runtime.o pngstuff.o

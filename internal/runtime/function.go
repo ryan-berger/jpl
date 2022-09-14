@@ -48,22 +48,31 @@ var fns = []Function{
 		Name: "read_image",
 		Params: []Param{
 			{
+				Name: "res",
+				Type: &Pointer{
+					Inner: types.Pict,
+				},
+			},
+			{
 				Name: "file_name",
 				Type: String,
 			},
 		},
-		Return: types.Pict,
+		Return: Void,
 	},
 	{
 		Name: "write_image",
 		Params: []Param{
 			{
-				Name: "file_name",
-				Type: String,
+				Name: "pict",
+				Type: &Pointer{
+					Inner:     types.Pict,
+					Alignment: 8,
+				},
 			},
 			{
-				Name: "pict",
-				Type: types.Pict,
+				Name: "file_name",
+				Type: String,
 			},
 		},
 		Return: Void,

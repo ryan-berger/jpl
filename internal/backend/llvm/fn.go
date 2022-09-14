@@ -49,7 +49,11 @@ func (g *generator) declareFunction(f *ast.Function) {
 				llvmFn.Param(i).SetName(arg.Variable)
 			}
 		case *ast.TupleBinding:
-			llvmFn.Param(i).SetName(fmt.Sprintf("struct_%d", i))
+			param := llvmFn.Param(i)
+			//typ := param.Type()
+			param.SetName(fmt.Sprintf("struct_%d", i))
+			//attr := g.ctx.CreateTypeAttribute(llvm.AttributeKindID("byval"), typ.ElementType())
+			//llvmFn.AddAttributeAtIndex(i+1, attr)
 		}
 	}
 

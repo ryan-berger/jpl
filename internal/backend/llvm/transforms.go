@@ -145,7 +145,7 @@ func (g *generator) recursiveArray(vals map[string]llvm.Value, storeTo llvm.Valu
 	g.builder.SetInsertPointAtEnd(loopBody)
 
 	// create phi node for variable to be incremented
-	incPhi := g.builder.CreatePHI(g.ctx.Int64Type(), "i")
+	incPhi := g.builder.CreatePHI(g.ctx.Int64Type(), bound.variable)
 
 	// bind the incremented variable to incPhi and prepare for recursion
 	vals[bound.variable] = incPhi
@@ -195,6 +195,7 @@ func (g *generator) genArrayTransform(vals map[string]llvm.Value, t *ast.ArrayTr
 		fieldPtr := g.builder.CreateStructGEP(res, i, fmt.Sprintf("rank_%d", i))
 		g.builder.CreateStore(exprs[i], fieldPtr)
 	}
+
 	arr := g.builder.CreateArrayMalloc(expType, sum, "arr")
 
 	fieldPtr := g.builder.CreateStructGEP(res, len(exprs), "arr_field")
@@ -222,12 +223,14 @@ func (g *generator) getArrayBase(base llvm.Value, idxs []llvm.Value) llvm.Value 
 		bounds[i] = g.builder.CreateExtractValue(base, i, "rank")
 	}
 
-	idx := llvm.ConstInt(g.ctx.Int64Type(), 0, false)
+	res := idxs[len(idxs)-1]
+	mul := llvm.ConstInt(g.ctx.Int64Type(), 1, false)
 
-	for i := 0; i < len(idxs)-1; i++ {
-		tmp := g.builder.CreateMul(bounds[i], idxs[i], "bound_mul")
-		idx = g.builder.CreateAdd(idx, tmp, "bound_add")
+	for i := len(idxs) - 2; i >= 0; i-- {
+		mul = g.builder.CreateMul(bounds[i+1], mul, "mul_agg")
+		idx := g.builder.CreateMul(idxs[i], mul, "bound_mul")
+		res = g.builder.CreateAdd(res, idx, "bound_add")
 	}
-	idx = g.builder.CreateAdd(idx, idxs[len(idxs)-1], "final_bound_add")
-	return g.builder.CreateGEP(ev, []llvm.Value{idx}, "item_ptr")
+
+	return g.builder.CreateGEP(ev, []llvm.Value{res}, "item_ptr")
 }

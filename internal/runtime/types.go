@@ -44,23 +44,24 @@ func (v void) SExpr() string {
 }
 
 type Pointer struct {
-	Inner types.Type
+	Inner     types.Type
+	Alignment int
 }
 
-func (p Pointer) Equal(other types.Type) bool {
-	otherPtr, ok := other.(Pointer)
+func (p *Pointer) Equal(other types.Type) bool {
+	otherPtr, ok := other.(*Pointer)
 	return ok && p.Inner.Equal(otherPtr.Inner)
 }
 
-func (p Pointer) Size() int {
+func (p *Pointer) Size() int {
 	return 8
 }
 
-func (p Pointer) String() string {
+func (p *Pointer) String() string {
 	return fmt.Sprintf("%s*", p.Inner)
 }
 
-func (p Pointer) SExpr() string {
+func (p *Pointer) SExpr() string {
 	return fmt.Sprintf("(Pointer (%s))", p.Inner)
 }
 

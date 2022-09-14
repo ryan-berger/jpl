@@ -70,6 +70,7 @@ const (
 	Float3
 	Float4
 	Bool
+	Pict
 )
 
 type Token struct {
@@ -149,7 +150,7 @@ var typeToDump = map[TokenType]string{
 	BoolLiteral:  "VARIABLE",
 }
 
-func (t *Token) DumpString() string {
+func (t Token) DumpString() string {
 	prefix := typeToDump[t.Type]
 
 	if t.Type == NewLine || t.Type == EOF {

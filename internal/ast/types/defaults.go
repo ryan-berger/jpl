@@ -9,8 +9,10 @@ var Float = &float{}
 // Boolean is an exported constant of type boolean
 var Boolean = &boolean{}
 
-// Pict is shorthand for [,]float
+// Pict is shorthand for [,]float4
 var Pict = &Array{
-	Inner: Float,
-	Rank:  2,
+	Inner: &Tuple{
+		[]Type{Float, Float, Float, Float},
+	},
+	Rank: 2,
 }
