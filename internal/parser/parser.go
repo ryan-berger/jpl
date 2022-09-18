@@ -134,7 +134,11 @@ func (p *parser) parseProgram() ([]ast.Command, error) {
 		commands = append(commands, cmd)
 
 		if !p.curTokenIs(lexer.NewLine) {
-			return nil, p.errorf(p.cur, "expected newline, received: %s", p.cur.Val)
+			val := p.cur.Val
+			if p.cur.Type == lexer.EOF {
+				val = "EOF"
+			}
+			return nil, p.errorf(p.cur, "expected newline, received: %s", val)
 		}
 		p.advance()
 	}

@@ -60,7 +60,7 @@ func setupRuntime(ctx llvm.Context) llvm.Module {
 	if err := llvm.LinkModules(runtimeMod, pngMod); err != nil {
 		panic(err)
 	}
-	
+
 	return runtimeMod
 }
 
@@ -90,7 +90,7 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 	g.genRuntime()
 	g.generate(p)
 
-	passBuilder := llvm.NewPassManagerBuilder()
+	//passBuilder := llvm.NewPassManagerBuilder()
 
 	passes := llvm.NewPassManager()
 	defer passes.Dispose()
@@ -102,9 +102,9 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 	passes.AddFunctionAttrsPass()
 	passes.AddFunctionInliningPass()
 	passes.AddLoopUnrollPass()
-	passes.Run(module)
+	//passes.Run(module)
 
-	passBuilder.SetOptLevel(3)
+	//passBuilder.SetOptLevel(3)
 
 	module.Dump()
 
@@ -273,23 +273,7 @@ func (g *generator) generateStatement(m map[string]llvm.Value, s ast.Statement) 
 	case *ast.ReturnStatement:
 		g.builder.CreateRet(g.getExpr(m, stmt.Expr))
 	case *ast.AssertStatement:
-		assertFn := g.fns["fail_assertion"]
-		exp := g.getExpr(m, stmt.Expr)
-
-		failBB := g.ctx.AddBasicBlock(g.curFn.fn, "assertfail")
-		contBB := g.ctx.AddBasicBlock(g.curFn.fn, "assertcont")
-
-		g.builder.CreateCondBr(exp, contBB, failBB)
-
-		str := g.builder.CreateGlobalStringPtr(stmt.Message, "assert")
-
-		g.builder.SetInsertPointAtEnd(failBB)
-		g.builder.CreateCall(assertFn.fn,
-			[]llvm.Value{str},
-			"",
-		)
-		g.builder.CreateUnreachable()
-		g.builder.SetInsertPointAtEnd(contBB)
+		g.createAssert(g.getExpr(m, stmt.Expr), stmt.Message)
 	default:
 		panic(fmt.Sprintf("unsupported stmt: %T", s))
 	}

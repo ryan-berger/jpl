@@ -21,11 +21,10 @@ fn invert(img[H, W] : float4[,]) : float4[,] {
     return array[h : H, w : W] sepia_p(img[h, w])
 }
 
-show {1, 2, 3}
 
-read image "test.png" to testImg[HH, WW]
+fn div(n : int) : int {
+    return 33 / n
+}
 
 
-
-time let newImg = invert(testImg)
-write image newImg to "anothertest.png"
+show div(0)

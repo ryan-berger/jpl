@@ -9,26 +9,69 @@ import (
 	"tinygo.org/x/go-llvm"
 )
 
-type infixOp func(builder llvm.Builder, a, b llvm.Value, name string) llvm.Value
+type infixOp func(g *generator, a, b llvm.Value, name string) llvm.Value
 
 func icmpToInfix(predicate llvm.IntPredicate) infixOp {
-	return func(builder llvm.Builder, a, b llvm.Value, name string) llvm.Value {
-		return builder.CreateICmp(predicate, a, b, name)
+	return func(g *generator, a, b llvm.Value, name string) llvm.Value {
+		return g.builder.CreateICmp(predicate, a, b, name)
 	}
 }
 
 func fcmpToInfix(predicate llvm.FloatPredicate) infixOp {
-	return func(builder llvm.Builder, a, b llvm.Value, name string) llvm.Value {
-		return builder.CreateFCmp(predicate, a, b, name)
+	return func(g *generator, a, b llvm.Value, name string) llvm.Value {
+		return g.builder.CreateFCmp(predicate, a, b, name)
 	}
+}
+
+func builderDo(do func(build llvm.Builder, a, b llvm.Value, name string) llvm.Value) infixOp {
+	return func(g *generator, a, b llvm.Value, name string) llvm.Value {
+		return do(g.builder, a, b, name)
+	}
+}
+
+func (g *generator) createAssert(cond llvm.Value, msg string) {
+	assertFn := g.fns["fail_assertion"]
+
+	failBB := g.ctx.AddBasicBlock(g.curFn.fn, "assertfail")
+	contBB := g.ctx.AddBasicBlock(g.curFn.fn, "assertcont")
+
+	g.builder.CreateCondBr(cond, contBB, failBB)
+
+	str := g.builder.CreateGlobalStringPtr(msg, "assert")
+
+	g.builder.SetInsertPointAtEnd(failBB)
+	g.builder.CreateCall(assertFn.fn,
+		[]llvm.Value{str},
+		"",
+	)
+	g.builder.CreateUnreachable()
+	g.builder.SetInsertPointAtEnd(contBB)
+
+}
+
+func (g *generator) div(a, b llvm.Value, name string) llvm.Value {
+	div := g.builder.CreateICmp(llvm.IntEQ, b, llvm.ConstInt(g.ctx.Int64Type(), 0, false), "is_zero")
+
+	g.createAssert(g.builder.CreateNot(div, "not_zero"), "division by zero")
+
+	return g.builder.CreateSDiv(a, b, name)
+}
+
+func (g *generator) rem(a, b llvm.Value, name string) llvm.Value {
+	div := g.builder.CreateICmp(llvm.IntEQ, b, llvm.ConstInt(g.ctx.Int64Type(), 0, false), "is_zero")
+
+	g.createAssert(g.builder.CreateNot(div, "not_zero"), "modulo by zero")
+
+	return g.builder.CreateSRem(a, b, name)
 }
 
 var fns = map[types.Type]map[string]infixOp{
 	types.Integer: {
-		"+":  llvm.Builder.CreateAdd,
-		"-":  llvm.Builder.CreateSub,
-		"*":  llvm.Builder.CreateMul,
-		"/":  llvm.Builder.CreateSDiv,
+		"+":  builderDo(llvm.Builder.CreateAdd),
+		"-":  builderDo(llvm.Builder.CreateSub),
+		"*":  builderDo(llvm.Builder.CreateMul),
+		"/":  (*generator).div,
+		"%":  (*generator).rem,
 		"<":  icmpToInfix(llvm.IntSLT),
 		"<=": icmpToInfix(llvm.IntSLE),
 		">":  icmpToInfix(llvm.IntSGT),
@@ -37,10 +80,11 @@ var fns = map[types.Type]map[string]infixOp{
 		"!=": icmpToInfix(llvm.IntNE),
 	},
 	types.Float: {
-		"+":  llvm.Builder.CreateFAdd,
-		"-":  llvm.Builder.CreateFSub,
-		"*":  llvm.Builder.CreateFMul,
-		"/":  llvm.Builder.CreateFDiv,
+		"+":  builderDo(llvm.Builder.CreateFAdd),
+		"-":  builderDo(llvm.Builder.CreateFSub),
+		"*":  builderDo(llvm.Builder.CreateFMul),
+		"/":  builderDo(llvm.Builder.CreateFDiv),
+		"%":  builderDo(llvm.Builder.CreateFRem),
 		"<":  fcmpToInfix(llvm.FloatOLT),
 		"<=": fcmpToInfix(llvm.FloatOLE),
 		">":  fcmpToInfix(llvm.FloatOGT),
@@ -49,9 +93,14 @@ var fns = map[types.Type]map[string]infixOp{
 		"!=": fcmpToInfix(llvm.FloatONE),
 	},
 	types.Boolean: {
-		"||": llvm.Builder.CreateOr,
-		"&&": llvm.Builder.CreateAnd,
+		"||": builderDo(llvm.Builder.CreateOr),
+		"&&": builderDo(llvm.Builder.CreateAnd),
 	},
+}
+
+var casts = map[string]struct{}{
+	"int":   {},
+	"float": {},
 }
 
 func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression) llvm.Value {
@@ -75,7 +124,7 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 		}
 	case *ast.InfixExpression:
 		l, r := g.getExpr(val, expr.Left), g.getExpr(val, expr.Right)
-		return fns[expr.Left.Typ()][expr.Op](g.builder, l, r, "infx")
+		return fns[expr.Left.Typ()][expr.Op](g, l, r, "infx")
 	case *ast.CallExpression:
 		fun, ok := g.fns[expr.Identifier]
 		if !ok {
@@ -92,7 +141,6 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 			}
 		}
 		return call
-
 	case *ast.SumTransform:
 		return g.genSumTransform(val, expr)
 	case *ast.ArrayTransform:

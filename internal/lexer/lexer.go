@@ -38,7 +38,12 @@ func Lex(input string) ([]Token, bool) {
 		tokens = append(tokens, tok)
 	}
 
-	tokens = append(tokens, Token{Type: EOF, Val: ""})
+	tokens = append(tokens, Token{
+		Type:      EOF,
+		Val:       "",
+		Line:      l.lineNumber,
+		Character: l.linePos,
+	})
 	return tokens, len(tokens) == 1 || len(tokens) >= 2 && tokens[len(tokens)-2].Type != ILLEGAL
 }
 
