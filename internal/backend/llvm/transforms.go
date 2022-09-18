@@ -218,11 +218,21 @@ func (g *generator) genArrayTransform(vals map[string]llvm.Value, t *ast.ArrayTr
 }
 
 func (g *generator) getArrayBase(base llvm.Value, idxs []llvm.Value) llvm.Value {
-	ev := g.builder.CreateExtractValue(base, len(idxs), "arr_base")
+	arrPtr := g.builder.CreateExtractValue(base, len(idxs), "arr_base")
+
 	bounds := make([]llvm.Value, len(idxs))
 	for i := 0; i < len(idxs); i++ {
 		bounds[i] = g.builder.CreateExtractValue(base, i, "rank")
 	}
+
+	inBounds := llvm.ConstInt(g.ctx.Int1Type(), 1, false)
+	for i := 0; i < len(idxs); i++ {
+		le := g.builder.CreateICmp(llvm.IntSLT, idxs[i], bounds[i], "le_upper")
+		ge := g.builder.CreateICmp(llvm.IntSGE, idxs[i], llvm.ConstInt(g.ctx.Int64Type(), 0, false), "geq_zero")
+		idxInBounds := g.builder.CreateAnd(le, ge, fmt.Sprintf("idx_%d_inbounds", i))
+		inBounds = g.builder.CreateAnd(inBounds, idxInBounds, "both_inbounds")
+	}
+	g.createAssert(inBounds, "array out of bounds access")
 
 	res := idxs[len(idxs)-1]
 	mul := llvm.ConstInt(g.ctx.Int64Type(), 1, false)
@@ -233,5 +243,12 @@ func (g *generator) getArrayBase(base llvm.Value, idxs []llvm.Value) llvm.Value 
 		res = g.builder.CreateAdd(res, idx, "bound_add")
 	}
 
-	return g.builder.CreateGEP(ev, []llvm.Value{res}, "item_ptr")
+	//max := g.builder.CreateMul(mul, bounds[0], "upper_bound")
+	//
+	//ge := g.builder.CreateICmp(llvm.IntSGE, res, llvm.ConstInt(g.ctx.Int64Type(), 0, false), "geq_zero")
+	//lt := g.builder.CreateICmp(llvm.IntSLT, res, max, "le_upper")
+	//inBounds := g.builder.CreateAnd(ge, lt, "in_bounds")
+	//g.createAssert(inBounds, "out of bounds array access")
+
+	return g.builder.CreateGEP(arrPtr, []llvm.Value{res}, "item_ptr")
 }

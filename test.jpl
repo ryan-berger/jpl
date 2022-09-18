@@ -21,10 +21,8 @@ fn invert(img[H, W] : float4[,]) : float4[,] {
     return array[h : H, w : W] sepia_p(img[h, w])
 }
 
-
-fn div(n : int) : int {
-    return 33 / n
+fn arr(n : int) : int[,] {
+    return array[i : n, j : n] ((i * n) + j)
 }
 
-
-show div(0)
+show arr(10)[9, 9]

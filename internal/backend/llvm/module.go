@@ -90,7 +90,7 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 	g.genRuntime()
 	g.generate(p)
 
-	//passBuilder := llvm.NewPassManagerBuilder()
+	passBuilder := llvm.NewPassManagerBuilder()
 
 	passes := llvm.NewPassManager()
 	defer passes.Dispose()
@@ -102,9 +102,9 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 	passes.AddFunctionAttrsPass()
 	passes.AddFunctionInliningPass()
 	passes.AddLoopUnrollPass()
-	//passes.Run(module)
+	passes.Run(module)
 
-	//passBuilder.SetOptLevel(3)
+	passBuilder.SetOptLevel(3)
 
 	module.Dump()
 
