@@ -98,9 +98,13 @@ var fns = map[types.Type]map[string]infixOp{
 	},
 }
 
-var casts = map[string]struct{}{
-	"int":   {},
-	"float": {},
+var casts = map[string]func(llvm.Builder, llvm.Context, llvm.Value, string) llvm.Value{
+	"int": func(builder llvm.Builder, ctx llvm.Context, value llvm.Value, s string) llvm.Value {
+		return builder.CreateFPToSI(value, ctx.Int64Type(), s)
+	},
+	"float": func(builder llvm.Builder, ctx llvm.Context, value llvm.Value, s string) llvm.Value {
+		return builder.CreateSIToFP(value, ctx.DoubleType(), s)
+	},
 }
 
 func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression) llvm.Value {
@@ -120,12 +124,20 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 		case "!":
 			return g.builder.CreateNot(r, "not")
 		case "-":
+			if expr.Expr.Typ() == types.Float {
+				return g.builder.CreateFSub(llvm.ConstFloat(g.ctx.DoubleType(), 0.0), r, "neg")
+			}
 			return g.builder.CreateNeg(r, "neg")
 		}
 	case *ast.InfixExpression:
 		l, r := g.getExpr(val, expr.Left), g.getExpr(val, expr.Right)
 		return fns[expr.Left.Typ()][expr.Op](g, l, r, "infx")
 	case *ast.CallExpression:
+		if fn, ok := casts[expr.Identifier]; ok {
+			exp := g.getExpr(val, expr.Arguments[0])
+			return fn(g.builder, g.ctx, exp, "cast")
+		}
+
 		fun, ok := g.fns[expr.Identifier]
 		if !ok {
 			panic(fmt.Sprintf("could not find fn %s", expr.Identifier))

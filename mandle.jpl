@@ -1,0 +1,6 @@
+let iter = 10.0 / 60.0
+let {xlo, xhi} = {-1.5, 1.0 - 2.3 * iter}
+let {ylo, yhi} = {-1.0 + 0.9 * iter, 1.0 - 0.9 * iter}
+let {W, H} = {500, 400}
+
+show xlo + xhi

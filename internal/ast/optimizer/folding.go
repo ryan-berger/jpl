@@ -2,6 +2,7 @@ package optimizer
 
 import (
 	"errors"
+	"fmt"
 	"math"
 
 	"github.com/ryan-berger/jpl/internal/ast"
@@ -280,8 +281,11 @@ func foldCommand(cmd ast.Command) (ast.Command, error) {
 		}
 		c.Statements = stmts
 		return c, nil
+	case *ast.Write, *ast.Read:
+		return c, nil
+	default:
+		panic(fmt.Sprintf("command of type: %T not supported", c))
 	}
-	panic("yeet")
 }
 
 const divideByZero = "Division by zero error"

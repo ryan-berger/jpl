@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	types "github.com/ryan-berger/jpl/internal/ast/types"
+	"github.com/ryan-berger/jpl/internal/collections"
 )
 
 type Expression interface {
@@ -153,7 +154,13 @@ type TupleExpression struct {
 }
 
 func (t *TupleExpression) SExpr() string {
-	panic("implement me")
+	strs := collections.Map(t.Expressions, func(e Expression) string { return e.SExpr() })
+
+	if t.Type != nil {
+		return fmt.Sprintf("(TupleConExpr %s %s)",
+			t.Type.SExpr(), strings.Join(strs, " "))
+	}
+	return fmt.Sprintf("(ArrConExpr %s)", strings.Join(strs, " "))
 }
 
 func (t *TupleExpression) String() string {

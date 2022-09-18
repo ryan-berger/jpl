@@ -17,17 +17,9 @@ func flattenStatement(statement ast.Statement, next nexter) []ast.Statement {
 }
 
 func flattenLet(ls *ast.LetStatement, next nexter) []ast.Statement {
-	switch ls.LValue.(type) {
-	case *ast.Variable:
-		exp, stmts := flattenExpression(ls.Expr, next)
-		ls.Expr = exp
-		return append(stmts, ls)
-	case *ast.VariableArr:
-		exp, stmts := flattenExpression(ls.Expr, next)
-		ls.Expr = exp
-		return append(stmts, ls)
-	}
-	return nil
+	exp, stmts := flattenExpression(ls.Expr, next)
+	ls.Expr = exp
+	return append(stmts, ls)
 }
 
 func flattenAssert(a *ast.AssertStatement, next nexter) []ast.Statement {

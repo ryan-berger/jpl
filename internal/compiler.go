@@ -80,7 +80,7 @@ func NewCompiler(opts ...CompilerOpts) *Compiler {
 }
 
 func (c *Compiler) lex() ([]lexer.Token, error) {
-	b, err := ioutil.ReadAll(c.input)
+	b, err := io.ReadAll(c.input)
 	if err != nil {
 		return nil, err
 	}

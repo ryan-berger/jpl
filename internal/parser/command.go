@@ -1,7 +1,6 @@
 package parser
 
 import (
-
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/lexer"
 )
@@ -34,7 +33,7 @@ func (p *parser) parseStatement() (ast.Statement, error) {
 	case lexer.Assert:
 		return p.parseAssertStatement()
 	default:
-		panic("unimplemented for statement type")
+		return nil, p.errorf(p.cur, "expected let, return, assert, received: %s", p.cur.Val)
 	}
 }
 

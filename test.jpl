@@ -1,28 +1,37 @@
 
-
-fn gen_black_pic(height : int, width : int) : float4[,] {
-    return array[h : height, w : width] {0.0, 0.0, 0.0, 255.0}
+fn mandlestep({ zx : float, zy : float}, {cx : float, cy : float}): {float,float} {
+   return { \
+     (zx * zx) - (zy * zy) + cx, \
+     (2.0 * zx * zy) + cy \
+   }
 }
 
-fn sepia_p(p : float4) : float4 {
-    let oldR = p{0}
-    let oldG = p{1}
-    let oldB = p{2}
-    let oldA = p{3}
-
-    return { 0.393 * oldR + 0.769 * oldG + 0.189 * oldB, \
-        0.349 * oldR + 0.686 * oldG + 0.168 * oldB, \
-        0.272 * oldR + 0.534 * oldG + 0.131 * oldB, \
-        oldA \
-    }
+fn mandlecount({ zx : float, zy : float}, c : {float,float}, max : int): int {
+   return if max == 0 \
+   then 0 \
+   else if (zx * zx + zy * zy) > 2.0 \
+   then 0 \
+   else 1 + mandlecount(mandlestep({zx, zy}, c), c, max - 1)
 }
 
-fn invert(img[H, W] : float4[,]) : float4[,] {
-    return array[h : H, w : W] sepia_p(img[h, w])
+fn colormap(c : float) : float4 {
+   return if c < 0.5 \
+   then { 0.0, 0.0, 2.0 * c, 1.0 } \
+   else { (2.0 * c) - 1.0, (2.0 * c) - 1.0, 1.0, 1.0}
 }
 
-fn arr(n : int) : int[,] {
-    return array[i : n, j : n] ((i * n) + j)
+fn mandlepixel(c : {float,float}, max : int) : float4 {
+   let count = mandlecount({0.0, 0.0}, c, max)
+   let c2 = if count == max then 0.0 else (float(count + 1) / float(max))
+   return colormap(c2)
 }
 
-show arr(10)[9, 9]
+let iter = 10.0 / 60.0
+let {xlo, xhi} = {-1.5, 1.0 - 2.3 * iter}
+let {ylo, yhi} = {-1.0 + 0.9 * iter, 1.0 - 0.9 * iter}
+let {W, H} = {500, 400}
+time let mandlebrot = array[i : W, j : H] mandlepixel( \
+    { xlo + float(i) / float(W) * (xhi - xlo) \
+    , ylo + float(j) / float(H) * (yhi - ylo)}, \
+    25)
+write image mandlebrot to "mandlebrot.png"

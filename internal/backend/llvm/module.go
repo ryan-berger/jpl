@@ -102,10 +102,11 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 	passes.AddFunctionAttrsPass()
 	passes.AddFunctionInliningPass()
 	passes.AddLoopUnrollPass()
-	passes.Run(module)
 
 	passBuilder.SetOptLevel(3)
+	passBuilder.Populate(passes)
 
+	passes.Run(module)
 	module.Dump()
 
 	if err := llvm.VerifyModule(module, llvm.PrintMessageAction); err != nil {
@@ -256,20 +257,28 @@ func toLLVMType(ctx llvm.Context, p types.Type) llvm.Type {
 	panic("unreachable")
 }
 
+func (g *generator) genLVal(m map[string]llvm.Value, value ast.LValue, exp llvm.Value) {
+	switch l := value.(type) {
+	case *ast.LTuple:
+		for i, lval := range l.Args {
+			ev := g.builder.CreateExtractValue(exp, i, fmt.Sprintf("extract_tup_%d"))
+			g.genLVal(m, lval, ev)
+		}
+	case *ast.Variable:
+		m[l.Variable] = exp
+	case *ast.VariableArr:
+		m[l.Variable] = exp
+		for i, v := range l.Variables {
+			m[v] = g.builder.CreateExtractValue(exp, i, "rank")
+		}
+	}
+}
+
 func (g *generator) generateStatement(m map[string]llvm.Value, s ast.Statement) {
 	switch stmt := s.(type) {
 	case *ast.LetStatement:
-		switch l := stmt.LValue.(type) {
-		case *ast.Variable:
-			exp := g.getExpr(m, stmt.Expr)
-			m[l.Variable] = exp
-		case *ast.VariableArr:
-			exp := g.getExpr(m, stmt.Expr)
-			m[l.Variable] = exp
-			for i, v := range l.Variables {
-				m[v] = g.builder.CreateExtractValue(exp, i, "rank")
-			}
-		}
+		exp := g.getExpr(m, stmt.Expr)
+		g.genLVal(m, stmt.LValue, exp)
 	case *ast.ReturnStatement:
 		g.builder.CreateRet(g.getExpr(m, stmt.Expr))
 	case *ast.AssertStatement:
