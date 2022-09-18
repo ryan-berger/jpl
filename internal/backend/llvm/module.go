@@ -23,16 +23,19 @@ type generator struct {
 	fns     map[string]fn
 }
 
-//go:embed "runtime/c/pngstuff.bc"
+//go:embed "runtime/c/runtime.bc"
 var runtime []byte
 
-func setupRuntime(ctx llvm.Context) (llvm.Module, func()) {
-	tf, err := os.CreateTemp("", "runtime.ll")
+//go:embed "runtime/c/pngstuff.bc"
+var pngstuff []byte
+
+func getModule(ctx llvm.Context, name string, file []byte) llvm.Module {
+	tf, err := os.CreateTemp("", fmt.Sprintf("%s.ll", name))
 	if err != nil {
 		panic(fmt.Sprintf("unable to create temp directory for runtime: %s", err))
 	}
 
-	tf.Write(runtime)
+	tf.Write(file)
 	tf.Close()
 
 	path, err := filepath.Abs(tf.Name())
@@ -45,9 +48,20 @@ func setupRuntime(ctx llvm.Context) (llvm.Module, func()) {
 		panic(err)
 	}
 
-	return mod, func() {
-		os.Remove(path)
+	os.Remove(path)
+
+	return mod
+}
+
+func setupRuntime(ctx llvm.Context) llvm.Module {
+	runtimeMod := getModule(ctx, "runtime", runtime)
+	pngMod := getModule(ctx, "pngstuff", pngstuff)
+
+	if err := llvm.LinkModules(runtimeMod, pngMod); err != nil {
+		panic(err)
 	}
+	
+	return runtimeMod
 }
 
 func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
@@ -59,8 +73,7 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 
 	ctx := llvm.NewContext()
 
-	mod, del := setupRuntime(ctx)
-	defer del()
+	mod := setupRuntime(ctx)
 
 	module := ctx.NewModule("main")
 	builder := ctx.NewBuilder()
