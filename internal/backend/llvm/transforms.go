@@ -120,8 +120,9 @@ func (g *generator) genSumTransform(vals map[string]llvm.Value, t *ast.SumTransf
 
 func (g *generator) recursiveArray(vals map[string]llvm.Value, storeTo llvm.Value, idxs []llvm.Value, idx int, params []llvmBinding, expr ast.Expression) llvm.BasicBlock {
 	if idx >= len(params) {
-		innerExp := g.getExpr(vals, expr)
 		to := g.getArrayBase(storeTo, idxs)
+
+		innerExp := g.getExpr(vals, expr)
 
 		g.builder.CreateStore(innerExp, to)
 		return g.builder.GetInsertBlock()

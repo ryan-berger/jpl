@@ -82,9 +82,10 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 			panic(fmt.Sprintf("could not find fn %s", expr.Identifier))
 		}
 
+		vals := collections.Map(expr.Arguments, func(e ast.Expression) llvm.Value { return g.getExpr(val, e) })
+
 		call := g.builder.CreateCall(fun.fn, make([]llvm.Value, fun.fn.ParamsCount()), "call")
-		for i, e := range expr.Arguments {
-			exp := g.getExpr(val, e)
+		for i, exp := range vals {
 			call.SetOperand(i, exp)
 			if ty := exp.Type(); ty.TypeKind() == llvm.PointerTypeKind {
 				call.AddCallSiteAttribute(i+1, g.ctx.CreateTypeAttribute(llvm.AttributeKindID("byval"), ty.ElementType()))

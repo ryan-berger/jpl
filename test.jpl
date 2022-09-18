@@ -4,9 +4,28 @@ fn gen_black_pic(height : int, width : int) : float4[,] {
     return array[h : height, w : width] {0.0, 0.0, 0.0, 255.0}
 }
 
-fn invert(img[H, W] : float4[,]) : float4[,] {
-    return array[h : H, w : W] {img[h, w]{0}, img[h, w]{1}, img[h, w]{2}, img[h, w]{3}}
+fn sepia_p(p : float4) : float4 {
+    let oldR = p{0}
+    let oldG = p{1}
+    let oldB = p{2}
+    let oldA = p{3}
+
+    return { 0.393 * oldR + 0.769 * oldG + 0.189 * oldB, \
+        0.349 * oldR + 0.686 * oldG + 0.168 * oldB, \
+        0.272 * oldR + 0.534 * oldG + 0.131 * oldB, \
+        oldA \
+    }
 }
 
+fn invert(img[H, W] : float4[,]) : float4[,] {
+    return array[h : H, w : W] sepia_p(img[h, w])
+}
+
+show {1, 2, 3}
+
 read image "test.png" to testImg[HH, WW]
-write image invert(testImg) to "anothertest.png"
+
+
+
+time let newImg = invert(testImg)
+write image newImg to "anothertest.png"

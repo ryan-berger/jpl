@@ -1,9 +1,11 @@
 package llvm
 
 import (
+	_ "embed"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/ryan-berger/jpl/internal/ast"
@@ -21,6 +23,33 @@ type generator struct {
 	fns     map[string]fn
 }
 
+//go:embed "runtime/c/pngstuff.bc"
+var runtime []byte
+
+func setupRuntime(ctx llvm.Context) (llvm.Module, func()) {
+	tf, err := os.CreateTemp("", "runtime.ll")
+	if err != nil {
+		panic(fmt.Sprintf("unable to create temp directory for runtime: %s", err))
+	}
+
+	tf.Write(runtime)
+	tf.Close()
+
+	path, err := filepath.Abs(tf.Name())
+	if err != nil {
+		panic(err)
+	}
+
+	mod, err := ctx.ParseBitcodeFile(path)
+	if err != nil {
+		panic(err)
+	}
+
+	return mod, func() {
+		os.Remove(path)
+	}
+}
+
 func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 	llvm.InitializeAllTargets()
 	llvm.InitializeAllTargetMCs()
@@ -29,6 +58,10 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 	llvm.InitializeAllAsmPrinters()
 
 	ctx := llvm.NewContext()
+
+	mod, del := setupRuntime(ctx)
+	defer del()
+
 	module := ctx.NewModule("main")
 	builder := ctx.NewBuilder()
 
@@ -41,27 +74,34 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 		fns:     make(map[string]fn),
 	}
 
-	fpm := llvm.NewFunctionPassManagerForModule(module)
-	fpm.AddCFGSimplificationPass()
-	//fpm.AddConstantMergePass()
-	fpm.AddGVNPass()
-	fpm.AddAggressiveDCEPass()
-	fpm.AddLICMPass()
-	fpm.AddReassociatePass()
-	fpm.AddInstructionCombiningPass()
-
-	fpm.InitializeFunc()
-
-	defer fpm.Dispose()
-
 	g.genRuntime()
-	g.generate(p, fpm)
+	g.generate(p)
 
-	if err := llvm.VerifyModule(g.module, llvm.PrintMessageAction); err != nil {
+	passBuilder := llvm.NewPassManagerBuilder()
+
+	passes := llvm.NewPassManager()
+	defer passes.Dispose()
+	passes.AddLICMPass()
+	passes.AddGlobalDCEPass()
+	passes.AddGlobalOptimizerPass()
+	passes.AddIPSCCPPass()
+	passes.AddAggressiveDCEPass()
+	passes.AddFunctionAttrsPass()
+	passes.AddFunctionInliningPass()
+	passes.AddLoopUnrollPass()
+	passes.Run(module)
+
+	passBuilder.SetOptLevel(3)
+
+	module.Dump()
+
+	if err := llvm.VerifyModule(module, llvm.PrintMessageAction); err != nil {
 		panic(err)
 	}
 
-	g.module.Dump()
+	if err := llvm.LinkModules(module, mod); err != nil {
+		panic(err)
+	}
 
 	// output code
 
@@ -87,7 +127,7 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 	}
 }
 
-func (g *generator) generate(p ast.Program, fpm llvm.PassManager) {
+func (g *generator) generate(p ast.Program) {
 	for _, cmd := range p {
 		if fn, ok := cmd.(*ast.Function); ok {
 			g.declareFunction(fn)
@@ -100,8 +140,6 @@ func (g *generator) generate(p ast.Program, fpm llvm.PassManager) {
 		switch command := cmd.(type) {
 		case *ast.Function:
 			g.genFunction(command)
-			//g.fns[command.Var].fn.Dump()
-			//fpm.RunFunc(g.fns[command.Var].fn)
 		default:
 			cmds = append(cmds, cmd)
 		}

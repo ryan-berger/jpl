@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/ryan-berger/jpl/internal/ast/types"
+	runtime2 "github.com/ryan-berger/jpl/internal/backend/llvm/runtime"
 	"github.com/ryan-berger/jpl/internal/collections"
-	"github.com/ryan-berger/jpl/internal/runtime"
 	"tinygo.org/x/go-llvm"
 )
 
@@ -24,14 +24,14 @@ type llvmFunc struct {
 
 func getRuntimeType(ctx llvm.Context, t types.Type) llvm.Type {
 	switch t {
-	case runtime.Void:
+	case runtime2.Void:
 		return ctx.VoidType()
-	case runtime.String:
+	case runtime2.String:
 		return llvm.PointerType(ctx.Int8Type(), 0)
-	case runtime.Opaque:
+	case runtime2.Opaque:
 		return ctx.Int8Type()
 	default:
-		ptr, ok := t.(*runtime.Pointer)
+		ptr, ok := t.(*runtime2.Pointer)
 		if ok {
 			fmt.Printf("pointer type: %s\n", ptr.Inner.String())
 			return llvm.PointerType(getRuntimeType(ctx, ptr.Inner), 0)
@@ -41,9 +41,9 @@ func getRuntimeType(ctx llvm.Context, t types.Type) llvm.Type {
 	}
 }
 
-func (g *generator) genRuntimeFn(runtimeFn runtime.Function) fn {
+func (g *generator) genRuntimeFn(runtimeFn runtime2.Function) fn {
 	ret := getRuntimeType(g.ctx, runtimeFn.Return)
-	args := collections.Map(runtimeFn.Params, func(p runtime.Param) llvm.Type {
+	args := collections.Map(runtimeFn.Params, func(p runtime2.Param) llvm.Type {
 		return getRuntimeType(g.ctx, p.Type)
 	})
 
@@ -68,7 +68,7 @@ func (g *generator) genRuntimeFn(runtimeFn runtime.Function) fn {
 }
 
 func (g *generator) genRuntime() {
-	for k, v := range runtime.Functions {
+	for k, v := range runtime2.Functions {
 		g.fns[k] = g.genRuntimeFn(v)
 	}
 }

@@ -316,6 +316,7 @@ int32_t show(char *type_str, void *data) {
     exit(127);
   }
   show_type(t, data);
+  tprintf("\n");
   return 1;
 }
 
