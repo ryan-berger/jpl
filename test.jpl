@@ -26,12 +26,12 @@ fn mandlepixel(c : {float,float}, max : int) : float4 {
    return colormap(c2)
 }
 
-let iter = 10.0 / 60.0
+let iter = 0.2 / 60.0
 let {xlo, xhi} = {-1.5, 1.0 - 2.3 * iter}
 let {ylo, yhi} = {-1.0 + 0.9 * iter, 1.0 - 0.9 * iter}
-let {W, H} = {500, 400}
+let {W, H} = {2000, 1600}
 time let mandlebrot = array[i : W, j : H] mandlepixel( \
     { xlo + float(i) / float(W) * (xhi - xlo) \
     , ylo + float(j) / float(H) * (yhi - ylo)}, \
-    25)
+    100)
 write image mandlebrot to "mandlebrot.png"

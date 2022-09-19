@@ -1,8 +1,6 @@
 package optimizer
 
 import (
-	"fmt"
-
 	"github.com/ryan-berger/jpl/internal/ast"
 )
 
@@ -17,7 +15,6 @@ func isPropable(expr ast.Expression) bool {
 func replace(expression ast.Expression, ident string, with ast.Expression) ast.Expression {
 	switch expr := expression.(type) {
 	case *ast.IdentifierExpression:
-		fmt.Printf("replacing: %v with %v\n", ident, with)
 		if expr.Identifier == ident {
 			return with
 		}
@@ -90,6 +87,8 @@ func checkAndProp(n ast.Node, use *defUse) {
 		for _, s := range stmt.Statements {
 			checkAndProp(s, children)
 		}
+	case *ast.AssertStatement:
+		checkAndProp(stmt.Expr, use)
 	}
 }
 

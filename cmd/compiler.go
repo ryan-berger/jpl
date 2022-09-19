@@ -5,10 +5,10 @@ import (
 	"os"
 
 	"github.com/ryan-berger/jpl/internal"
-	"github.com/ryan-berger/jpl/internal/ast/optimizer"
 	"github.com/ryan-berger/jpl/internal/backend"
 	"github.com/ryan-berger/jpl/internal/backend/llvm"
 	"github.com/ryan-berger/jpl/internal/backend/nasm"
+	"github.com/ryan-berger/jpl/internal/optimizer"
 )
 
 var debugLex bool

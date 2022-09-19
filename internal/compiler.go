@@ -8,10 +8,10 @@ import (
 
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/ast/flatten"
-	"github.com/ryan-berger/jpl/internal/ast/optimizer"
 	"github.com/ryan-berger/jpl/internal/ast/types/checker"
 	"github.com/ryan-berger/jpl/internal/backend"
 	"github.com/ryan-berger/jpl/internal/lexer"
+	"github.com/ryan-berger/jpl/internal/optimizer"
 	"github.com/ryan-berger/jpl/internal/parser"
 	"github.com/ryan-berger/jpl/internal/symbol"
 )
