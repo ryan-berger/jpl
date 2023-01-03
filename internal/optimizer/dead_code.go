@@ -277,13 +277,17 @@ func hasNoUses(l ast.LValue, use *defUse) bool {
 }
 
 func shouldRemove(n ast.Node, use *defUse) bool {
-	if let, ok := n.(*ast.LetStatement); ok {
-		if hasNoUses(let.LValue, use) {
-			fmt.Printf("%s has no uses\n", let.LValue.String())
-			use.clearUse(let)
+	switch stmt := n.(type) {
+	case *ast.LetStatement:
+		if hasNoUses(stmt.LValue, use) {
+			fmt.Printf("%s has no uses\n", stmt.LValue.String())
+			use.clearUse(stmt)
 			return true
 		}
-		return false
+	case *ast.AssertStatement:
+		val, ok := stmt.Expr.(*ast.BooleanExpression)
+		use.clearUse(stmt)
+		return ok && val.Val
 	}
 	return false
 }

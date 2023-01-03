@@ -261,7 +261,7 @@ func (g *generator) genLVal(m map[string]llvm.Value, value ast.LValue, exp llvm.
 	switch l := value.(type) {
 	case *ast.LTuple:
 		for i, lval := range l.Args {
-			ev := g.builder.CreateExtractValue(exp, i, fmt.Sprintf("extract_tup_%d"))
+			ev := g.builder.CreateExtractValue(exp, i, fmt.Sprintf("extract_tup_%d", i))
 			g.genLVal(m, lval, ev)
 		}
 	case *ast.Variable:
