@@ -1,6 +1,7 @@
 package optimizer
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/ryan-berger/jpl/internal/ast"
@@ -126,6 +127,12 @@ func searchUses(du *defUse, parent ast.Node, expr ast.Expression) {
 		for _, e := range exp.Expressions {
 			searchUses(du, parent, e)
 		}
+	case *ast.TupleExpression:
+		for _, e := range exp.Expressions {
+			searchUses(du, parent, e)
+		}
+	case *ast.TupleRefExpression:
+		searchUses(du, parent, exp.Tuple)
 	case *ast.CallExpression:
 		for _, arg := range exp.Arguments {
 			searchUses(du, parent, arg)
@@ -156,16 +163,51 @@ func searchUses(du *defUse, parent ast.Node, expr ast.Expression) {
 	}
 }
 
+func recordDefs(lval ast.LValue, d *defUse) {
+	switch v := lval.(type) {
+	case *ast.Variable:
+		d.recordDef(v.Variable)
+	case *ast.VariableArr:
+		d.recordDef(v.Variable)
+		for _, arr := range v.Variables {
+			d.recordDef(arr)
+		}
+	case *ast.LTuple:
+		for _, t := range v.Args {
+			recordDefs(t, d)
+		}
+	}
+}
+
 func searchStmt(d *defUse, statement ast.Statement) {
 	switch stmt := statement.(type) {
 	case *ast.LetStatement:
-		arg := stmt.LValue.(*ast.Variable)
-		d.recordDef(arg.Variable)
+		recordDefs(stmt.LValue, d)
 		searchUses(d, stmt, stmt.Expr)
 	case *ast.AssertStatement:
 		searchUses(d, stmt, stmt.Expr)
 	case *ast.ReturnStatement:
 		searchUses(d, stmt, stmt.Expr)
+	}
+}
+
+func searchBinding(d *defUse, binding ast.Binding) {
+	switch bind := binding.(type) {
+	case *ast.TypeBind:
+		switch arg := bind.Argument.(type) {
+		case *ast.Variable:
+			fmt.Println(arg.Variable)
+			d.recordDef(arg.Variable)
+		case *ast.VariableArr:
+			d.recordDef(arg.Variable)
+			for _, v := range arg.Variables {
+				d.recordDef(v)
+			}
+		}
+	case *ast.TupleBinding:
+		for _, b := range bind.Bindings {
+			searchBinding(d, b)
+		}
 	}
 }
 
@@ -176,10 +218,17 @@ func searchCmd(d *defUse, command ast.Command) {
 	case *ast.Show:
 		searchUses(d, cmd, cmd.Expr)
 	case *ast.Time:
-		searchCmd(d, cmd)
+		searchCmd(d, cmd.Command)
 	case *ast.Function:
 		def := makeDefUse(d)
 		d.children[cmd] = def
+
+		for _, bind := range cmd.Bindings {
+			searchBinding(def, bind)
+		}
+
+		fmt.Println(d.graph)
+
 		for _, stmt := range cmd.Statements {
 			searchStmt(def, stmt)
 		}
@@ -205,14 +254,40 @@ func buildDefUse(p ast.Program) *defUse {
 	return d
 }
 
+func hasNoUses(l ast.LValue, use *defUse) bool {
+	switch v := l.(type) {
+	case *ast.Variable:
+		return len(use.getUses(v.Variable)) == 0
+	case *ast.VariableArr:
+		canClear := len(use.getUses(v.Variable)) == 0
+		for i := 0; i < len(v.Variables) && canClear; i++ {
+			canClear = canClear && len(use.getUses(v.Variables[i])) == 0
+		}
+		return canClear
+	case *ast.LTuple:
+		canClear := true
+		for i := 0; i < len(v.Args) && canClear; i++ {
+			fmt.Printf("%s has uses? %v", v.Args[i], hasNoUses(v.Args[i], use))
+			canClear = canClear && hasNoUses(v.Args[i], use)
+		}
+		return canClear
+	default:
+		panic("unreachable")
+	}
+}
+
 func shouldRemove(n ast.Node, use *defUse) bool {
-	if let, ok := n.(*ast.LetStatement); ok {
-		variable := let.LValue.(*ast.Variable).Variable
-		uses := use.getUses(variable)
-		if len(uses) == 0 {
-			use.clearUse(let)
+	switch stmt := n.(type) {
+	case *ast.LetStatement:
+		if hasNoUses(stmt.LValue, use) {
+			fmt.Printf("%s has no uses\n", stmt.LValue.String())
+			use.clearUse(stmt)
 			return true
 		}
+	case *ast.AssertStatement:
+		val, ok := stmt.Expr.(*ast.BooleanExpression)
+		use.clearUse(stmt)
+		return ok && val.Val
 	}
 	return false
 }
@@ -234,6 +309,9 @@ func removeUnused(p ast.Program, use *defUse) ast.Program {
 				}
 				fnStmts = append(fnStmts, stmt)
 			}
+			sort.Slice(fnStmts, func(i, j int) bool {
+				return j < i
+			})
 			fn.Statements = fnStmts
 		}
 		cmds = append(cmds, p[i])

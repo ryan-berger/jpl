@@ -1,6 +1,10 @@
 package optimizer
 
-import "github.com/ryan-berger/jpl/internal/ast"
+import (
+	"fmt"
+
+	"github.com/ryan-berger/jpl/internal/ast"
+)
 
 type defUse struct {
 	graph        map[string]map[ast.Node]bool
@@ -17,7 +21,7 @@ func (d *defUse) recordUse(key string, n ast.Node) {
 	g, ok := d.graph[key]
 	if !ok {
 		if d.parent == nil {
-			panic("oopsies")
+			panic(fmt.Sprintf("lookup on %s failed", key))
 		}
 		d.parent.recordUse(key, n)
 		return

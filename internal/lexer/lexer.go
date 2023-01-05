@@ -38,7 +38,12 @@ func Lex(input string) ([]Token, bool) {
 		tokens = append(tokens, tok)
 	}
 
-	tokens = append(tokens, Token{Type: EOF, Val: ""})
+	tokens = append(tokens, Token{
+		Type:      EOF,
+		Val:       "",
+		Line:      l.lineNumber,
+		Character: l.linePos,
+	})
 	return tokens, len(tokens) == 1 || len(tokens) >= 2 && tokens[len(tokens)-2].Type != ILLEGAL
 }
 
@@ -216,7 +221,9 @@ var keywords = map[string]TokenType{
 	"float":  Float,
 	"float3": Float3,
 	"float4": Float4,
+	"pict":   Pict,
 	"bool":   Bool,
+	"str":    Str,
 }
 
 // searchNextToken looks for the next token for the given input

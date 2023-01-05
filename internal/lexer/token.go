@@ -70,6 +70,8 @@ const (
 	Float3
 	Float4
 	Bool
+	Pict
+	Str
 )
 
 type Token struct {
@@ -77,6 +79,11 @@ type Token struct {
 	Val       string
 	Line      int
 	Character int
+}
+
+func (t Token) GoString() string {
+	return fmt.Sprintf("Token{Type: %s, Val: %s, Line: %d, Character: %d}",
+		typeToDump[t.Type], t.Val, t.Line, t.Character)
 }
 
 func (t Token) Loc() (int, int) {
@@ -146,10 +153,11 @@ var typeToDump = map[TokenType]string{
 	IntLiteral:   "INTVAL",
 	FloatLiteral: "FLOATVAL",
 	String:       "STRING",
-	BoolLiteral:  "VARIABLE",
+	BoolLiteral:  "BOOL",
+	Str:          "STR",
 }
 
-func (t *Token) DumpString() string {
+func (t Token) DumpString() string {
 	prefix := typeToDump[t.Type]
 
 	if t.Type == NewLine || t.Type == EOF {

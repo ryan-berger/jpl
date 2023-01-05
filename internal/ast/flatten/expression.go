@@ -1,13 +1,16 @@
 package flatten
 
 import (
+	"fmt"
+
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/ast/dsl"
 )
 
 // expansionAndLet takes in an expression and if it is an ast.CallExpression it will convert
-// it to a let. This method should only be used when an ast.CallExpression is not allowed in an
-// expansion and allows for flattenExpression to stay generic
+// it to a let.
+// This method should only be used when an ast.CallExpression is not allowed in an expansion
+// and allows for flattenExpression to stay generic.
 func expansionAndLet(
 	expr ast.Expression,
 	next nexter,
@@ -30,7 +33,8 @@ func flattenInfixExpression(expr ast.Expression, next nexter) (ast.Expression, [
 	case *ast.FloatExpression, *ast.IntExpression:
 		return expansionAndLet(expr, next)
 	case *ast.InfixExpression:
-		if exp.Op == "&&" || exp.Op == "||" { // TODO: generate function calls for these
+		if exp.Op == "&&" || exp.Op == "||" {
+			panic(fmt.Sprintf("cannot flatten infix expression %s", expr.String()))
 			return exp, nil
 		}
 
@@ -46,18 +50,29 @@ func flattenInfixExpression(expr ast.Expression, next nexter) (ast.Expression, [
 	}
 }
 
-
 func flattenExpression(expression ast.Expression, next nexter) (ast.Expression, []ast.Statement) {
 	switch expr := expression.(type) {
 	case *ast.IdentifierExpression:
 		return expr, nil
-	case *ast.IntExpression, *ast.FloatExpression, *ast.BooleanExpression:
+	case *ast.IntExpression, *ast.FloatExpression, *ast.BooleanExpression, *ast.StrExpression:
 		return expr, nil
 	case *ast.IfExpression:
+		return expr, nil
+	case *ast.PrefixExpression:
 		return expr, nil
 	case *ast.InfixExpression:
 		return flattenInfixExpression(expr, next)
 	case *ast.TupleExpression:
+		var stmts []ast.Statement
+
+		for i, exp := range expr.Expressions {
+			newExp, deps := expansionAndLet(exp, next)
+
+			expr.Expressions[i] = newExp
+			stmts = append(stmts, deps...)
+		}
+		return expr, stmts
+	case *ast.SumTransform, *ast.ArrayTransform, *ast.ArrayRefExpression, *ast.TupleRefExpression:
 		return expr, nil
 	case *ast.CallExpression:
 		var stmts []ast.Statement

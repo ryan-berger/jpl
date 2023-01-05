@@ -1,5 +1,5 @@
 assert true, "Test 1"
-assert true, "Test 2"
+assert false, "Test 2"
 assert true, "Test 3"
 assert true, "Test 4"
 assert true, "Test 5"

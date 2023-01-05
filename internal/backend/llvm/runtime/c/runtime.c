@@ -18,6 +18,12 @@ struct {
   uint8_t data[MAX];
 } mem;
 
+struct str {
+    char* data;
+    uint64_t len;
+};
+
+
 uint8_t getmem(size_t amt) {
   if (mem.i + amt < MAX) {
     mem.i += amt;
@@ -41,6 +47,7 @@ void tprintf(const char *fmt, ...) {
 }
 
 // Types are:
+static const uint8_t STR = 250;
 static const uint8_t BOOL = 251;
 static const uint8_t INT = 252;
 static const uint8_t FLOAT = 253;
@@ -50,6 +57,20 @@ static const uint8_t NDARRAY = 255;
 uint8_t parse_type(char *type_str, char **new_type_str);
 size_t size_type(uint8_t t);
 void show_type(uint8_t t, void *data);
+
+uint8_t parse_str_type(char *type_str, char **new_type_str) {
+  char *orig_type_str = type_str;
+  if (*type_str++ != 's') goto fail;
+  if (*type_str++ != 't') goto fail;
+  if (*type_str++ != 'r') goto fail;
+  uint8_t t = getmem(1);
+  mem.data[t] = STR;
+  *new_type_str = type_str;
+  return t;
+  fail:
+  fprintf(stderr, "[builtin show] Could not parse str type in %s", orig_type_str);
+  exit(127);
+}
 
 uint8_t parse_bool_type(char *type_str, char **new_type_str) {
   char *orig_type_str = type_str;
@@ -141,6 +162,9 @@ uint8_t parse_type(char *type_str, char **new_type_str) {
   case 'i':
     t = parse_int_type(type_str, &type_str);
     break;
+  case 's':
+    t = parse_str_type(type_str, &type_str);
+    break;
   case 'f':
     t = parse_float_type(type_str, &type_str);
     break;
@@ -155,7 +179,7 @@ uint8_t parse_type(char *type_str, char **new_type_str) {
   uint8_t rank;
   while (1) {
     switch (*type_str) {
-    case '[':
+    case '[': {}
       rank = 1;
       type_str++;
       while (*type_str == ' ') type_str++;
@@ -200,6 +224,8 @@ uint8_t parse_type(char *type_str, char **new_type_str) {
 size_t size_type(uint8_t t) {
   int rank, fields, size;
   switch (mem.data[t]) {
+  case STR:
+    return sizeof(int64_t) + sizeof(void*);
   case BOOL:
     return sizeof(int);
   case INT:
@@ -256,6 +282,9 @@ void show_array(uint8_t subtype, int rank, uint64_t *data2) {
 
 void show_type(uint8_t t, void *data) {
   switch (mem.data[t]) {
+  case STR:
+    tprintf("%s", ((struct str*)data)->data);
+    return;
   case BOOL:
     if (*(int32_t*)data) {
       tprintf("true");
@@ -312,10 +341,11 @@ int32_t show(char *type_str, void *data) {
   uint8_t t = parse_type(type_str, &type_str);
   while (*type_str == ' ') type_str++;
   if (*type_str != '\0') {
-    fprintf(stderr, "[builtin show] Cannnot parse type string in %s", orig_type_str);
+    fprintf(stderr, "[builtin show] Cannot parse type string in %s", orig_type_str);
     exit(127);
   }
   show_type(t, data);
+  tprintf("\n");
   return 1;
 }
 
@@ -540,6 +570,7 @@ struct pict read_image(char *filename) {
 }
 
 struct pict _read_image(char *filename) {
+  printf("reading image: %s\n", filename);
   return read_image(filename);
 }
 
@@ -547,8 +578,21 @@ void write_image(struct pict input, char *filename) {
   _writePNG(input.rows, input.cols, input.data, filename);
 }
 
-void _write_image(struct pict input, char *filename) {
-  write_image(input, filename);
+void _write_image(struct pict *input, char *filename) {
+  write_image(*input, filename);
+}
+
+
+struct str _str_concat(struct str left, struct str right) {
+    uint64_t new_len = left.len + right.len;
+
+    char* new_data = malloc(sizeof(char) * new_len);
+    snprintf(new_data, new_len, "%s%s", left.data, right.data);
+
+    struct str new_str;
+    new_str.len = new_len;
+    new_str.data = new_data;
+    return new_str;
 }
 
 

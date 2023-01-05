@@ -41,8 +41,7 @@ func flattenFunction(fn *ast.Function, next nexter) ast.Command {
 		}
 	}
 
-	if size := len(flattened);
-		size != 0 && isReturn(flattened[size-1]) { // add a return at last since there is none
+	if size := len(flattened); size != 0 && isReturn(flattened[size-1]) { // add a return at last since there is none
 		name := next()
 		l := dsl.Let(
 			dsl.LIdent(name), dsl.Tuple())
@@ -88,9 +87,9 @@ func flattenTime(time *ast.Time, next nexter) []ast.Command {
 	subRef := next()
 	sub := dsl.Let(
 		dsl.LIdent(subRef),
-		dsl.Call("sub_floats",
-			dsl.Ident(startRef),
-			dsl.Ident(endRef)))
+		dsl.Infix("-",
+			dsl.Ident(endRef),
+			dsl.Ident(startRef)))
 
 	p := dsl.Print("time: ")
 	s := dsl.Show(dsl.Ident(subRef))

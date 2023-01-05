@@ -21,7 +21,7 @@ type TypeBind struct {
 func (b *TypeBind) SExpr() string {
 	return fmt.Sprintf("(Binding %s %s)",
 		b.Argument.SExpr(),
-		b.Type.SExpr(),)
+		b.Type.SExpr())
 }
 
 func (b *TypeBind) String() string {
@@ -47,4 +47,3 @@ func (b *TupleBinding) String() string {
 	return fmt.Sprintf("{%s}", strings.Join(strs, ", "))
 }
 func (b *TupleBinding) binding() {}
-

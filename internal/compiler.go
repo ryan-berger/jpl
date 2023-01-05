@@ -8,10 +8,10 @@ import (
 
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/ast/flatten"
-	"github.com/ryan-berger/jpl/internal/ast/optimizer"
 	"github.com/ryan-berger/jpl/internal/ast/types/checker"
-	"github.com/ryan-berger/jpl/internal/backend/nasm"
+	"github.com/ryan-berger/jpl/internal/backend"
 	"github.com/ryan-berger/jpl/internal/lexer"
+	"github.com/ryan-berger/jpl/internal/optimizer"
 	"github.com/ryan-berger/jpl/internal/parser"
 	"github.com/ryan-berger/jpl/internal/symbol"
 )
@@ -30,6 +30,7 @@ const (
 type Compiler struct {
 	input         io.Reader
 	output        io.Writer
+	backend       backend.Generator
 	mode          PrintMode
 	optimizations []optimizer.Optimization
 }
@@ -54,6 +55,12 @@ func WithReader(r io.Reader) CompilerOpts {
 	}
 }
 
+func WithBackend(g backend.Generator) CompilerOpts {
+	return func(c *Compiler) {
+		c.backend = g
+	}
+}
+
 func WithOptimizations(optimizations []optimizer.Optimization) CompilerOpts {
 	return func(c *Compiler) {
 		c.optimizations = optimizations
@@ -73,7 +80,7 @@ func NewCompiler(opts ...CompilerOpts) *Compiler {
 }
 
 func (c *Compiler) lex() ([]lexer.Token, error) {
-	b, err := ioutil.ReadAll(c.input)
+	b, err := io.ReadAll(c.input)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +138,7 @@ func (c *Compiler) generate(program ast.Program, table *symbol.Table) {
 	if c.mode == ASM {
 		c.output = os.Stdout
 	}
-	nasm.Generate(program, table, c.output)
+	c.backend(program, table, c.output)
 }
 
 func (c *Compiler) compile() error {
@@ -153,14 +160,15 @@ func (c *Compiler) compile() error {
 	if len(c.optimizations) != 0 {
 		for _, o := range c.optimizations {
 			program = o(program)
+			fmt.Println("running optimization")
+			fmt.Println(program.String())
+			fmt.Println("-------")
 		}
-		fmt.Println(program.SExpr())
-		return nil
 	}
 
 	program, table := c.flatten(program)
 	if c.mode == Flatten {
-		fmt.Println(program.SExpr())
+		fmt.Println(program.String())
 		return nil
 	}
 

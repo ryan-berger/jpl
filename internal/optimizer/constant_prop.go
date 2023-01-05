@@ -1,6 +1,8 @@
 package optimizer
 
-import "github.com/ryan-berger/jpl/internal/ast"
+import (
+	"github.com/ryan-berger/jpl/internal/ast"
+)
 
 func isPropable(expr ast.Expression) bool {
 	switch expr.(type) {
@@ -69,14 +71,24 @@ func propStmt(statement ast.Statement, ident string, with ast.Expression) {
 	}
 }
 
-func checkAndProp(n ast.Node, use *defUse)  {
-	if let, ok := n.(*ast.LetStatement); ok && isPropable(let.Expr) {
-		variable := let.LValue.(*ast.Variable).Variable
-		for _, u := range use.getUses(variable) {
-			propCmd(u, variable, let.Expr)
-			use.clearUse(n)
+func checkAndProp(n ast.Node, use *defUse) {
+	switch stmt := n.(type) {
+	case *ast.LetStatement:
+		if isPropable(stmt.Expr) {
+			variable := stmt.LValue.(*ast.Variable).Variable
+			for _, u := range use.getUses(variable) {
+				propCmd(u, variable, stmt.Expr)
+				use.clearUse(n)
+			}
+			delete(use.graph, variable)
 		}
-		delete(use.graph, variable)
+	case *ast.Function:
+		children := use.children[stmt]
+		for _, s := range stmt.Statements {
+			checkAndProp(s, children)
+		}
+	case *ast.AssertStatement:
+		checkAndProp(stmt.Expr, use)
 	}
 }
 

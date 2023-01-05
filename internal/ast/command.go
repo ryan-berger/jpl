@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	types "github.com/ryan-berger/jpl/internal/ast/types"
+	"github.com/ryan-berger/jpl/internal/ast/types"
 )
 
 type Command interface {
@@ -62,13 +62,13 @@ func (f *Function) String() string {
 
 type Read struct {
 	Type     string
-	Src      string
+	Src      Expression
 	Argument Argument
 	Location
 }
 
 func (r *Read) SExpr() string {
-	return fmt.Sprintf("(ReadImageCmd %s %s)", r.Src, r.Argument.SExpr())
+	return fmt.Sprintf("(ReadImageCmd %s %s)", r.Src.SExpr(), r.Argument.SExpr())
 }
 
 func (r *Read) String() string {
@@ -79,7 +79,7 @@ func (r *Read) command() {}
 type Write struct {
 	Type string
 	Expr Expression
-	Dest string
+	Dest Expression
 	Location
 }
 
@@ -116,7 +116,7 @@ func (p *Print) SExpr() string {
 }
 
 func (p *Print) String() string {
-	return fmt.Sprintf("print %s", p.Str)
+	return fmt.Sprintf(`print "%s"`, p.Str)
 }
 
 func (p *Print) command() {}

@@ -34,21 +34,21 @@ var tests = []struct {
 			{Type: LessThan, Val: "<", Line: 1, Character: 49},
 			{Type: GreaterThan, Val: ">", Line: 1, Character: 50},
 			{Type: EqualTo, Val: "==", Line: 1, Character: 55},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 58},
 		},
 	},
 	{
 		input: `&|`,
 		tokens: []Token{
 			{Type: ILLEGAL, Val: "error, expected '&' received '|' at line 1 position 1", Line: 1, Character: 1},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 1},
 		},
 	},
 	{
 		input: `|&`,
 		tokens: []Token{
 			{Type: ILLEGAL, Val: "error, expected '|' received '&' at line 1 position 1", Line: 1, Character: 1},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 1},
 		},
 	},
 	{
@@ -66,7 +66,7 @@ fn yeet`,
 			{Type: NewLine, Val: "\n", Line: 3, Character: 8},
 			{Type: Function, Val: "fn", Line: 5, Character: 0},
 			{Type: Variable, Val: "yeet", Line: 5, Character: 3},
-			{Type: EOF},
+			{Type: EOF, Line: 5, Character: 8},
 		},
 	},
 	{
@@ -74,14 +74,14 @@ fn yeet`,
 		tokens: []Token{
 			{Type: Print, Val: "print", Line: 1, Character: 0},
 			{Type: ILLEGAL, Val: "error, expected end quote received: ï at line 1 position 8", Line: 1, Character: 8},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 8},
 		},
 	},
 	{
 		input: `"test string yeeet"`,
 		tokens: []Token{
 			{Type: String, Val: "\"test string yeeet\"", Line: 1},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 20},
 		},
 	},
 	{
@@ -92,7 +92,7 @@ fn yeet`,
 			{Type: LParen, Val: "(", Line: 1, Character: 8},
 			{Type: IntLiteral, Val: "33", Line: 1, Character: 9},
 			{Type: RParen, Val: ")", Line: 1, Character: 11},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 13},
 		},
 	},
 	{
@@ -103,7 +103,7 @@ fn yeet`,
 			{Type: LParen, Val: "(", Line: 1, Character: 8},
 			{Type: FloatLiteral, Val: "3.3", Line: 1, Character: 9},
 			{Type: RParen, Val: ")", Line: 1, Character: 12},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 14},
 		},
 	},
 	{
@@ -119,7 +119,7 @@ fn yeet`,
 			{Type: Comma, Val: ",", Line: 2, Character: 3},
 			{Type: FloatLiteral, Val: "3.5", Line: 2, Character: 5},
 			{Type: RParen, Val: ")", Line: 2, Character: 8},
-			{Type: EOF},
+			{Type: EOF, Line: 2, Character: 10},
 		},
 	},
 	{
@@ -130,7 +130,7 @@ fn yeet`,
 			{Type: LParen, Val: "(", Line: 1, Character: 8},
 			{Type: FloatLiteral, Val: "3.", Line: 1, Character: 9},
 			{Type: RParen, Val: ")", Line: 1, Character: 11},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 13},
 		},
 	},
 	{
@@ -164,7 +164,7 @@ fn example(i : int, j : int) {
 			{Type: Variable, Val: "j", Line: 8, Character: 13},
 			{Type: NewLine, Val: "\n", Line: 8, Character: 14},
 			{Type: RCurly, Val: "}", Line: 9, Character: 0},
-			{Type: EOF, Val: "", Line: 0, Character: 0},
+			{Type: EOF, Val: "", Line: 9, Character: 2},
 		},
 	},
 	{
@@ -191,14 +191,14 @@ fn example(i : int, j : int) {
 			{Type: Variable, Val: "j", Line: 2, Character: 13},
 			{Type: NewLine, Val: "\n", Line: 2, Character: 14},
 			{Type: RCurly, Val: "}", Line: 3, Character: 0},
-			{Type: EOF, Val: "", Line: 0, Character: 0},
+			{Type: EOF, Val: "", Line: 3, Character: 2},
 		},
 	},
 	{
 		input: `\ `,
 		tokens: []Token{
 			{Type: ILLEGAL, Val: "error, expected newline after '\\' received: ' ' at line 1 position 1", Line: 1, Character: 1},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 1},
 		},
 	},
 	{
@@ -214,7 +214,7 @@ fn example(i : int, j : int) {
 			{Type: NewLine, Val: "\n", Line: 2, Character: 4},
 			{Type: Plus, Val: "+", Line: 3, Character: 0},
 			{Type: FloatLiteral, Val: "0.3", Line: 3, Character: 1},
-			{Type: EOF},
+			{Type: EOF, Line: 3, Character: 5},
 		},
 	},
 	{
@@ -222,7 +222,7 @@ fn example(i : int, j : int) {
 		tokens: []Token{
 			{Type: Print, Val: "print", Line: 1, Character: 0},
 			{Type: String, Val: "\"\"", Line: 1, Character: 6},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 9},
 		},
 	},
 	{
@@ -230,40 +230,40 @@ fn example(i : int, j : int) {
 		tokens: []Token{
 			{Type: IntLiteral, Val: "1234567", Line: 1, Character: 0},
 			{Type: ILLEGAL, Val: "error, received invalid character: \x00 at line 1 position 8", Line: 1, Character: 8},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 8},
 		},
 	},
 	{
 		input: `//000000000000`,
 		tokens: []Token{
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 15},
 		},
 	},
 	{
 		input: `/* */`,
 		tokens: []Token{
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 6},
 		},
 	},
 	{
 		input: "/* \x00*/",
 		tokens: []Token{
 			{Type: ILLEGAL, Val: "error, expected closing '*/' received invalid character: '\x00' at line 1 position 4", Line: 1, Character: 4},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 4},
 		},
 	},
 	{
 		input: `/*`,
 		tokens: []Token{
 			{Type: ILLEGAL, Val: "error, expected closing '*/' received EOF at line 1 position 3", Line: 1, Character: 3},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 3},
 		},
 	},
 	{
 		input: "\x00",
 		tokens: []Token{
 			{Type: ILLEGAL, Val: "error, received invalid character: \x00 at line 1 position 1", Line: 1, Character: 1},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 1},
 		},
 	},
 	{
@@ -271,7 +271,7 @@ fn example(i : int, j : int) {
 		tokens: []Token{
 			{Type: Print, Val: "print", Line: 1},
 			{Type: ILLEGAL, Val: "error, expected end quote received: \x00 at line 1 position 8", Line: 1, Character: 8},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 8},
 		},
 	},
 	{
@@ -299,7 +299,7 @@ fn example(i : int, j : int) {
 			{Type: Let, Val: "let", Line: 3, Character: 4},
 			{Type: Variable, Val: "r", Line: 3, Character: 8},
 			{Type: Assign, Val: "=", Line: 3, Character: 10},
-			{Type: EOF, Val: "", Line: 0, Character: 0},
+			{Type: EOF, Val: "", Line: 3, Character: 12},
 		},
 	},
 	{
@@ -309,7 +309,7 @@ fn example(i : int, j : int) {
 			{Type: Variable, Val: "r", Line: 1, Character: 4},
 			{Type: Assign, Val: "=", Line: 1, Character: 6},
 			{Type: IntLiteral, Val: "10", Line: 1, Character: 8},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 27},
 		},
 	},
 	{
@@ -321,7 +321,7 @@ fn example(i : int, j : int) {
 			{Type: RBrace, Val: "]", Line: 1, Character: 1},
 			{Type: LParen, Val: "(", Line: 1, Character: 3},
 			{Type: Variable, Val: "k", Line: 3, Character: 6},
-			{Type: EOF},
+			{Type: EOF, Line: 3, Character: 8},
 		},
 	},
 	{
@@ -332,7 +332,7 @@ fn example(i : int, j : int) {
 			{Type: Variable, Val: "mi", Line: 1, Character: 2},
 			{Type: NewLine, Val: "\n", Line: 1, Character: 42},
 			{Type: RCurly, Val: "}", Line: 2},
-			{Type: EOF},
+			{Type: EOF, Line: 2, Character: 2},
 		},
 	},
 	{
@@ -343,7 +343,7 @@ fn example(i : int, j : int) {
 			{Type: Variable, Val: "mi", Line: 1, Character: 2},
 			{Type: NewLine, Val: "\n", Line: 1, Character: 39},
 			{Type: RCurly, Val: "}", Line: 2},
-			{Type: EOF},
+			{Type: EOF, Line: 2, Character: 2},
 		},
 	},
 	{
@@ -353,7 +353,7 @@ fn example(i : int, j : int) {
 			{Type: FloatLiteral, Val: ".31111", Line: 1, Character: 0},
 			{Type: NewLine, Val: "\n", Line: 1, Character: 41},
 			{Type: RCurly, Val: "}", Line: 2},
-			{Type: EOF},
+			{Type: EOF, Line: 2, Character: 2},
 		},
 	},
 	{
@@ -372,7 +372,7 @@ fn example(i : int, j : int) {
 			{Type: Return, Val: "return", Line: 1, Character: 26},
 			{Type: Variable, Val: "x", Line: 1, Character: 33},
 			{Type: RCurly, Val: "}", Line: 1, Character: 35},
-			{Type: EOF},
+			{Type: EOF, Line: 1, Character: 37},
 		},
 	},
 	{
@@ -383,22 +383,39 @@ fn example(i : int, j : int) {
 			{Type: NewLine, Val: "\n", Line: 1, Character: 10},
 			{Type: Time, Val: "time", Line: 2},
 			{Type: Write, Val: "write", Line: 2, Character: 5},
-			{Type: EOF},
+			{Type: EOF, Line: 2, Character: 11},
+		},
+	},
+	{
+		input: `fn test(): str {
+}`,
+		tokens: []Token{
+			{Type: Function, Val: "fn", Line: 1, Character: 0},
+			{Type: Variable, Val: "test", Line: 1, Character: 3},
+			{Type: LParen, Val: "(", Line: 1, Character: 7},
+			{Type: RParen, Val: ")", Line: 1, Character: 8},
+			{Type: Colon, Val: ":", Line: 1, Character: 9},
+			{Type: Str, Val: "str", Line: 1, Character: 11},
+			{Type: LCurly, Val: "{", Line: 1, Character: 15},
+			{Type: NewLine, Val: "\n", Line: 1, Character: 16},
+			{Type: RCurly, Val: "}", Line: 2, Character: 0},
+			{Type: EOF, Val: "", Line: 2, Character: 2},
 		},
 	},
 }
 
 func TestLexer(t *testing.T) {
-	for _, test := range tests {
-		tokens, _ := Lex(test.input)
-		for _, tok := range tokens {
-			fmt.Println(tok.DumpString())
-		}
-		assert.Equal(t, test.tokens, tokens)
-		fmt.Println("-------------")
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("lexer-%d", i), func(t2 *testing.T) {
+			tokens, _ := Lex(test.input)
+			for _, tok := range tokens {
+				fmt.Println(tok.DumpString())
+			}
+			assert.Equal(t2, test.tokens, tokens)
+			fmt.Println("-------------")
+		})
 	}
 }
-
 
 func TestLexerWithAssignments(t *testing.T) {
 	tests := map[string]struct{ input, expected string }{}

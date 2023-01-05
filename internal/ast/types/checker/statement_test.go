@@ -32,6 +32,8 @@ var validLetTests = []string{
 	"{x, y} = {1, 2}",
 	"{x, y} = {[1, 2], 2}",
 	"{x[L], y} = {[1, 2], 2}",
+	"{x[L], y} = {[1, 2], 2}",
+	`{x, y, z} = {"asdf", 2, "a"}`,
 }
 
 func TestLet(t *testing.T) {

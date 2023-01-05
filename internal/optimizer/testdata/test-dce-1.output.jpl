@@ -1,0 +1,1 @@
+(Func my_test IntType () ((ReturnStmt (IntExpr IntType 3))))(Func my_test_two IntType () ((ReturnStmt (IntExpr IntType 1))))(StmtCmd (AssertStmt (VarExpr BoolType false) "test stop"))

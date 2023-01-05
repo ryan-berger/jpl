@@ -1,0 +1,6 @@
+
+
+let str_a = "asdf"
+let str_b = "zxcv"
+
+show str_a + str_b

@@ -2,6 +2,7 @@ package optimizer
 
 import (
 	"errors"
+	"fmt"
 	"math"
 
 	"github.com/ryan-berger/jpl/internal/ast"
@@ -15,7 +16,6 @@ func isConstant(exp ast.Expression) bool {
 	}
 	return false
 }
-
 
 var DivideByZero = errors.New("divide by zero")
 
@@ -175,6 +175,12 @@ func constantFold(exp ast.Expression) (ast.Expression, error) {
 			return nil, err
 		}
 
+		if exp, ok := expr.Condition.(*ast.BooleanExpression); ok {
+			if exp.Val {
+				return expr.Consequence, nil
+			}
+			return expr.Otherwise, nil
+		}
 		return expr, nil
 	case *ast.InfixExpression:
 		lExp, err := constantFold(expr.Left)
@@ -275,8 +281,11 @@ func foldCommand(cmd ast.Command) (ast.Command, error) {
 		}
 		c.Statements = stmts
 		return c, nil
+	case *ast.Write, *ast.Read:
+		return c, nil
+	default:
+		panic(fmt.Sprintf("command of type: %T not supported", c))
 	}
-	panic("yeet")
 }
 
 const divideByZero = "Division by zero error"

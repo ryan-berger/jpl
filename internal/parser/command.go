@@ -1,7 +1,6 @@
 package parser
 
 import (
-
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/lexer"
 )
@@ -34,7 +33,7 @@ func (p *parser) parseStatement() (ast.Statement, error) {
 	case lexer.Assert:
 		return p.parseAssertStatement()
 	default:
-		panic("unimplemented for statement type")
+		return nil, p.errorf(p.cur, "expected let, return, assert, received: %s", p.cur.Val)
 	}
 }
 
@@ -87,14 +86,17 @@ func (p *parser) parseReadCommand() (ast.Command, error) {
 		return nil, p.errorf(p.peek, "illegal token. Expected string, found %s", p.peek.Val)
 	}
 
-	read.Src = p.cur.Val
+	var err error
+	read.Src, err = p.parseExpression(lowest)
+	if err != nil {
+		return nil, err
+	}
 
 	if !p.expectPeek(lexer.To) {
 		return nil, p.errorf(p.peek, "err: illegal token. Expected 'to', found %s", p.peek.Val)
 	}
 	p.advance()
 
-	var err error
 	read.Argument, err = p.parseArgument()
 	if read.Argument == nil {
 		return nil, err
@@ -131,11 +133,12 @@ func (p *parser) parseWriteCommand() (ast.Command, error) {
 	if !p.expectPeek(lexer.To) {
 		return nil, p.errorf(p.peek, "illegal token. Expected 'to', found %s", p.peek.Val)
 	}
+	p.advance()
 
-	if !p.expectPeek(lexer.String) {
-		return nil, p.errorf(p.peek, "illegal token. Expected string, found %s", p.peek.Val)
+	write.Dest, err = p.parseExpression(lowest)
+	if err != nil {
+		return nil, err
 	}
-	write.Dest = p.cur.Val
 
 	p.advance()
 	return write, nil

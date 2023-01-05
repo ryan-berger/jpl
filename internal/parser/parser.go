@@ -40,16 +40,19 @@ func newParser(tokens []lexer.Token) *parser {
 	p.registerPrefixFn(lexer.IntLiteral, p.parseInteger)
 	p.registerPrefixFn(lexer.FloatLiteral, p.parseFloat)
 	p.registerPrefixFn(lexer.BoolLiteral, p.parseBoolean)
+	p.registerPrefixFn(lexer.String, p.parseString)
 	p.registerPrefixFn(lexer.Variable, p.parseIdentifier)
 	p.registerPrefixFn(lexer.If, p.parseIf)
 	p.registerPrefixFn(lexer.Array, p.parseArrayTransform)
 	p.registerPrefixFn(lexer.Sum, p.parseSumTransform)
+
 	// type casts should be call expressions
 	p.registerPrefixFn(lexer.Int, p.parseCallExpression)
 	p.registerPrefixFn(lexer.Float, p.parseCallExpression)
 	p.registerPrefixFn(lexer.Float3, p.parseCallExpression)
 	p.registerPrefixFn(lexer.Float4, p.parseCallExpression)
 
+	// parse infix expressions
 	p.registerInfixFn(lexer.Plus, p.parseInfixExpr)
 	p.registerInfixFn(lexer.Minus, p.parseInfixExpr)
 	p.registerInfixFn(lexer.Multiply, p.parseInfixExpr)
@@ -132,7 +135,11 @@ func (p *parser) parseProgram() ([]ast.Command, error) {
 		commands = append(commands, cmd)
 
 		if !p.curTokenIs(lexer.NewLine) {
-			return nil, p.errorf(p.cur, "expected newline, received: %s", p.cur.Val)
+			val := p.cur.Val
+			if p.cur.Type == lexer.EOF {
+				val = "EOF"
+			}
+			return nil, p.errorf(p.cur, "expected newline, received: %s", val)
 		}
 		p.advance()
 	}

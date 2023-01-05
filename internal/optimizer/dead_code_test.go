@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	checker2 "github.com/ryan-berger/jpl/internal/ast/types/checker"
+	"github.com/ryan-berger/jpl/internal/ast/types/checker"
 	"github.com/ryan-berger/jpl/internal/lexer"
 	"github.com/ryan-berger/jpl/internal/parser"
 	"github.com/stretchr/testify/assert"
@@ -52,15 +52,20 @@ func readDeadCodeTests() (map[string]string, map[string]string, error) {
 }
 
 func TestDeadCode(t *testing.T) {
-	tests, _, _ := readDeadCodeTests()
-	for _, v := range tests {
-		lex, ok := lexer.Lex(v)
-		assert.True(t, ok)
-		p, err := parser.Parse(lex)
-		assert.NoError(t, err)
-		p = DeadCode(p)
-		p, _, err = checker2.Check(p)
-		assert.NoError(t, err, v)
-		fmt.Println(p.String())
+	tests, output, _ := readDeadCodeTests()
+	for k, v := range tests {
+		t.Run(k, func(tes *testing.T) {
+			lex, ok := lexer.Lex(v)
+			assert.True(tes, ok)
+			p, err := parser.Parse(lex)
+			assert.NoError(tes, err)
+
+			fmt.Println(p.SExpr())
+
+			p = DeadCode(p)
+			p, _, err = checker.Check(p)
+			assert.NoError(tes, err, v)
+			assert.Equal(tes, output[k], p.SExpr())
+		})
 	}
 }

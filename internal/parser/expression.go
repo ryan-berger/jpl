@@ -3,6 +3,7 @@ package parser
 import (
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/lexer"
@@ -86,7 +87,7 @@ func (p *parser) parsePrefixExpr() (ast.Expression, error) {
 	p.advance()
 
 	// MIN_INT
-	if expr.Op == "-" && p.cur.Type == lexer.IntLiteral && p.cur.Val == minInt{
+	if expr.Op == "-" && p.cur.Type == lexer.IntLiteral && p.cur.Val == minInt {
 		return &ast.IntExpression{
 			Val: math.MinInt64,
 			Location: ast.Location{
@@ -195,7 +196,7 @@ func (p *parser) parseTupleRefExpr(tuple ast.Expression) (ast.Expression, error)
 func (p *parser) parseGroupedExpression() (ast.Expression, error) {
 	p.advance()
 
-	exp, err := p.parseExpression(lowest) // TODO: handle error
+	exp, err := p.parseExpression(lowest)
 
 	if err != nil {
 		return nil, err
@@ -286,6 +287,16 @@ func (p *parser) parseFloat() (ast.Expression, error) {
 func (p *parser) parseBoolean() (ast.Expression, error) {
 	return &ast.BooleanExpression{
 		Val: p.cur.Val == "true",
+		Location: ast.Location{
+			Line: p.cur.Line,
+			Pos:  p.cur.Character,
+		},
+	}, nil
+}
+
+func (p *parser) parseString() (ast.Expression, error) {
+	return &ast.StrExpression{
+		Val: strings.Trim(p.cur.Val, `"`),
 		Location: ast.Location{
 			Line: p.cur.Line,
 			Pos:  p.cur.Character,

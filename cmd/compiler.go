@@ -5,7 +5,9 @@ import (
 	"os"
 
 	"github.com/ryan-berger/jpl/internal"
-	optimizer2 "github.com/ryan-berger/jpl/internal/ast/optimizer"
+	"github.com/ryan-berger/jpl/internal/backend"
+	"github.com/ryan-berger/jpl/internal/backend/llvm"
+	"github.com/ryan-berger/jpl/internal/optimizer"
 )
 
 var debugLex bool
@@ -14,6 +16,8 @@ var debug bool
 var typed bool
 var flattened bool
 var asm bool
+
+var backendStr string
 
 var outFile string
 
@@ -24,6 +28,7 @@ func init() {
 	flag.BoolVar(&typed, "t", false, "types")
 	flag.BoolVar(&flattened, "f", false, "flatten")
 	flag.BoolVar(&asm, "s", false, "flatten")
+	flag.StringVar(&backendStr, "backend", "nasm", "flatten")
 	flag.StringVar(&outFile, "o", "", "out file")
 	flag.Bool("cf", false, "cf")
 	flag.Bool("cp", false, "cp")
@@ -31,11 +36,16 @@ func init() {
 	flag.Bool("peep", false, "peep")
 }
 
-var optimization = map[string]optimizer2.Optimization{
-	"-cf":   optimizer2.ConstantFold,
-	"-cp":   optimizer2.ConstantProp,
-	"-dce":  optimizer2.DeadCode,
-	"-peep": optimizer2.Peephole,
+var optimization = map[string]optimizer.Optimization{
+	"-cf":   optimizer.ConstantFold,
+	"-cp":   optimizer.ConstantProp,
+	"-dce":  optimizer.DeadCode,
+	"-peep": optimizer.Peephole,
+}
+
+var backends = map[string]backend.Generator{
+	//"nasm": nasm.Generate,
+	"llvm": llvm.Generate,
 }
 
 func main() {
@@ -46,7 +56,7 @@ func main() {
 		panic(err)
 	}
 
-	var optimizations []optimizer2.Optimization
+	var optimizations []optimizer.Optimization
 	for _, f := range os.Args {
 		if o, ok := optimization[f]; ok {
 			optimizations = append(optimizations, o)
@@ -56,6 +66,7 @@ func main() {
 	opts := []internal.CompilerOpts{
 		internal.WithReader(file),
 		internal.WithOptimizations(optimizations),
+		internal.WithBackend(backends["llvm"]),
 	}
 
 	var mode internal.PrintMode
