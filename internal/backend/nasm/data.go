@@ -53,7 +53,7 @@ func dataWalk(n ast.Node, namer namer, names constantMapper, reverse map[string]
 		reverse[typeStr] = name
 		return []data{{Name: name, Value: typeStr, Type: str}}
 	case *ast.Read:
-		val := node.Src[1 : len(node.Src)-1]
+		val := node.Src.String()
 		if k, ok := reverse[val]; ok {
 			names[node] = k
 			return nil
@@ -65,7 +65,7 @@ func dataWalk(n ast.Node, namer namer, names constantMapper, reverse map[string]
 
 		return []data{{Name: name, Value: val, Type: str}}
 	case *ast.Write:
-		val := node.Dest[1 : len(node.Dest)-1]
+		val := node.Dest.String()
 		if k, ok := reverse[val]; ok {
 			names[node] = k
 			return nil
@@ -158,8 +158,7 @@ func dataWalk(n ast.Node, namer namer, names constantMapper, reverse map[string]
 		name := namer()
 		names[node] = name
 		reverse[val] = name
-		return []data{{Name: name, Value: val, Type: str},
-		}
+		return []data{{Name: name, Value: val, Type: str}}
 	case *ast.Print:
 		val := fmt.Sprintf(`%s\n`, node.Str[1:len(node.Str)-1])
 		if k, ok := reverse[val]; ok {
@@ -170,8 +169,7 @@ func dataWalk(n ast.Node, namer namer, names constantMapper, reverse map[string]
 		name := namer()
 		names[node] = name
 		reverse[val] = name
-		return []data{{Name: name, Value: val, Type: str},
-		}
+		return []data{{Name: name, Value: val, Type: str}}
 	default:
 		return nil
 	}

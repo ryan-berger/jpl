@@ -2,10 +2,10 @@ package lexer
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
-	"io/ioutil"
+	"io/fs"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -417,9 +417,12 @@ func TestLexer(t *testing.T) {
 	}
 }
 
+//go:embed testdata/*
+var testDir embed.FS
+
 func TestLexerWithAssignments(t *testing.T) {
 	tests := map[string]struct{ input, expected string }{}
-	err := filepath.Walk("../../assignment1/lexer-tests1/", func(path string, info os.FileInfo, err error) error {
+	err := fs.WalkDir(testDir, ".", func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -430,11 +433,11 @@ func TestLexerWithAssignments(t *testing.T) {
 			return nil
 		case strings.Contains(fileName, "output"):
 			key := fileName[:len(".output")]
-			b, err := ioutil.ReadFile(path)
+			b, err := os.ReadFile(path)
 			assert.Nil(t, err)
 			tests[key] = struct{ input, expected string }{input: tests[key].input, expected: string(b)}
 		default:
-			b, err := ioutil.ReadFile(path)
+			b, err := os.ReadFile(path)
 			assert.Nil(t, err)
 			tests[fileName] = struct{ input, expected string }{input: string(b), expected: tests[fileName].input}
 		}
