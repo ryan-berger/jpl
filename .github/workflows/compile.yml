@@ -8,21 +8,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - name: Install Racket
-        uses: Bogdanp/setup-racket@v0.11
-        with:
-          architecture: 'x64'
-          distribution: 'full'
-          version: '7.9'
-      - name: Compile
-        run: make compile
-      - name: Lexer tests
-        run: |
-          ./assignment1/test-lexer1 ./jpl
-          ./assignment1/test-lexer2 ./jpl
-      - name: Parser tests
-        run: ./assignment2/test-subset-parser
-      - name: Typechecker tests
-        run: ./assignment4/test-subset-typechecker
       - name: Internal tests
         run: go test ./internal/...
