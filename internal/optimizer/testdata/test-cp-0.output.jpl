@@ -1,2 +1,1 @@
-let x = 10
-let y = 10 + 10 + 10 / 10 + 10 + 10
+(StmtCmd (LetStmt (ArgLValue (VarArgument IntType x)) (IntExpr IntType 10)))(StmtCmd (LetStmt (ArgLValue (VarArgument IntType y)) (BinopExpr IntType (BinopExpr IntType (BinopExpr IntType (BinopExpr IntType (IntExpr IntType 10) + (IntExpr IntType 10)) + (BinopExpr IntType (IntExpr IntType 10) / (IntExpr IntType 10))) + (IntExpr IntType 10)) + (IntExpr IntType 10))))

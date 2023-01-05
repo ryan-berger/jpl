@@ -30,7 +30,7 @@ func readConstantPropTests() (map[string]string, map[string]string, error) {
 		}
 
 		f, err := constantProp.ReadFile(path)
-		key := path[:len("testdata/test-dce-x")]
+		key := path[:len("testdata/test-cp-x")]
 
 		if err != nil {
 			return err
@@ -52,15 +52,23 @@ func readConstantPropTests() (map[string]string, map[string]string, error) {
 }
 
 func TestConstantProp(t *testing.T) {
-	tests, _, _ := readConstantPropTests()
-	for _, v := range tests {
-		lex, ok := lexer.Lex(v)
-		assert.True(t, ok)
-		p, err := parser.Parse(lex)
-		assert.NoError(t, err, v)
-		p = ConstantProp(p)
-		p, _, err = checker2.Check(p)
-		assert.NoError(t, err, v)
-		fmt.Println(p.String())
+	tests, outputs, _ := readConstantPropTests()
+	for k, v := range tests {
+		t.Run(k, func(t2 *testing.T) {
+			lex, ok := lexer.Lex(v)
+			assert.True(t2, ok)
+			p, err := parser.Parse(lex)
+			assert.NoError(t2, err, v)
+
+			p = ConstantProp(p)
+
+			p, _, err = checker2.Check(p)
+
+			fmt.Println(p.String())
+
+			assert.NoError(t2, err, v)
+			assert.Equal(t2, outputs[k], p.SExpr())
+		})
+
 	}
 }
