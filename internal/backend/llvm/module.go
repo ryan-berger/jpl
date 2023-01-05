@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/ast/types"
@@ -90,24 +89,23 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 	g.genRuntime()
 	g.generate(p)
 
-	passBuilder := llvm.NewPassManagerBuilder()
+	//passBuilder := llvm.NewPassManagerBuilder()
 
-	passes := llvm.NewPassManager()
-	defer passes.Dispose()
-	passes.AddLICMPass()
-	passes.AddGlobalDCEPass()
-	passes.AddGlobalOptimizerPass()
-	passes.AddIPSCCPPass()
-	passes.AddAggressiveDCEPass()
-	passes.AddFunctionAttrsPass()
-	passes.AddFunctionInliningPass()
-	passes.AddLoopUnrollPass()
-
-	passBuilder.SetOptLevel(3)
-	passBuilder.Populate(passes)
-
-	passes.Run(module)
-	module.Dump()
+	//passes := llvm.NewPassManager()
+	//defer passes.Dispose()
+	//passes.AddLICMPass()
+	//passes.AddGlobalDCEPass()
+	//passes.AddGlobalOptimizerPass()
+	//passes.AddIPSCCPPass()
+	//passes.AddAggressiveDCEPass()
+	//passes.AddFunctionAttrsPass()
+	//passes.AddFunctionInliningPass()
+	//passes.AddLoopUnrollPass()
+	//
+	//passBuilder.SetOptLevel(3)
+	//passBuilder.Populate(passes)
+	//
+	//passes.Run(module)
 
 	if err := llvm.VerifyModule(module, llvm.PrintMessageAction); err != nil {
 		panic(err)
@@ -184,10 +182,12 @@ func (g *generator) generateCommand(vals map[string]llvm.Value, cmd ast.Command)
 		printStr := g.builder.CreateGlobalStringPtr(command.Str, "print")
 		g.builder.CreateCall(g.fns["print"].fn, []llvm.Value{printStr}, "")
 	case *ast.Read:
-		readStr := g.builder.CreateGlobalStringPtr(strings.Trim(command.Src, `"`), "file_name")
+		readStr := g.getExpr(vals, command.Src)
+		read := g.builder.CreateExtractValue(readStr, 0, "read")
+
 		resPtr := g.builder.CreateMalloc(toLLVMType(g.ctx, types.Pict), "res_ptr")
 
-		g.builder.CreateCall(g.fns["read_image"].fn, []llvm.Value{resPtr, readStr}, "")
+		g.builder.CreateCall(g.fns["read_image"].fn, []llvm.Value{resPtr, read}, "")
 
 		res := g.builder.CreateLoad(resPtr, "res")
 
@@ -202,13 +202,14 @@ func (g *generator) generateCommand(vals map[string]llvm.Value, cmd ast.Command)
 		}
 
 	case *ast.Write:
-		fileName := g.builder.CreateGlobalStringPtr(strings.Trim(command.Dest, `"`), "file_name")
-		input := g.getExpr(vals, command.Expr)
+		destStr := g.getExpr(vals, command.Dest)
+		dest := g.builder.CreateExtractValue(destStr, 0, "dest_str")
 
+		input := g.getExpr(vals, command.Expr)
 		m := g.builder.CreateMalloc(input.Type(), "img_arg")
 		g.builder.CreateStore(input, m)
 
-		g.builder.CreateCall(g.fns["write_image"].fn, []llvm.Value{m, fileName}, "")
+		g.builder.CreateCall(g.fns["write_image"].fn, []llvm.Value{m, dest}, "")
 	case *ast.Show:
 		typStr := command.Expr.Typ().String()
 		str := g.builder.CreateGlobalStringPtr(typStr, "type")
@@ -237,6 +238,8 @@ func toLLVMType(ctx llvm.Context, p types.Type) llvm.Type {
 		return ctx.Int64Type()
 	case p == types.Boolean:
 		return ctx.Int1Type()
+	case p == types.Str:
+		return ctx.StructType([]llvm.Type{llvm.PointerType(ctx.Int8Type(), 0), ctx.Int64Type()}, false)
 	}
 
 	switch t := p.(type) {

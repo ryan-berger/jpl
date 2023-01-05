@@ -223,6 +223,7 @@ var keywords = map[string]TokenType{
 	"float4": Float4,
 	"pict":   Pict,
 	"bool":   Bool,
+	"str":    Str,
 }
 
 // searchNextToken looks for the next token for the given input

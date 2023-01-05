@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	types "github.com/ryan-berger/jpl/internal/ast/types"
+	"github.com/ryan-berger/jpl/internal/ast/types"
 	"github.com/ryan-berger/jpl/internal/collections"
 )
 
@@ -13,6 +13,28 @@ type Expression interface {
 	Typ() types.Type
 	expression()
 }
+
+type StrExpression struct {
+	Val  string
+	Type types.Type
+	Location
+}
+
+func (s *StrExpression) SExpr() string {
+	if s.Type != nil {
+		return fmt.Sprintf("(StrExpr %s %s)", s.Type.SExpr(), s.Val)
+	}
+	return fmt.Sprintf("(StrExpr %s)", s.Val)
+}
+
+func (s *StrExpression) String() string {
+	return fmt.Sprintf(`"%s"`, s.Val)
+}
+func (s *StrExpression) Typ() types.Type {
+	return s.Type
+}
+
+func (s *StrExpression) expression() {}
 
 // IntExpression
 type IntExpression struct {

@@ -29,6 +29,20 @@ var fns = []Function{
 		Return: Void,
 	},
 	{
+		Name: "str_concat",
+		Params: []Param{
+			{
+				Name: "lhs",
+				Type: types.Str,
+			},
+			{
+				Name: "rhs",
+				Type: types.Str,
+			},
+		},
+		Return: types.Str,
+	},
+	{
 		Name: "show",
 		Params: []Param{
 			{

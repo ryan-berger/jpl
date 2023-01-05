@@ -65,6 +65,10 @@ func (g *generator) rem(a, b llvm.Value, name string) llvm.Value {
 	return g.builder.CreateSRem(a, b, name)
 }
 
+func (g *generator) strConcat(a, b llvm.Value, name string) llvm.Value {
+	return g.builder.CreateCall(g.fns["str_concat"].fn, []llvm.Value{a, b}, name)
+}
+
 var fns = map[types.Type]map[string]infixOp{
 	types.Integer: {
 		"+":  builderDo(llvm.Builder.CreateAdd),
@@ -95,6 +99,11 @@ var fns = map[types.Type]map[string]infixOp{
 	types.Boolean: {
 		"||": builderDo(llvm.Builder.CreateOr),
 		"&&": builderDo(llvm.Builder.CreateAnd),
+		"==": icmpToInfix(llvm.IntEQ),
+		"!=": icmpToInfix(llvm.IntNE),
+	},
+	types.Str: {
+		"+": (*generator).strConcat,
 	},
 }
 
@@ -183,6 +192,14 @@ func (g *generator) getExpr(val map[string]llvm.Value, expression ast.Expression
 		}
 
 		return iv
+	case *ast.StrExpression:
+		ptr := g.builder.CreateGlobalStringPtr(expr.Val, "str_val")
+
+		typ := toLLVMType(g.ctx, expr.Type)
+		next := g.builder.CreateInsertValue(llvm.Undef(typ), ptr, 0, "str")
+		length := llvm.ConstInt(g.ctx.Int64Type(), uint64(len(expr.Val)), false)
+
+		return g.builder.CreateInsertValue(next, length, 1, "str")
 	}
 	panic(fmt.Sprintf("unsupported expr: %T", expression))
 }

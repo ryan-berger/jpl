@@ -143,15 +143,22 @@ func checkInfixExpr(expression *ast.InfixExpression, table *symbol.Table) (types
 		return types.Boolean, nil
 	}
 
-	// if we don't have logical operators, we need to make sure that both
-	// expressions are the same and are not Booleans
-	if !isNumeric(leftType) {
-		return nil, NewError(expression.Left,
-			"type error: left type of %s expression must be numeric, received %s", expression.Op, leftType)
-	}
-	if !isNumeric(rightType) {
-		return nil, NewError(expression.Left,
-			"type error: right type of %s expression must be numeric, received %s", expression.Op, rightType)
+	if leftType.Equal(types.Str) || rightType.Equal(types.Str) {
+		if expression.Op != "+" {
+			return nil, NewError(expression.Left,
+				"type error: operator %s is not defined for type str", expression.Op)
+		}
+	} else {
+		// if we don't have logical operators, we need to make sure that both
+		// expressions are the same and are not Booleans
+		if !isNumeric(leftType) {
+			return nil, NewError(expression.Left,
+				"type error: left type of %s expression must be numeric, received %s", expression.Op, leftType)
+		}
+		if !isNumeric(rightType) {
+			return nil, NewError(expression.Left,
+				"type error: right type of %s expression must be numeric, received %s", expression.Op, rightType)
+		}
 	}
 
 	if !leftType.Equal(rightType) {
@@ -367,6 +374,9 @@ func checkArray(expr *ast.ArrayExpression, table *symbol.Table) (types.Type, err
 
 func expressionType(expression ast.Expression, table *symbol.Table) (types.Type, error) {
 	switch expr := expression.(type) {
+	case *ast.StrExpression:
+		expr.Type = types.Str
+		return types.Str, nil
 	case *ast.BooleanExpression:
 		expr.Type = types.Boolean
 		return types.Boolean, nil

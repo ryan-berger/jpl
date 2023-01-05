@@ -69,7 +69,6 @@ func (f *float) SExpr() string {
 	return "FloatType"
 }
 
-
 type Array struct {
 	Inner Type
 	Rank  int
@@ -89,7 +88,7 @@ func (a *Array) String() string {
 		return "pict" // special case
 	}
 
-	b := make([]byte, a.Rank - 1)
+	b := make([]byte, a.Rank-1)
 	for i := 0; i < len(b); i++ {
 		b[i] = ','
 	}
@@ -100,7 +99,6 @@ func (a *Array) SExpr() string {
 	return fmt.Sprintf("(ArrayType %s rank=%d)",
 		a.Inner.SExpr(), a.Rank)
 }
-
 
 type Tuple struct {
 	Types []Type
@@ -139,3 +137,23 @@ func (t *Tuple) String() string {
 }
 
 func (t *Tuple) SExpr() string { return "" }
+
+type str struct{}
+
+func (s *str) Equal(other Type) bool {
+	_, ok := other.(*str)
+	return ok
+}
+
+func (s *str) Size() int {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *str) String() string {
+	return "str"
+}
+
+func (s *str) SExpr() string {
+	return "StrType"
+}

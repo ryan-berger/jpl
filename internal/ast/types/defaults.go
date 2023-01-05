@@ -3,6 +3,9 @@ package types
 // Integer is an exported constant of type integer
 var Integer = &integer{}
 
+// Str is an exported constant of type str
+var Str = &str{}
+
 // Float is an exported constant of type float
 var Float = &float{}
 

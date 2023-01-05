@@ -3,6 +3,7 @@ package parser
 import (
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/ryan-berger/jpl/internal/ast"
 	"github.com/ryan-berger/jpl/internal/lexer"
@@ -286,6 +287,16 @@ func (p *parser) parseFloat() (ast.Expression, error) {
 func (p *parser) parseBoolean() (ast.Expression, error) {
 	return &ast.BooleanExpression{
 		Val: p.cur.Val == "true",
+		Location: ast.Location{
+			Line: p.cur.Line,
+			Pos:  p.cur.Character,
+		},
+	}, nil
+}
+
+func (p *parser) parseString() (ast.Expression, error) {
+	return &ast.StrExpression{
+		Val: strings.Trim(p.cur.Val, `"`),
 		Location: ast.Location{
 			Line: p.cur.Line,
 			Pos:  p.cur.Character,

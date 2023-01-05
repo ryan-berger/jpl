@@ -1,61 +1,35 @@
-CS 4470 Compilers Template
-==========================
+# JPL - A UofU CS4470 Programming Language
 
-Please use this repository to hold all of your work for CS 4470
-compilers. You will submit your assigments, and they will be graded,
-using the contents of this repository only, at the commit
-corresponding to the latest possible submission time (including
-all granted extensions).
+![Mandlebrot](/mandlebrot.png)
 
-Picking a Language
-------------------
+## History
 
-This repository supports work in C++ (version 20), Java (15), or
-Python (3.9). It correspondingly includes starter files
-`compiler.cpp`, `compiler.java`, and `compiler.py`. Each starter file
-compiles and runs, doing nothing and returning successfully. For each
-language there is also a Makefile: `Makefile_cpp`, `Makefile_java`,
-and `Makefile_py`.
+JPL also known as **J**(ohn Regehr) **P**((avel Pachenkha) **L**(ang), or **J**(ust a) **P**(rogramming) **L**(anguage),
+or whatever else you make fit with the letters JPL is a toy programming language to teach the students of the
+University of Utah about compilers.
 
-To pick your language, delete the starter files for the other two
-languages. If you want to use a language other than C++, Java, or
-Python, contact the instructors. Keep in mind that using another
-language will be more work, and you will not be able to receive the
-same level of instructor support. Compilers is a complicated subject.
-It is abjectly irresponsible to try to learn a new language at the
-same time as you learn compilers.
+It is an array-based programming language built to process images and videos. To find the entire spec, take a look at SPEC.md
 
-Compiling your Compiler
------------------------
+It was initially written with a NASM backend that one would have to assemble with nasm,
+and link to the runtime.  The runtime is minimal. It is written in C, and uses LibPNG to do the image processing. Due to constraints of the class
+video processing was never finished. 
 
-A compiler is just a normal computer program. Before running it you
-need to compile it. So, once you've picked a language, compile your
-compiler by running:
+As a compiler it is pretty simple. It will lex, parse, then do source to source optimizations,
+emitting NASM at the end of the process. We were tasked with choosing from a list of optimizations, 
+so I implemented dead code elimination, constant propagation, constant folding, and a few peephole optimizations.
 
-    make compile
+All tests were run using Perl, and used our required S-Expression outputs were delt with by Racket to guarantee
+our lexing, parsing, type checking, and optimizations were all correct.
 
-This should complete without errors. If you get an error, you likely
-need to install one of `clang++`, `javac`/`java`, or `python3`
-(depending on the language you chose), or to add those tools to your
-system PATH. If you're having trouble with this step, please talk
-to your TA or one of your instructors.
+## Additions
 
-Note that if you're using Python, `make compile` will do a bit of
-syntax checking but that's about it.
+Since the spec is pretty bare, and missing some "real programming language" features, I've added some new features.
 
-Running your Compiler
----------------------
+First NASM sucks pretty bad, and there were a lot of steps to get a binary working correctly. Now I've added a LLVM backend
+to make things more portable, and I've got the build step down to two commands. One to compile the object file,
+and one to link LibPNG.
 
-To test your compiler you need a test program to compile. The file
-`test.jpl` is intended to be a quick scratch-pad for such tests. Run
-your compiler on it with:
+## Using it
 
-    make run
-
-Of course, longer-term you'll want to save test files and run the
-regularly to avoid regressions. You can change the name of the test
-file like so:
-
-    make run TEST=something.jpl
-
-We will use this same functionality to grade your assignments.
+To compile the compiler, run `make compile` and you should get a `jpl` binary outputted in your directory. You may need to
+have Tiny Go's llvm-go installed so that LLVM can be invoked while compiling

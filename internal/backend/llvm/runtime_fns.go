@@ -1,26 +1,11 @@
 package llvm
 
 import (
-	"fmt"
-
 	"github.com/ryan-berger/jpl/internal/ast/types"
 	runtime2 "github.com/ryan-berger/jpl/internal/backend/llvm/runtime"
 	"github.com/ryan-berger/jpl/internal/collections"
 	"tinygo.org/x/go-llvm"
 )
-
-type llvmArg struct {
-	name     string
-	llvmType llvm.Type
-}
-
-type llvmType llvm.Type
-
-type llvmFunc struct {
-	name     string
-	llvmType llvm.Type
-	args     []llvmArg
-}
 
 func getRuntimeType(ctx llvm.Context, t types.Type) llvm.Type {
 	switch t {
@@ -33,7 +18,6 @@ func getRuntimeType(ctx llvm.Context, t types.Type) llvm.Type {
 	default:
 		ptr, ok := t.(*runtime2.Pointer)
 		if ok {
-			fmt.Printf("pointer type: %s\n", ptr.Inner.String())
 			return llvm.PointerType(getRuntimeType(ctx, ptr.Inner), 0)
 		}
 

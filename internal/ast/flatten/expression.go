@@ -54,7 +54,7 @@ func flattenExpression(expression ast.Expression, next nexter) (ast.Expression, 
 	switch expr := expression.(type) {
 	case *ast.IdentifierExpression:
 		return expr, nil
-	case *ast.IntExpression, *ast.FloatExpression, *ast.BooleanExpression:
+	case *ast.IntExpression, *ast.FloatExpression, *ast.BooleanExpression, *ast.StrExpression:
 		return expr, nil
 	case *ast.IfExpression:
 		return expr, nil

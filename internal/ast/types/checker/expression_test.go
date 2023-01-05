@@ -57,6 +57,8 @@ var okTests = []struct {
 	{"[[1, 2, 3, 4]][0][0]", types.Integer},
 	{"[1, 2, 3, 4]", &types.Array{Inner: types.Integer, Rank: 1}},
 	{"[]", &types.Array{Inner: types.Integer, Rank: 1}},
+	{`"test"`, types.Str},
+	{`"test" + "other test"`, types.Str},
 }
 
 func TestExpressionCheck(t *testing.T) {

@@ -36,7 +36,5 @@ a6-peep:
 generate-asm:
 	./jpl -o code.s $(TEST)
 
-
-
 clean:
 	rm -rf jpl

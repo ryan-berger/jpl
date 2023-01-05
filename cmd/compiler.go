@@ -7,7 +7,6 @@ import (
 	"github.com/ryan-berger/jpl/internal"
 	"github.com/ryan-berger/jpl/internal/backend"
 	"github.com/ryan-berger/jpl/internal/backend/llvm"
-	"github.com/ryan-berger/jpl/internal/backend/nasm"
 	"github.com/ryan-berger/jpl/internal/optimizer"
 )
 
@@ -45,7 +44,7 @@ var optimization = map[string]optimizer.Optimization{
 }
 
 var backends = map[string]backend.Generator{
-	"nasm": nasm.Generate,
+	//"nasm": nasm.Generate,
 	"llvm": llvm.Generate,
 }
 
@@ -67,7 +66,7 @@ func main() {
 	opts := []internal.CompilerOpts{
 		internal.WithReader(file),
 		internal.WithOptimizations(optimizations),
-		internal.WithBackend(backends[backendStr]),
+		internal.WithBackend(backends["llvm"]),
 	}
 
 	var mode internal.PrintMode

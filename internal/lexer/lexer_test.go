@@ -386,6 +386,22 @@ fn example(i : int, j : int) {
 			{Type: EOF, Line: 2, Character: 11},
 		},
 	},
+	{
+		input: `fn test(): str {
+}`,
+		tokens: []Token{
+			{Type: Function, Val: "fn", Line: 1, Character: 0},
+			{Type: Variable, Val: "test", Line: 1, Character: 3},
+			{Type: LParen, Val: "(", Line: 1, Character: 7},
+			{Type: RParen, Val: ")", Line: 1, Character: 8},
+			{Type: Colon, Val: ":", Line: 1, Character: 9},
+			{Type: Str, Val: "str", Line: 1, Character: 11},
+			{Type: LCurly, Val: "{", Line: 1, Character: 15},
+			{Type: NewLine, Val: "\n", Line: 1, Character: 16},
+			{Type: RCurly, Val: "}", Line: 2, Character: 0},
+			{Type: EOF, Val: "", Line: 2, Character: 2},
+		},
+	},
 }
 
 func TestLexer(t *testing.T) {
