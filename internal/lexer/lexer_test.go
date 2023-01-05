@@ -442,15 +442,18 @@ func TestLexerWithAssignments(t *testing.T) {
 		return nil
 	})
 
-	for _, test := range tests {
-		buf := bytes.NewBufferString("")
-		tokens, ok := Lex(test.input)
-		assert.True(t, ok)
-		for _, tok := range tokens {
-			buf.WriteString(tok.DumpString() + "\n")
-		}
-		buf.WriteString("Compilation succeeded\n")
-		assert.Equal(t, test.expected, buf.String())
+	for k, test := range tests {
+		t.Run(k, func(t2 *testing.T) {
+			buf := bytes.NewBufferString("")
+			tokens, ok := Lex(test.input)
+			assert.True(t2, ok)
+			for _, tok := range tokens {
+				buf.WriteString(tok.DumpString() + "\n")
+			}
+			buf.WriteString("Compilation succeeded\n")
+			assert.Equal(t2, test.expected, buf.String())
+		})
+
 	}
 	assert.Nil(t, err)
 }

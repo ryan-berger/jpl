@@ -153,7 +153,7 @@ var typeToDump = map[TokenType]string{
 	IntLiteral:   "INTVAL",
 	FloatLiteral: "FLOATVAL",
 	String:       "STRING",
-	BoolLiteral:  "BOOL",
+	BoolLiteral:  "VARIABLE",
 	Str:          "STR",
 }
 

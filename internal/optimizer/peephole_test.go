@@ -2,7 +2,6 @@ package optimizer
 
 import (
 	"embed"
-	"fmt"
 	"io/fs"
 	"strings"
 	"testing"
@@ -16,17 +15,16 @@ import (
 //go:embed testdata/test-peep-*
 var peepTests embed.FS
 
-func readPeepTests() (map[string]string, map[string]string, error){
+func readPeepTests() (map[string]string, map[string]string, error) {
 	testMap := make(map[string]string)
 	outputMap := make(map[string]string)
-
 
 	e := fs.WalkDir(peepTests, ".", func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			return nil
 		}
 
-		if err != nil  {
+		if err != nil {
 			return err
 		}
 
@@ -37,7 +35,7 @@ func readPeepTests() (map[string]string, map[string]string, error){
 			return err
 		}
 
-		if strings.Contains(path,"output") {
+		if strings.Contains(path, "output") {
 			outputMap[key] = string(f)
 		} else {
 			testMap[key] = string(f)
@@ -53,15 +51,18 @@ func readPeepTests() (map[string]string, map[string]string, error){
 }
 
 func TestPeephole(t *testing.T) {
-	tests, _, _ := readPeepTests()
-	for _, v := range tests {
+	tests, outputs, _ := readPeepTests()
+	for k, v := range tests {
 		lex, ok := lexer.Lex(v)
 		assert.True(t, ok)
+
 		p, err := parser.Parse(lex)
 		assert.NoError(t, err)
+
 		p = Peephole(p)
 		p, _, err = checker2.Check(p)
+
 		assert.NoError(t, err, v)
-		fmt.Println(p.String())
+		assert.Equal(t, outputs[k], p.SExpr())
 	}
 }
