@@ -89,23 +89,23 @@ func Generate(p ast.Program, s *symbol.Table, w io.Writer) {
 	g.genRuntime()
 	g.generate(p)
 
-	//passBuilder := llvm.NewPassManagerBuilder()
+	passBuilder := llvm.NewPassManagerBuilder()
 
-	//passes := llvm.NewPassManager()
-	//defer passes.Dispose()
-	//passes.AddLICMPass()
-	//passes.AddGlobalDCEPass()
-	//passes.AddGlobalOptimizerPass()
-	//passes.AddIPSCCPPass()
-	//passes.AddAggressiveDCEPass()
-	//passes.AddFunctionAttrsPass()
-	//passes.AddFunctionInliningPass()
-	//passes.AddLoopUnrollPass()
-	//
-	//passBuilder.SetOptLevel(3)
-	//passBuilder.Populate(passes)
-	//
-	//passes.Run(module)
+	passes := llvm.NewPassManager()
+	defer passes.Dispose()
+	passes.AddLICMPass()
+	passes.AddGlobalDCEPass()
+	passes.AddGlobalOptimizerPass()
+	passes.AddIPSCCPPass()
+	passes.AddAggressiveDCEPass()
+	passes.AddFunctionAttrsPass()
+	passes.AddFunctionInliningPass()
+	passes.AddLoopUnrollPass()
+
+	passBuilder.SetOptLevel(3)
+	passBuilder.Populate(passes)
+
+	passes.Run(module)
 
 	if err := llvm.VerifyModule(module, llvm.PrintMessageAction); err != nil {
 		panic(err)
